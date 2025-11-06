@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Climb</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d0d1a;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-container {
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #1a1a2e; /* Dark theme for the tower */
+            border: 4px solid #3c004d;
+        }
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #10001f 0%, #1a1a2e 100%);
+        }
+        .controls {
+            padding: 16px;
+            text-align: center;
+            background-color: #1a1a2e;
+            border-top: 1px solid #3c004d;
+        }
+        .controls p {
+            margin: 4px 0;
+            font-size: 0.9rem;
+            color: #999;
+        }
+        .control-key {
+            display: inline-block;
+            background-color: #3c004d;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin: 0 2px;
+            font-weight: bold;
+            box-shadow: 0 2px #28003a;
+        }
+        .message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 30px;
+            background: rgba(44, 44, 60, 0.95);
+            border: 3px solid #ff416c;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            min-width: 250px;
+            box-shadow: 0 0 20px rgba(255, 65, 108, 0.5);
+            display: none; /* Initially hidden */
+        }
+        .message-box h2 {
+            font-size: 1.8rem;
+            color: #ff416c;
+            margin-bottom: 10px;
+        }
+        .message-box p {
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+        .message-box button {
+            background-color: #ff416c;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .message-box button:hover {
+            background-color: #e03a5e;
+        }
+        .message-box button:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Game Container -->
+    <div class="game-container">
+        <canvas id="gameCanvas" width="500" height="650"></canvas>
+        <div class="controls">
+            <p>Controls: Move with <span class="control-key">←</span> <span class="control-key">→</span> and Jump/<span class="font-bold text-yellow-300">Float</span> with <span class="control-key">↑</span></p>
+            <p id="level-display" class="font-bold text-lg text-fuchsia-400 mt-2"></p>
+        </div>
+    </div>
+
+    <!-- Message Box for Game Over -->
+    <div id="messageBox" class="message-box">
+        <h2 id="messageTitle"></h2>
+        <p id="messageText"></p>
+        <button id="restartButton">Try Again</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration and Initialization ---
+        setLogLevel('Debug');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-tower-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth;
+        let userId = 'anon';
+
+        // --- Game Setup and Variables ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game Mechanics Constants
+        const PLAYER_SPEED = 5;
+        const JUMP_FORCE = -15;
+        const GRAVITY = 0.6;
+        const WALL_X = 50;
+        const WALL_WIDTH = canvas.width - 100;
+        
+        // --- NEW KIRBY JUMP CONSTANTS ---
+        const MAX_JUMPS = 2; // Total jumps/boosts before landing
+        const FLOAT_GRAVITY = 0.2; // Heavily reduced gravity when holding jump key to float
+        const FLOAT_FALL_CAP = 4; // Max downward velocity during float
+        
+        // Platform Generation Constants (ADJUSTED FOR EASIER CLIMBING AND RESPONSIVE GENERATION)
+        const PLATFORM_GAP_MIN = 80; 
+        const PLATFORM_GAP_MAX = 140; 
+        const PLATFORM_WIDTH_MIN = 70;
+        const PLATFORM_WIDTH_MAX = 200;
+        const GENERATION_BUFFER_Y = 450; // Increased generation buffer to build a taller tower section at once 
+
+        // State variables for infinite generation
+        let highestPlatformY = 0; // The lowest Y-coordinate (highest point) that has a platform
+        let scrollY = 0; // Camera scroll offset
+        let distanceClimbed = 0; // The new score: total distance climbed
+
+        let gameState = {
+            player: null,
+            platforms: [],
+            obstacles: [], // NEW: List to hold all obstacles
+            isGameOver: false,
+            keys: {}
+        };
+
+        const levelDisplay = document.getElementById('level-display');
+        const messageBox = document.getElementById('messageBox');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageText = document.getElementById('messageText');
+        const restartButton = document.getElementById('restartButton');
+
+        // --- Game Classes ---
+
+        class Player {
+            constructor(x, y) {
+                this.width = 20;
+                this.height = 30;
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.onGround = false;
+                this.jumpsUsed = 0; // NEW: tracks how many jumps/boosts used since landing
+                this.color = '#ffeb3b'; // Player color
+            }
+
+            update() {
+                // --- Apply Kirby Float/Gravity Logic ---
+                const isHoldingJump = gameState.keys['ArrowUp'];
+                const isInAir = !this.onGround;
+
+                if (isInAir && this.jumpsUsed === MAX_JUMPS && isHoldingJump) {
+                    // Actively floating: greatly reduce gravity effect
+                    this.vy += FLOAT_GRAVITY;
+                    // Cap max downward speed to make it a gentle float
+                    this.vy = Math.min(this.vy, FLOAT_FALL_CAP); 
+                } else {
+                    // Normal gravity
+                    this.vy += GRAVITY;
+                }
+                
+                // Horizontal movement
+                if (gameState.keys['ArrowLeft']) {
+                    this.vx = -PLAYER_SPEED;
+                } else if (gameState.keys['ArrowRight']) {
+                    this.vx = PLAYER_SPEED;
+                } else {
+                    this.vx = 0;
+                }
+
+                // Apply velocity
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Boundary checks (keeping player inside the tower walls)
+                if (this.x < WALL_X) {
+                    this.x = WALL_X;
+                }
+                if (this.x + this.width > WALL_X + WALL_WIDTH) {
+                    this.x = WALL_X + WALL_WIDTH - this.width;
+                }
+            }
+
+            jump() {
+                // Jump or Mid-air Boost (up to MAX_JUMPS)
+                if (this.jumpsUsed < MAX_JUMPS) {
+                    this.vy = JUMP_FORCE; // Apply jump force
+                    this.onGround = false;
+                    this.jumpsUsed++;
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y - scrollY, this.width, this.height);
+            }
+        }
+
+        class Platform {
+            constructor(level, x, y_absolute, w, h, type = 'static', speed = 0) {
+                this.level = level; // Level is now unused but kept for structure
+                this.x = x;
+                this.y = y_absolute; // Absolute Y position in the world
+                this.w = w;
+                this.h = h;
+                this.type = type;
+                this.speed = speed;
+                this.color = '#ff416c'; // Default platform color
+                this.startY = y_absolute; // For vertical movement anchor
+                this.startX = x; // For horizontal movement anchor
+
+                if (type.includes('moving')) {
+                    this.color = '#4dffa6';
+                }
+            }
+
+            update() {
+                if (this.type === 'moving-h') {
+                    this.x += this.speed;
+                    // Reverse direction if hitting boundaries (relative to tower walls)
+                    if (this.x < WALL_X || this.x + this.w > WALL_X + WALL_WIDTH) {
+                        this.speed *= -1;
+                    }
+                } else if (this.type === 'moving-v') {
+                    this.y += this.speed;
+                    // Reverse direction based on a small range (100px travel up/down)
+                    if (this.y < this.startY - 100 || this.y > this.startY + 100) {
+                        this.speed *= -1;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y - scrollY, this.w, this.h);
+            }
+        }
+
+        // NEW: Obstacle Class
+        class Obstacle {
+            constructor(x, y_absolute, w, h, type = 'sweeper', speed = 0) {
+                this.x = x;
+                this.y = y_absolute; // Absolute Y position in the world
+                this.w = w;
+                this.h = h;
+                this.type = type;
+                this.speed = speed;
+                this.color = '#ff0000'; // Pure red for danger
+                this.startY = y_absolute; // Anchor for vertical movement
+                this.startX = x; // Anchor for horizontal movement
+            }
+
+            update() {
+                if (this.type === 'sweeper') {
+                    this.x += this.speed;
+                    // Reverse direction if hitting boundaries (relative to tower walls)
+                    if (this.x < WALL_X || this.x + this.w > WALL_X + WALL_WIDTH) {
+                        this.speed *= -1;
+                    }
+                } else if (this.type === 'bouncer') {
+                    this.y += this.speed;
+                    // Reverse direction based on a range (150px travel up/down)
+                    if (this.y < this.startY - 150 || this.y > this.startY + 150) {
+                        this.speed *= -1;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                // Draw main rectangle
+                ctx.fillRect(this.x, this.y - scrollY, this.w, this.h);
+                
+                // Add a visual 'spike' effect to make it look dangerous
+                ctx.fillStyle = '#ff9999';
+                ctx.fillRect(this.x, this.y - scrollY, this.w, 3);
+                ctx.fillRect(this.x, this.y - scrollY + this.h - 3, this.w, 3);
+            }
+        }
+        // --- End Obstacle Class ---
+
+        // --- Game Logic Functions ---
+        
+        /**
+         * Generates new, random platforms starting from the highest point in the world.
+         */
+        function generateNewPlatforms(start_y) {
+            let current_y = start_y;
+
+            // Generate platforms up until the new highest point is GENERATION_BUFFER_Y pixels above the current starting point
+            const targetY = current_y - GENERATION_BUFFER_Y;
+            let previous_y = start_y; // Keep track of the Y before the last platform
+
+            while (current_y > targetY) {
+                // Randomly determine the vertical gap
+                const y_gap = Math.floor(Math.random() * (PLATFORM_GAP_MAX - PLATFORM_GAP_MIN) + PLATFORM_GAP_MIN);
+                current_y -= y_gap;
+
+                // Determine platform properties
+                const w = Math.floor(Math.random() * (PLATFORM_WIDTH_MAX - PLATFORM_WIDTH_MIN) + PLATFORM_WIDTH_MIN);
+                
+                // Ensure platform is fully within the walls
+                const max_x = WALL_X + WALL_WIDTH - w;
+                const x = Math.floor(Math.random() * (max_x - WALL_X) + WALL_X);
+                const h = 10;
+                
+                // Randomly decide platform type: 70% static, 30% moving
+                const rand = Math.random();
+                let type = 'static';
+                let speed = 0;
+
+                if (rand > 0.7) {
+                    // 15% moving-h, 15% moving-v
+                    if (Math.random() > 0.5) {
+                        type = 'moving-h';
+                        speed = Math.random() < 0.5 ? 1.5 : -1.5; // Slow horizontal movement
+                    } else {
+                        type = 'moving-v';
+                        speed = Math.random() < 0.5 ? 1 : -1; // Slow vertical movement
+                    }
+                }
+
+                // Push platform
+                gameState.platforms.push(new Platform(0, x, current_y, w, h, type, speed));
+                
+                // Update the highest point tracked
+                highestPlatformY = Math.min(highestPlatformY, current_y); 
+                
+                // --- OBSTACLE GENERATION LOGIC ---
+                // Try to spawn an obstacle in the gap between the new platform (current_y) and the previous position (previous_y)
+                if (Math.random() < 0.25) { // 25% chance to spawn an obstacle
+                    const obs_w = Math.floor(Math.random() * 40) + 20; // 20 to 60 wide
+                    const obs_h = 20; // Slightly thicker
+                    
+                    // Define a safe vertical range for the obstacle
+                    const safe_margin = 10;
+                    const obs_y_min = current_y + obs_h + safe_margin; // Ensure it's not overlapping the new platform
+                    const obs_y_max = previous_y - safe_margin - 30; // Ensure it's not too close to the platform below
+                    
+                    if (obs_y_max > obs_y_min) {
+                        const obs_y = Math.floor(Math.random() * (obs_y_max - obs_y_min) + obs_y_min);
+
+                        const obs_x_max = WALL_X + WALL_WIDTH - obs_w;
+                        const obs_x = Math.floor(Math.random() * (obs_x_max - WALL_X) + WALL_X);
+
+                        let obs_type = Math.random() > 0.5 ? 'sweeper' : 'bouncer';
+                        let obs_speed = obs_type === 'sweeper' ? (Math.random() < 0.5 ? 2.5 : -2.5) : (Math.random() < 0.5 ? 1.5 : -1.5);
+                        
+                        gameState.obstacles.push(new Obstacle(obs_x, obs_y, obs_w, obs_h, obs_type, obs_speed));
+                    }
+                }
+                
+                previous_y = current_y + y_gap; // Update previous_y for the next iteration
+            }
+        }
+
+        function loadInitialLevels() {
+            gameState.platforms = [];
+            gameState.obstacles = []; // NEW: Clear obstacles on reset
+            
+            // Set the initial highest Y to the bottom of the canvas
+            highestPlatformY = canvas.height; 
+
+            // 1. Create a generous starting platform at the very bottom
+            gameState.platforms.push(new Platform(0, WALL_X, canvas.height - 30, WALL_WIDTH, 30, 'static'));
+            
+            // 2. Set player position right above the start platform
+            gameState.player = new Player(canvas.width / 2 - 10, canvas.height - 60);
+            gameState.player.vy = 0;
+            
+            // 3. Generate initial set of platforms (ensures the first screen is full)
+            generateNewPlatforms(canvas.height - 100); 
+
+            // 4. Reset scroll and score
+            scrollY = 0;
+            distanceClimbed = 0;
+            updateLevelDisplay();
+        }
+
+        function checkCollision(obj1, obj2) {
+            // Check for AABB (Axis-Aligned Bounding Box) collision
+            // obj1 is expected to have 'width'/'height', obj2 is expected to have 'w'/'h'
+            return (
+                obj1.x < obj2.x + obj2.w &&
+                obj1.x + obj1.width > obj2.x &&
+                obj1.y < obj2.y + obj2.h &&
+                obj1.y + obj1.height > obj2.y
+            );
+        }
+
+        function updateGame() {
+            if (gameState.isGameOver) return;
+
+            gameState.player.update();
+            
+            const discardThresholdY = scrollY + canvas.height + 100;
+            
+            // Update and Filter Platforms
+            gameState.platforms.forEach(p => p.update());
+            gameState.platforms = gameState.platforms.filter(p => p.y < discardThresholdY);
+
+            // NEW: Update and Filter Obstacles
+            gameState.obstacles.forEach(o => o.update());
+            gameState.obstacles = gameState.obstacles.filter(o => o.y < discardThresholdY);
+
+            // NEW: Obstacle Collision Detection (Game Over Trigger)
+            for (const o of gameState.obstacles) {
+                // FIX: playerRect must use 'width' and 'height' to correctly match the checkCollision signature.
+                const playerRect = { 
+                    x: gameState.player.x, 
+                    y: gameState.player.y, 
+                    width: gameState.player.width, 
+                    height: gameState.player.height 
+                };
+                const obstacleRect = { x: o.x, y: o.y, w: o.w, h: o.h };
+                
+                // Use a simple collision check for the player and obstacle
+                if (checkCollision(playerRect, obstacleRect)) {
+                    gameOver(true); // Pass true to indicate a hit by an obstacle
+                    return; // Stop the game update immediately
+                }
+            }
+
+            // Collision Detection for Platforms
+            for (const p of gameState.platforms) {
+                const playerRect = { x: gameState.player.x, y: gameState.player.y, width: gameState.player.width, height: gameState.player.height };
+                
+                if (checkCollision(playerRect, p)) {
+                    // Check if player is falling onto the platform (landing)
+                    if (gameState.player.vy > 0 && 
+                        gameState.player.y + gameState.player.height <= p.y + p.h) {
+                        
+                        // Successful Landing
+                        gameState.player.y = p.y - gameState.player.height;
+                        gameState.player.vy = 0;
+                        gameState.player.onGround = true;
+                        gameState.player.jumpsUsed = 0; // Reset jumps on landing!
+                    } else {
+                        // Handle side or bottom collisions
+                        if (gameState.player.vy < 0) {
+                            // Hit bottom of platform
+                            gameState.player.vy = 0;
+                            gameState.player.y = p.y + p.h;
+                        } else if (gameState.player.vx > 0) {
+                            // Player moving right hits the left side of the platform
+                            gameState.player.x = p.x - gameState.player.width;
+                        } else if (gameState.player.vx < 0) {
+                            // Player moving left hits the right side of the platform
+                            gameState.player.x = p.x + p.w;
+                        }
+                    }
+                }
+            }
+
+            // --- Infinite Climbing / Generation Logic ---
+
+            // 1. Update Camera Scroll: Keep player focused in the lower half of the screen
+            const playerScreenY = gameState.player.y - scrollY;
+            const scrollThreshold = canvas.height * 0.4; // Keep player above 40% of the screen height
+
+            if (playerScreenY < scrollThreshold) {
+                // Scroll the view up (scrollY is the distance climbed in world coordinates)
+                scrollY = gameState.player.y - scrollThreshold;
+            }
+            
+            // 2. Responsive Generation Trigger (Ensures new platforms are always within jump range above the player)
+            // If the highest generated platform (lowest Y) is less than 300 pixels above the player's head, generate more.
+            if (highestPlatformY - gameState.player.y < 300) { 
+                generateNewPlatforms(highestPlatformY);
+            }
+            
+            // 3. Score update: Distance climbed is the total camera scroll distance
+            distanceClimbed = Math.round(Math.max(0, -scrollY)); // Negative Y values mean climbing up
+            updateLevelDisplay();
+            
+            // 4. Game Over condition (falling far below the bottom of the canvas)
+            if (gameState.player.y > scrollY + canvas.height + 50 && !gameState.isGameOver) {
+                gameOver(false); // Pass false to indicate a fall
+            }
+        }
+
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Tower Walls (Vertical lines)
+            ctx.fillStyle = '#3c004d'; // Wall color
+            ctx.fillRect(0, 0, WALL_X, canvas.height);
+            ctx.fillRect(WALL_X + WALL_WIDTH, 0, WALL_X, canvas.height);
+
+            // Draw Platforms
+            gameState.platforms.forEach(p => p.draw());
+            
+            // NEW: Draw Obstacles
+            gameState.obstacles.forEach(o => o.draw());
+
+            // Draw Player
+            if (gameState.player) {
+                gameState.player.draw();
+            }
+        }
+
+        function updateLevelDisplay() {
+            levelDisplay.textContent = `Distance Climbed: ${distanceClimbed} meters`;
+        }
+
+        function gameOver(hitObstacle = false) {
+            gameState.isGameOver = true;
+            messageTitle.textContent = "GAME OVER";
+            
+            if (hitObstacle) {
+                messageText.textContent = `OUCH! You ran into a moving hazard. Total climb: ${distanceClimbed} meters.`;
+            } else {
+                messageText.textContent = `You fell! You climbed a total distance of ${distanceClimbed} meters.`;
+            }
+            
+            // Use different color for Game Over state
+            messageTitle.style.color = '#ff416c';
+            restartButton.style.backgroundColor = '#ff416c';
+
+            restartButton.onclick = () => {
+                messageBox.style.display = 'none';
+                resetGame();
+            };
+            messageBox.style.display = 'block';
+        }
+
+        function gameLoop() {
+            if (!gameState.isGameOver) {
+                updateGame();
+                drawGame();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function resetGame() {
+            gameState.isGameOver = false;
+            loadInitialLevels();
+            gameLoop();
+        }
+
+        function startGame() {
+            // --- Input Handling ---
+            document.addEventListener('keydown', (e) => {
+                if (gameState.isGameOver) return;
+
+                gameState.keys[e.key] = true;
+                if (e.key === 'ArrowUp' || e.key === ' ' || e.key === 'w') {
+                    e.preventDefault(); // Prevent scrolling
+                    // Call jump only on keydown, the continuous float is handled in updateGame
+                    if(gameState.player) gameState.player.jump();
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                gameState.keys[e.key] = false;
+            });
+
+            // Start the game
+            resetGame();
+        }
+
+        /**
+         * Initializes Firebase authentication and then calls startGame().
+         */
+        const initGame = async () => {
+            try {
+                if (Object.keys(firebaseConfig).length > 0) {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                    
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    userId = auth.currentUser?.uid || crypto.randomUUID();
+                    console.log("Firebase Auth successful. User ID:", userId);
+                } else {
+                    console.warn("Firebase config not available. Starting game without database.");
+                }
+            } catch (e) {
+                console.error("Critical Firebase error during initialization/auth:", e);
+            }
+            
+            // ALWAYS start the game loop after attempting Firebase init
+            startGame(); 
+        };
+
+        // Call the initialization function immediately after the script loads
+        initGame();
+    </script>
+</body>
+</html>
