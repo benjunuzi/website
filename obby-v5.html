@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="content="width=device-width, initial-scale=1.0">
+    <title>Infinite Climb</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d0d1a;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-container {
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #1a1a2e; /* Dark theme for the tower */
+            border: 4px solid #3c004d;
+        }
+        canvas {
+            display: block;
+            background: linear-gradient(to bottom, #10001f 0%, #1a1a2e 100%);
+        }
+        .controls {
+            padding: 16px;
+            text-align: center;
+            background-color: #1a1a2e;
+            border-top: 1px solid #3c004d;
+        }
+        .controls p {
+            margin: 4px 0;
+            font-size: 0.9rem;
+            color: #999;
+        }
+        .control-key {
+            display: inline-block;
+            background-color: #3c004d;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin: 0 2px;
+            font-weight: bold;
+            box-shadow: 0 2px #28003a;
+        }
+        .message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 30px;
+            background: rgba(44, 44, 60, 0.95);
+            border: 3px solid #ff416c;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            min-width: 250px;
+            box-shadow: 0 0 20px rgba(255, 65, 108, 0.5);
+            display: none; /* Initially hidden */
+        }
+        .message-box h2 {
+            font-size: 1.8rem;
+            color: #ff416c;
+            margin-bottom: 10px;
+        }
+        .message-box p {
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+        .message-box button {
+            background-color: #ff416c;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .message-box button:hover {
+            background-color: #e03a5e;
+        }
+        .message-box button:active {
+            transform: scale(0.98);
+        }
+
+        /* --- Touch Controls --- */
+        #touchControls {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem;
+            background-color: #0d0d1a;
+        }
+
+        .touch-button {
+            width: 70px;
+            height: 70px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px rgba(0, 0, 0, 0.4);
+            user-select: none; 
+            -webkit-tap-highlight-color: transparent; 
+            transition: transform 0.1s, opacity 0.1s;
+            opacity: 0.85; /* Slight transparency when idle */
+        }
+        .touch-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px rgba(0, 0, 0, 0.4);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Game Container -->
+    <div class="game-container">
+        <canvas id="gameCanvas" width="500" height="650"></canvas>
+        <div class="controls">
+            <!-- Desktop Controls Display -->
+            <p>Controls: Move <span class="control-key">←</span> <span class="control-key">→</span> Jump/Float <span class="control-key">↑</span></p>
+            <p>Fire Laser with <span class="control-key">X</span></p> 
+            <p id="level-display" class="font-bold text-lg text-fuchsia-400 mt-2"></p>
+            <div class="flex justify-center space-x-6">
+                <p id="tool-display" class="font-bold text-lg text-cyan-400"></p>
+                <p id="poison-display" class="font-bold text-lg text-red-500"></p>
+            </div>
+        </div>
+
+        <!-- Touch Controls -->
+        <div id="touchControls">
+            <!-- Movement Pad (Left/Right) -->
+            <div class="flex space-x-4">
+                <button id="touchLeft" class="touch-button bg-blue-700">←</button>
+                <button id="touchRight" class="touch-button bg-blue-700">→</button>
+            </div>
+            <!-- Action Pad (Fire/Jump) -->
+            <div class="flex space-x-4">
+                <button id="touchFire" class="touch-button bg-red-600">Fire (X)</button>
+                <button id="touchJump" class="touch-button bg-green-600">Jump (↑)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Box for Game Over -->
+    <div id="messageBox" class="message-box">
+        <h2 id="messageTitle"></h2>
+        <p id="messageText"></p>
+        <button id="restartButton">Try Again</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Configuration and Initialization ---
+        setLogLevel('Debug');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-tower-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth;
+        let userId = 'anon';
+
+        // --- Game Setup and Variables ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game Mechanics Constants
+        const PLAYER_SPEED = 5;
+        const JUMP_FORCE = -15;
+        const GRAVITY = 0.6;
+        const WALL_X = 50;
+        const WALL_WIDTH = canvas.width - 100;
+        
+        // Kirby Jump Constants
+        const MAX_JUMPS = 2; 
+        const FLOAT_GRAVITY = 0.2; 
+        const FLOAT_FALL_CAP = 4; 
+        
+        // Platform Generation Constants
+        const PLATFORM_GAP_MIN = 80; 
+        const PLATFORM_GAP_MAX = 140; 
+        const PLATFORM_WIDTH_MIN = 70;
+        const PLATFORM_WIDTH_MAX = 200;
+        const GENERATION_BUFFER_Y = 450; 
+
+        // State variables for infinite generation
+        let highestPlatformY = 0; 
+        let scrollY = 0; 
+        let distanceClimbed = 0; 
+
+        let gameState = {
+            player: null,
+            platforms: [],
+            obstacles: [], 
+            tools: [], 
+            mushrooms: [], // Poison mushrooms
+            antidotes: [], // Antidote mushrooms (NEW)
+            lasers: [], 
+            isGameOver: false,
+            keys: {}
+        };
+
+        const levelDisplay = document.getElementById('level-display');
+        const toolDisplay = document.getElementById('tool-display'); 
+        const poisonDisplay = document.getElementById('poison-display'); 
+        const messageBox = document.getElementById('messageBox');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageText = document.getElementById('messageText');
+        const restartButton = document.getElementById('restartButton');
+
+        // --- Game Classes ---
+
+        class Player {
+            constructor(x, y) {
+                this.width = 20;
+                this.height = 30;
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.onGround = false;
+                this.jumpsUsed = 0; 
+                this.color = '#ffeb3b';
+                
+                // Tool properties
+                this.currentTool = 'none';
+                this.laserCooldown = 0; 
+
+                // Poison properties
+                this.poisonHits = 0; // 3 hits max
+                this.flashTimer = 0; // For player visual feedback
+            }
+
+            update() {
+                // Update cooldown and flashing timer
+                if (this.laserCooldown > 0) {
+                    this.laserCooldown--;
+                }
+                if (this.flashTimer > 0) {
+                    this.flashTimer--;
+                }
+                updatePoisonDisplay(); // Update UI
+
+                // Apply Kirby Float/Gravity Logic
+                const isHoldingJump = gameState.keys['ArrowUp'];
+                const isInAir = !this.onGround;
+
+                if (isInAir && this.jumpsUsed === MAX_JUMPS && isHoldingJump) {
+                    this.vy += FLOAT_GRAVITY;
+                    this.vy = Math.min(this.vy, FLOAT_FALL_CAP); 
+                } else {
+                    this.vy += GRAVITY;
+                }
+                
+                // Horizontal movement
+                if (gameState.keys['ArrowLeft']) {
+                    this.vx = -PLAYER_SPEED;
+                } else if (gameState.keys['ArrowRight']) {
+                    this.vx = PLAYER_SPEED;
+                } else {
+                    this.vx = 0;
+                }
+
+                // Apply velocity
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Boundary checks
+                if (this.x < WALL_X) {
+                    this.x = WALL_X;
+                }
+                if (this.x + this.width > WALL_X + WALL_WIDTH) {
+                    this.x = WALL_X + WALL_WIDTH - this.width;
+                }
+            }
+
+            jump() {
+                if (this.jumpsUsed < MAX_JUMPS) {
+                    this.vy = JUMP_FORCE; 
+                    this.onGround = false;
+                    this.jumpsUsed++;
+                }
+            }
+            
+            // Fire Laser Method
+            fireLaser() {
+                if (this.currentTool === 'laser_gun' && this.laserCooldown <= 0) {
+                    const laserX = this.x + this.width / 2 - 2; // Center of player
+                    const laserY = this.y; // Top of player
+                    
+                    gameState.lasers.push(new Laser(laserX, laserY));
+                    
+                    this.laserCooldown = 15; // Small cooldown to prevent too much spam
+                    updateToolDisplay(); // Update UI
+                }
+            }
+
+            draw() {
+                // Flashing Logic: Blink every 5 frames if flashTimer is active
+                if (this.flashTimer > 0 && Math.floor(this.flashTimer / 5) % 2 === 0) {
+                    ctx.globalAlpha = 0.5; // Make player half transparent when flashing
+                } else {
+                    ctx.globalAlpha = 1.0;
+                }
+
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y - scrollY, this.width, this.height);
+                
+                ctx.globalAlpha = 1.0; // Reset alpha for other drawings
+            }
+        }
+
+        class Platform {
+            constructor(level, x, y_absolute, w, h, type = 'static', speed = 0) {
+                this.x = x;
+                this.y = y_absolute; 
+                this.w = w;
+                this.h = h;
+                this.type = type;
+                this.speed = speed;
+                this.color = '#ff416c'; 
+                this.startY = y_absolute;
+                this.startX = x; 
+
+                if (type.includes('moving')) {
+                    this.color = '#4dffa6';
+                }
+            }
+
+            update() {
+                if (this.type === 'moving-h') {
+                    this.x += this.speed;
+                    if (this.x < WALL_X || this.x + this.w > WALL_X + WALL_WIDTH) {
+                        this.speed *= -1;
+                    }
+                } else if (this.type === 'moving-v') {
+                    this.y += this.speed;
+                    if (this.y < this.startY - 100 || this.y > this.startY + 100) {
+                        this.speed *= -1;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y - scrollY, this.w, this.h);
+            }
+        }
+
+        class Obstacle {
+            constructor(x, y_absolute, w, h, type = 'sweeper', speed = 0) {
+                this.x = x;
+                this.y = y_absolute; 
+                this.w = w;
+                this.h = h;
+                this.type = type;
+                this.speed = speed;
+                this.color = '#ff0000';
+                this.startY = y_absolute; 
+                this.startX = x;
+                this.toRemove = false; 
+            }
+
+            update() {
+                if (this.type === 'sweeper') {
+                    this.x += this.speed;
+                    if (this.x < WALL_X || this.x + this.w > WALL_X + WALL_WIDTH) {
+                        this.speed *= -1;
+                    }
+                } else if (this.type === 'bouncer') {
+                    this.y += this.speed;
+                    if (this.y < this.startY - 150 || this.y > this.startY + 150) {
+                        this.speed *= -1;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y - scrollY, this.w, this.h);
+                
+                ctx.fillStyle = '#ff9999';
+                ctx.fillRect(this.x, this.y - scrollY, this.w, 3);
+                ctx.fillRect(this.x, this.y - scrollY + this.h - 3, this.w, 3);
+            }
+        }
+        
+        class BaseMushroom {
+            constructor(x, y_absolute, parentPlatform, capColor, dotColor) {
+                this.x = x;
+                this.y = y_absolute; 
+                this.w = 15;
+                this.h = 15;
+                this.toRemove = false;
+                this.platform = parentPlatform;
+                this.speed = 0.8; 
+                this.capColor = capColor;
+                this.dotColor = dotColor;
+                this.minX = this.platform.x + 5;
+                this.maxX = this.platform.x + this.platform.w - this.w - 5;
+            }
+
+            update() {
+                this.minX = this.platform.x + 5;
+                this.maxX = this.platform.x + this.platform.w - this.w - 5;
+
+                this.x += this.speed;
+
+                if (this.x < this.minX || this.x > this.maxX) {
+                    this.speed *= -1;
+                }
+                
+                if (this.platform.type.includes('moving')) {
+                    this.y = this.platform.y - this.h;
+                }
+            }
+
+            draw() {
+                const screenY = this.y - scrollY;
+                
+                // Base/Stem color (Dark Grey)
+                ctx.fillStyle = '#333333'; 
+                ctx.fillRect(this.x + this.w/2 - 3, screenY + 5, 6, 10);
+                
+                // Cap color 
+                ctx.fillStyle = this.capColor; 
+                ctx.beginPath();
+                ctx.arc(this.x + this.w / 2, screenY + 5, this.w / 2, Math.PI, 0, false);
+                ctx.closePath();
+                ctx.fill();
+
+                // Add small spots 
+                ctx.fillStyle = this.dotColor;
+                ctx.fillRect(this.x + 3, screenY + 2, 2, 2);
+                ctx.fillRect(this.x + 10, screenY + 2, 2, 2);
+            }
+        }
+        
+        // Poison Mushroom (Red)
+        class PoisonMushroom extends BaseMushroom {
+            constructor(x, y_absolute, parentPlatform) {
+                super(x, y_absolute, parentPlatform, '#CC0000', '#FFFFFF');
+            }
+        }
+        
+        // Antidote Mushroom (Green) - NEW
+        class AntidoteMushroom extends BaseMushroom {
+            constructor(x, y_absolute, parentPlatform) {
+                super(x, y_absolute, parentPlatform, '#34D399', '#FFFFFF'); // Emerald Green
+            }
+        }
+        
+        // Tool Class
+        class Tool {
+            constructor(x, y_absolute, type) {
+                this.x = x;
+                this.y = y_absolute;
+                this.width = 15;
+                this.height = 15;
+                this.type = type;
+                this.color = '#00FFFF'; // Cyan for laser gun
+                this.toRemove = false;
+            }
+
+            draw() {
+                // Draw as a triangle
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width / 2, this.y - scrollY); // Top center
+                ctx.lineTo(this.x, this.y - scrollY + this.height); // Bottom left
+                ctx.lineTo(this.x + this.width, this.y - scrollY + this.height); // Bottom right
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        
+        // Laser Class
+        class Laser {
+            constructor(x, y_absolute) {
+                this.x = x;
+                this.y = y_absolute;
+                this.width = 4;
+                this.height = 20;
+                this.vy = -35; 
+                this.color = '#FFFF00'; 
+                this.toRemove = false;
+            }
+            
+            update() {
+                this.y += this.vy;
+            }
+            
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y - scrollY, this.width, this.height);
+            }
+        }
+
+        // --- Game Logic Functions ---
+        
+        function generateNewPlatforms(start_y) {
+            let current_y = start_y;
+            const targetY = current_y - GENERATION_BUFFER_Y;
+            let previous_y = start_y; 
+
+            while (current_y > targetY) {
+                const y_gap = Math.floor(Math.random() * (PLATFORM_GAP_MAX - PLATFORM_GAP_MIN) + PLATFORM_GAP_MIN);
+                current_y -= y_gap;
+
+                // Determine platform properties
+                const w = Math.floor(Math.random() * (PLATFORM_WIDTH_MAX - PLATFORM_WIDTH_MIN) + PLATFORM_WIDTH_MIN);
+                const max_x = WALL_X + WALL_WIDTH - w;
+                const x = Math.floor(Math.random() * (max_x - WALL_X) + WALL_X);
+                const h = 10;
+                
+                // Randomly decide platform type
+                const rand = Math.random();
+                let type = 'static';
+                let speed = 0;
+
+                if (rand > 0.7) {
+                    if (Math.random() > 0.5) {
+                        type = 'moving-h';
+                        speed = Math.random() < 0.5 ? 1.5 : -1.5;
+                    } else {
+                        type = 'moving-v';
+                        speed = Math.random() < 0.5 ? 1 : -1; 
+                    }
+                }
+
+                // Push platform
+                const p = new Platform(0, x, current_y, w, h, type, speed);
+                gameState.platforms.push(p);
+                
+                
+                // 1. Tool Generation
+                if (p.type === 'static' && Math.random() < 0.08 && (!gameState.player || gameState.player.currentTool === 'none')) {
+                    const tool_w = 15;
+                    const tool_h = 15;
+                    const tool_x = p.x + (p.w / 2) - (tool_w / 2); 
+                    const tool_y = p.y - tool_h - 2; 
+                    gameState.tools.push(new Tool(tool_x, tool_y, 'laser_gun'));
+                }
+
+                // 2. Poison Mushroom Generation (Red, 15% chance)
+                if (p.type === 'static' && Math.random() < 0.15 && p.w > 40) { 
+                    const mush_w = 15;
+                    const mush_h = 15;
+                    const mush_x = p.x + (p.w / 2) - (mush_w / 2); // Start in center
+                    const mush_y = p.y - mush_h;
+                    gameState.mushrooms.push(new PoisonMushroom(mush_x, mush_y, p));
+                }
+                
+                // 3. Antidote Mushroom Generation (Green, 8% chance) - NEW
+                if (p.type === 'static' && Math.random() < 0.08 && p.w > 40) { 
+                    const mush_w = 15;
+                    const mush_h = 15;
+                    const mush_x = p.x + (p.w / 2) - (mush_w / 2); 
+                    const mush_y = p.y - mush_h;
+                    gameState.antidotes.push(new AntidoteMushroom(mush_x, mush_y, p));
+                }
+
+                // 4. Obstacle Generation Logic (between platforms)
+                if (Math.random() < 0.25) { 
+                    const obs_w = Math.floor(Math.random() * 40) + 20; 
+                    const obs_h = 20; 
+                    
+                    const safe_margin = 10;
+                    const obs_y_min = current_y + obs_h + safe_margin; 
+                    const obs_y_max = previous_y - safe_margin - 30; 
+                    
+                    if (obs_y_max > obs_y_min) {
+                        const obs_y = Math.floor(Math.random() * (obs_y_max - obs_y_min) + obs_y_min);
+                        const obs_x_max = WALL_X + WALL_WIDTH - obs_w;
+                        const obs_x = Math.floor(Math.random() * (obs_x_max - WALL_X) + WALL_X);
+                        let obs_type = Math.random() > 0.5 ? 'sweeper' : 'bouncer';
+                        let obs_speed = obs_type === 'sweeper' ? (Math.random() < 0.5 ? 2.5 : -2.5) : (Math.random() < 0.5 ? 1.5 : -1.5);
+                        
+                        gameState.obstacles.push(new Obstacle(obs_x, obs_y, obs_w, obs_h, obs_type, obs_speed));
+                    }
+                }
+                
+                previous_y = current_y + y_gap; 
+                highestPlatformY = Math.min(highestPlatformY, current_y); 
+            }
+        }
+
+        function loadInitialLevels() {
+            gameState.platforms = [];
+            gameState.obstacles = []; 
+            gameState.tools = []; 
+            gameState.lasers = []; 
+            gameState.mushrooms = []; 
+            gameState.antidotes = []; // Reset antidotes (NEW)
+            
+            highestPlatformY = canvas.height; 
+
+            // Create starting platform
+            gameState.platforms.push(new Platform(0, WALL_X, canvas.height - 30, WALL_WIDTH, 30, 'static'));
+            
+            // Set player position
+            gameState.player = new Player(canvas.width / 2 - 10, canvas.height - 60);
+            gameState.player.vy = 0;
+            gameState.player.currentTool = 'none'; 
+            gameState.player.poisonHits = 0;
+            gameState.player.flashTimer = 0;
+            
+            // Generate initial set of platforms
+            generateNewPlatforms(canvas.height - 100); 
+
+            // Reset scroll and score
+            scrollY = 0;
+            distanceClimbed = 0;
+            updateLevelDisplay();
+            updateToolDisplay();
+            updatePoisonDisplay(); 
+        }
+
+        function checkCollision(obj1, obj2) {
+            // obj1 has width/height, obj2 has w/h
+            return (
+                obj1.x < obj2.x + obj2.w &&
+                obj1.x + obj1.width > obj2.x &&
+                obj1.y < obj2.y + obj2.h &&
+                obj1.y + obj1.height > obj2.y
+            );
+        }
+
+        function updateGame() {
+            if (gameState.isGameOver) return;
+
+            gameState.player.update();
+            
+            const discardThresholdY = scrollY + canvas.height + 100;
+            
+            // Update and Filter Entities
+            gameState.platforms.forEach(p => p.update());
+            gameState.platforms = gameState.platforms.filter(p => p.y < discardThresholdY);
+
+            gameState.obstacles.forEach(o => o.update());
+            gameState.obstacles = gameState.obstacles.filter(o => !o.toRemove && o.y < discardThresholdY);
+            
+            gameState.mushrooms.forEach(m => m.update()); 
+            gameState.mushrooms = gameState.mushrooms.filter(m => !m.toRemove && m.y < discardThresholdY);
+            
+            gameState.antidotes.forEach(a => a.update()); // Update antidote movement (NEW)
+            gameState.antidotes = gameState.antidotes.filter(a => !a.toRemove && a.y < discardThresholdY); // Filter antidotes (NEW)
+
+            gameState.tools = gameState.tools.filter(t => !t.toRemove && t.y < discardThresholdY);
+            
+            gameState.lasers.forEach(l => l.update());
+            gameState.lasers = gameState.lasers.filter(l => !l.toRemove && l.y > scrollY - 200); 
+
+            // --- Collision Detection ---
+
+            // 1. Player vs Obstacle (Game Over)
+            for (const o of gameState.obstacles) {
+                if (checkCollision(gameState.player, o)) {
+                    gameOver(true, `OUCH! You ran into a moving hazard after climbing ${distanceClimbed} meters.`); 
+                    return; 
+                }
+            }
+            
+            // 2. Player vs Poison Mushroom (Hit Counter)
+            for (const mush of gameState.mushrooms) {
+                if (!mush.toRemove && checkCollision(gameState.player, {x: mush.x, y: mush.y, w: mush.w, h: mush.h})) {
+                    if (gameState.player.flashTimer <= 0) { 
+                        mush.toRemove = true; 
+                        gameState.player.poisonHits++;
+                        gameState.player.flashTimer = 180; 
+
+                        if (gameState.player.poisonHits >= 3) {
+                            gameOver(true, `You consumed too many poisonous mushrooms! Final climb: ${distanceClimbed} meters.`); 
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // 3. Player vs Antidote Mushroom (Cure!) - NEW
+            for (const antidote of gameState.antidotes) {
+                if (!antidote.toRemove && checkCollision(gameState.player, {x: antidote.x, y: antidote.y, w: antidote.w, h: antidote.h})) {
+                    antidote.toRemove = true; 
+                    gameState.player.poisonHits = 0; // CURE!
+                    gameState.player.flashTimer = 60; // Short flash to show the cure took effect
+                }
+            }
+            
+            // 4. Player vs Tool (Pickup)
+            for (const tool of gameState.tools) {
+                if (!tool.toRemove && checkCollision(gameState.player, {x: tool.x, y: tool.y, w: tool.width, h: tool.height})) {
+                    tool.toRemove = true;
+                    gameState.player.currentTool = tool.type;
+                    updateToolDisplay(); // Update UI
+                }
+            }
+            
+            // 5. Laser vs Obstacle/Mushroom/Antidote (Destroy)
+            for (const laser of gameState.lasers) {
+                if (laser.toRemove) continue;
+                
+                // Check vs Obstacles
+                for (const obstacle of gameState.obstacles) {
+                    if (obstacle.toRemove) continue;
+                    
+                    if (checkCollision({x: laser.x, y: laser.y, width: laser.width, height: laser.height}, obstacle)) {
+                        laser.toRemove = true;
+                        obstacle.toRemove = true;
+                        break; 
+                    }
+                }
+                
+                // Check vs Poison Mushrooms
+                for (const mush of gameState.mushrooms) {
+                    if (mush.toRemove) continue;
+                    if (checkCollision({x: laser.x, y: laser.y, width: laser.width, height: laser.height}, {x: mush.x, y: mush.y, w: mush.w, h: mush.h})) {
+                        laser.toRemove = true;
+                        mush.toRemove = true;
+                        break; 
+                    }
+                }
+                
+                // Check vs Antidote Mushrooms - NEW
+                for (const antidote of gameState.antidotes) {
+                    if (antidote.toRemove) continue;
+                    if (checkCollision({x: laser.x, y: laser.y, width: laser.width, height: laser.height}, {x: antidote.x, y: antidote.y, w: antidote.w, h: antidote.h})) {
+                        laser.toRemove = true;
+                        antidote.toRemove = true;
+                        break; 
+                    }
+                }
+            }
+
+            // 6. Player vs Platform (Landing/Bumping)
+            let landed = false;
+            for (const p of gameState.platforms) {
+                if (checkCollision(gameState.player, p)) {
+                    // FIX: If falling (vy > 0) and colliding, it's a landing.
+                    if (gameState.player.vy > 0) { 
+                        
+                        // Successful Landing: Snap player to the top of the platform
+                        gameState.player.y = p.y - gameState.player.height;
+                        gameState.player.vy = 0;
+                        gameState.player.onGround = true;
+                        gameState.player.jumpsUsed = 0; 
+                        landed = true;
+                    } else {
+                        // Handle side or bottom collisions
+                        if (gameState.player.vy < 0) { 
+                            // Player hits bottom of platform (head bump)
+                            gameState.player.vy = 0;
+                            gameState.player.y = p.y + p.h;
+                        } else if (gameState.player.vx > 0) { 
+                            // Player hits side from the left
+                            gameState.player.x = p.x - gameState.player.width;
+                        } else if (gameState.player.vx < 0) { 
+                            // Player hits side from the right
+                            gameState.player.x = p.x + p.w;
+                        }
+                    }
+                }
+            }
+            // If the player collided but the landing logic didn't trigger, they are in the air.
+            if (!landed && gameState.player.onGround) {
+                gameState.player.onGround = false;
+            }
+
+            // --- Infinite Climbing / Generation Logic ---
+            const playerScreenY = gameState.player.y - scrollY;
+            const scrollThreshold = canvas.height * 0.4; 
+
+            if (playerScreenY < scrollThreshold) {
+                scrollY = gameState.player.y - scrollThreshold;
+            }
+            
+            // Responsive Generation Trigger
+            if (highestPlatformY - gameState.player.y < 300) { 
+                generateNewPlatforms(highestPlatformY);
+            }
+            
+            // Score update
+            distanceClimbed = Math.round(Math.max(0, -scrollY)); 
+            updateLevelDisplay();
+            
+            // Game Over (falling)
+            if (gameState.player.y > scrollY + canvas.height + 50 && !gameState.isGameOver) {
+                gameOver(false, `You fell! You climbed a total distance of ${distanceClimbed} meters.`); // Fell
+            }
+        }
+
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Tower Walls
+            ctx.fillStyle = '#3c004d'; 
+            ctx.fillRect(0, 0, WALL_X, canvas.height);
+            ctx.fillRect(WALL_X + WALL_WIDTH, 0, WALL_X, canvas.height);
+
+            // Draw all entities
+            gameState.platforms.forEach(p => p.draw());
+            gameState.tools.forEach(t => t.draw()); 
+            gameState.antidotes.forEach(a => a.draw()); // Draw antidotes (NEW)
+            gameState.mushrooms.forEach(m => m.draw()); 
+            gameState.obstacles.forEach(o => o.draw());
+            gameState.lasers.forEach(l => l.draw()); 
+
+            if (gameState.player) {
+                gameState.player.draw();
+            }
+        }
+
+        function updateLevelDisplay() {
+            levelDisplay.textContent = `Distance Climbed: ${distanceClimbed} meters`;
+        }
+        
+        // Update Tool UI
+        function updateToolDisplay() {
+            if (!gameState.player || gameState.player.currentTool === 'none') {
+                toolDisplay.textContent = 'Tool: None';
+                toolDisplay.style.color = '#999';
+            } else if (gameState.player.currentTool === 'laser_gun') {
+                toolDisplay.textContent = 'Tool: Laser Gun!';
+                toolDisplay.style.color = '#00FFFF'; // Cyan
+            }
+        }
+        
+        // Update Poison UI
+        function updatePoisonDisplay() {
+            if (!gameState.player) return;
+            const hits = gameState.player.poisonHits;
+            poisonDisplay.textContent = `Poison Hits: ${hits}/3`;
+            
+            if (hits === 0) {
+                 poisonDisplay.style.color = '#fff';
+            } else if (hits === 1) {
+                 poisonDisplay.style.color = '#ffaa00'; // Orange
+            } else if (hits === 2) {
+                 poisonDisplay.style.color = '#ff5500'; // Darker Orange/Red
+            } else if (hits >= 3) {
+                 poisonDisplay.style.color = '#ff0000'; // Red
+            }
+        }
+
+        function gameOver(hitObstacle = false, messageOverride = null) {
+            gameState.isGameOver = true;
+            messageTitle.textContent = "GAME OVER";
+            
+            if (messageOverride) {
+                messageText.textContent = messageOverride;
+            } else if (hitObstacle) {
+                messageText.textContent = `OUCH! You ran into a moving hazard. Total climb: ${distanceClimbed} meters.`;
+            } else {
+                messageText.textContent = `You fell! You climbed a total distance of ${distanceClimbed} meters.`;
+            }
+            
+            messageTitle.style.color = '#ff416c';
+            restartButton.style.backgroundColor = '#ff416c';
+
+            restartButton.onclick = () => {
+                messageBox.style.display = 'none';
+                resetGame();
+            };
+            messageBox.style.display = 'block';
+        }
+
+        function gameLoop() {
+            if (!gameState.isGameOver) {
+                updateGame();
+                drawGame();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+
+        function resetGame() {
+            gameState.isGameOver = false;
+            loadInitialLevels();
+            gameLoop();
+        }
+
+        function startGame() {
+            // --- Helper to setup touch and mouse events for a button ---
+            const setupButtonEvents = (element, key, isAction = false) => {
+                const startHandler = (e) => {
+                    e.preventDefault(); // Prevents scrolling on touch
+                    if (gameState.isGameOver || !gameState.player) return;
+
+                    // Set the key state to true (for movement and float)
+                    gameState.keys[key] = true;
+
+                    // Trigger instant action on press (for jump and fire)
+                    if (isAction && key === 'ArrowUp') {
+                        gameState.player.jump();
+                    }
+                    // Fire is now triggered by keydown/touchstart and held for rapid fire
+                    if (isAction && key === 'x') {
+                         gameState.player.fireLaser();
+                    }
+                };
+
+                const endHandler = (e) => {
+                    e.preventDefault();
+                    // Set the key state to false
+                    gameState.keys[key] = false;
+                };
+
+                // Touch events (for mobile)
+                element.addEventListener('touchstart', startHandler, { passive: false });
+                element.addEventListener('touchend', endHandler, { passive: false });
+                element.addEventListener('touchcancel', endHandler, { passive: false }); // Added touchcancel for safety
+
+                // Mouse events (for desktop testing/hybrid)
+                element.addEventListener('mousedown', startHandler);
+                element.addEventListener('mouseup', endHandler);
+                element.addEventListener('mouseleave', endHandler); // Added mouseleave in case of drag-off
+            };
+
+            // --- Input Handling (Keyboard) ---
+            document.addEventListener('keydown', (e) => {
+                if (gameState.isGameOver) return;
+
+                // Handle movement keys (held down)
+                gameState.keys[e.key] = true;
+                
+                // Handle instant actions on press
+                if (e.key === 'ArrowUp' || e.key === ' ' || e.key === 'w') {
+                    e.preventDefault(); 
+                    if(gameState.player) gameState.player.jump();
+                }
+                
+                // Fire laser on 'x' press
+                if (e.key === 'x') {
+                    e.preventDefault();
+                    if(gameState.player) gameState.player.fireLaser();
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                gameState.keys[e.key] = false;
+            });
+            
+            // --- Input Handling (Touchscreen/Hybrid) ---
+            const touchLeft = document.getElementById('touchLeft');
+            const touchRight = document.getElementById('touchRight');
+            const touchJump = document.getElementById('touchJump');
+            const touchFire = document.getElementById('touchFire');
+
+            setupButtonEvents(touchLeft, 'ArrowLeft');
+            setupButtonEvents(touchRight, 'ArrowRight');
+            setupButtonEvents(touchJump, 'ArrowUp', true); // Jump is an instant action + hold for float
+            setupButtonEvents(touchFire, 'x', true); // Fire is an instant action + hold for rapid fire
+
+            // Start the game
+            resetGame();
+        }
+
+        /**
+         * Initializes Firebase authentication and then calls startGame().
+         */
+        const initGame = async () => {
+            try {
+                if (Object.keys(firebaseConfig).length > 0) {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                    
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    userId = auth.currentUser?.uid || crypto.randomUUID();
+                    console.log("Firebase Auth successful. User ID:", userId);
+                } else {
+                    console.warn("Firebase config not available. Starting game without database.");
+                }
+            } catch (e) {
+                console.error("Critical Firebase error during initialization/auth:", e);
+            }
+            
+            // ALWAYS start the game loop after attempting Firebase init
+            startGame(); 
+        };
+
+        // Call the initialization function immediately after the script loads
+        initGame();
+    </script>
+</body>
+</html>
