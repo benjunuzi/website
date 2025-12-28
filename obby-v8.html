@@ -21,10 +21,6 @@
         .game-container {
             width: 100%;
             max-width: 500px;
-            height: 100vh;
-            max-height: 850px;
-            display: flex;
-            flex-direction: column;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             border-radius: 12px;
             overflow: hidden;
@@ -33,23 +29,17 @@
         }
         canvas {
             display: block;
-            flex: 1;
-            width: 100%;
-            height: 100%;
             background: linear-gradient(to bottom, #10001f 0%, #1a1a2e 100%);
         }
         .controls {
-            padding: 8px 16px;
+            padding: 16px;
             text-align: center;
             background-color: #1a1a2e;
             border-top: 1px solid #3c004d;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
         }
         .controls p {
-            margin: 0;
-            font-size: 0.75rem;
+            margin: 4px 0;
+            font-size: 0.9rem;
             color: #999;
         }
         .control-key {
@@ -191,23 +181,16 @@
 <body>
 
     <div class="game-container">
-        <canvas id="gameCanvas"></canvas>
+        <canvas id="gameCanvas" width="500" height="650"></canvas>
         <div class="controls">
-            <div class="flex justify-between items-center">
-                <p id="level-display" class="font-bold text-fuchsia-400"></p>
-                <div class="flex space-x-4">
-                    <p id="tool-display" class="font-bold text-cyan-400"></p>
-                    <p id="poison-display" class="font-bold text-red-500"></p>
-                </div>
+            <p>Controls: Move <span class="control-key">←</span> <span class="control-key">→</span> Jump/Float <span class="control-key">↑</span></p>
+            <p>Fire Laser with <span class="control-key">X</span></p> 
+            <p id="level-display" class="font-bold text-lg text-fuchsia-400 mt-2"></p>
+            <div class="flex justify-center space-x-6">
+                <p id="tool-display" class="font-bold text-lg text-cyan-400"></p>
+                <p id="poison-display" class="font-bold text-lg text-red-500"></p>
             </div>
-
-            <div class="flex justify-between items-center border-t border-purple-900/30 pt-1">
-                <div class="text-left">
-                    <p class="text-[9px] text-gray-500">Logged in as: <span id="displayPlayerName" class="text-purple-400">...</span></p>
-                    <p class="text-[9px] text-gray-600 hidden md:block">Keys: ←→ ↑(Jump) X(Fire)</p>
-                </div>
-                <button id="viewLeaderboardButton" class="px-3 py-1 bg-purple-900 hover:bg-purple-800 text-white text-[10px] font-bold rounded transition duration-150">Leaderboard</button>
-            </div>
+            <button id="viewLeaderboardButton" class="mt-4 px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white font-bold rounded-lg shadow-lg transition duration-150">View Leaderboard</button>
         </div>
 
         <div id="touchControls">
@@ -222,18 +205,20 @@
         </div>
     </div>
 
+    <div id="messageBox" class="message-box">
+        <h2 id="messageTitle"></h2>
+        <p id="messageText"></p>
+        <div id="scoreSubmitForm" class="hidden">
+            <label for="playerName" class="block mb-2 text-sm font-medium text-gray-300">Enter Your Name:</label>
+            <input type="text" id="playerName" maxlength="15" placeholder="Player Name" class="mb-4 w-full p-2 bg-gray-700 border border-purple-500 rounded text-white text-center">
+            <button id="saveScoreButton" class="w-full">Save Score & Restart</button>
+            <button id="restartWithoutSaveButton" class="mt-2 w-full bg-gray-600 hover:bg-gray-500">Restart Without Saving</button>
+        </div>
+        <button id="restartButton" class="hidden">Try Again</button>
+    </div>
     
     <div id="leaderboardModal" class="message-box">
         <h2 class="text-fuchsia-400">Hall of Ascent</h2>
-        
-        <div class="mt-4 p-3 bg-gray-800 rounded border border-purple-500 text-left">
-            <label for="playerName" class="block text-xs font-bold text-purple-300 mb-1 uppercase tracking-wider">Your Display Name</label>
-            <div class="flex space-x-2">
-                <input type="text" id="playerName" maxlength="15" placeholder="Enter name..." class="flex-1 p-1 bg-gray-700 border border-gray-600 rounded text-white text-sm outline-none focus:border-fuchsia-500">
-                <button id="updateNameButton" class="bg-fuchsia-700 hover:bg-fuchsia-600 px-3 py-1 rounded text-xs font-bold text-white transition">Update</button>
-            </div>
-        </div>
-
         <div id="leaderboardContent">
             <p class="text-center text-gray-400">Loading scores... (Max 10)</p>
         </div>
@@ -273,22 +258,13 @@
         // --- Game Setup and Variables ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-
-        const resizeCanvas = () => {
-            const container = canvas.parentElement;
-            canvas.width = container.clientWidth;
-            canvas.height = canvas.clientHeight; // Uses flex height
-            
-            // Adjust wall width based on new width
-            WALL_WIDTH = canvas.width - 100;
-        };
         
         // Game Mechanics Constants
         const PLAYER_SPEED = 5;
         const JUMP_FORCE = -15;
         const GRAVITY = 0.6;
         const WALL_X = 50;
-        let WALL_WIDTH = 400; // Updated on resize
+        const WALL_WIDTH = canvas.width - 100;
         
         // Kirby Jump Constants
         const MAX_JUMPS = 2; 
@@ -300,7 +276,7 @@
         const PLATFORM_GAP_MAX = 140; 
         const PLATFORM_WIDTH_MIN = 70;
         const PLATFORM_WIDTH_MAX = 200;
-        const GENERATION_BUFFER_Y = 1000; 
+        const GENERATION_BUFFER_Y = 450; 
 
         // State variables for infinite generation
         let highestPlatformY = 0; 
@@ -324,9 +300,15 @@
         const poisonDisplay = document.getElementById('poison-display'); 
         
         // Game Over/Submission DOM elements
+        const messageBox = document.getElementById('messageBox');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageText = document.getElementById('messageText');
+        const restartButton = document.getElementById('restartButton'); 
+
+        const scoreSubmitForm = document.getElementById('scoreSubmitForm');
         const playerNameInput = document.getElementById('playerName');
-        const displayPlayerName = document.getElementById('displayPlayerName');
-        const updateNameButton = document.getElementById('updateNameButton');
+        const saveScoreButton = document.getElementById('saveScoreButton');
+        const restartWithoutSaveButton = document.getElementById('restartWithoutSaveButton');
         
         // Leaderboard DOM elements
         const viewLeaderboardButton = document.getElementById('viewLeaderboardButton');
@@ -577,7 +559,7 @@
                     
                     gameState.lasers.push(new Laser(laserX, laserY));
                     
-                    this.laserCooldown = 8; // Small cooldown to prevent too much spam
+                    this.laserCooldown = 15; // Small cooldown to prevent too much spam
                     updateToolDisplay(); // Update UI
                 }
             }
@@ -739,34 +721,23 @@
         
         // Tool Class
         class Tool {
-            constructor(x, y_absolute, type, platform = null) {
+            constructor(x, y_absolute, type) {
                 this.x = x;
                 this.y = y_absolute;
-                this.w = 15;
-                this.h = 15;
-                this.width = 15; // Keep for player-side collision logic if needed
+                this.width = 15;
                 this.height = 15;
                 this.type = type;
                 this.color = '#00FFFF'; // Cyan for laser gun
                 this.toRemove = false;
-                this.platform = platform;
-                this.relativeX = x - (platform ? platform.x : 0);
-            }
-
-            update() {
-                if (this.platform) {
-                    this.x = this.platform.x + this.relativeX;
-                    this.y = this.platform.y - this.h - 2;
-                }
             }
 
             draw() {
                 // Draw as a triangle
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
-                ctx.moveTo(this.x + this.w / 2, this.y - scrollY); // Top center
-                ctx.lineTo(this.x, this.y - scrollY + this.h); // Bottom left
-                ctx.lineTo(this.x + this.w, this.y - scrollY + this.h); // Bottom right
+                ctx.moveTo(this.x + this.width / 2, this.y - scrollY); // Top center
+                ctx.lineTo(this.x, this.y - scrollY + this.height); // Bottom left
+                ctx.lineTo(this.x + this.width, this.y - scrollY + this.height); // Bottom right
                 ctx.closePath();
                 ctx.fill();
             }
@@ -779,7 +750,7 @@
                 this.y = y_absolute;
                 this.width = 4;
                 this.height = 20;
-                this.vy = -50; 
+                this.vy = -35; 
                 this.color = '#FFFF00'; 
                 this.toRemove = false;
             }
@@ -797,19 +768,19 @@
 
         // --- Game Logic Functions (Omitted for brevity, assuming no change needed) ---
         
-        function generateNewPlatforms(startY, customBuffer) {
-            let currentY = startY;
-            const buffer = customBuffer || GENERATION_BUFFER_Y;
-            const targetY = currentY - buffer;
+        function generateNewPlatforms(start_y) {
+            let current_y = start_y;
+            const targetY = current_y - GENERATION_BUFFER_Y;
+            let previous_y = start_y; 
 
-            while (currentY > targetY) {
-                const yGap = Math.floor(Math.random() * (PLATFORM_GAP_MAX - PLATFORM_GAP_MIN) + PLATFORM_GAP_MIN);
-                currentY -= yGap;
+            while (current_y > targetY) {
+                const y_gap = Math.floor(Math.random() * (PLATFORM_GAP_MAX - PLATFORM_GAP_MIN) + PLATFORM_GAP_MIN);
+                current_y -= y_gap;
 
                 // Determine platform properties
                 const w = Math.floor(Math.random() * (PLATFORM_WIDTH_MAX - PLATFORM_WIDTH_MIN) + PLATFORM_WIDTH_MIN);
-                const maxX = WALL_X + WALL_WIDTH - w;
-                const x = Math.floor(Math.random() * (maxX - WALL_X) + WALL_X);
+                const max_x = WALL_X + WALL_WIDTH - w;
+                const x = Math.floor(Math.random() * (max_x - WALL_X) + WALL_X);
                 const h = 10;
                 
                 // Randomly decide platform type
@@ -827,57 +798,58 @@
                 }
 
                 // Push platform
-                const p = new Platform(0, x, currentY, w, h, type, speed);
+                const p = new Platform(0, x, current_y, w, h, type, speed);
                 gameState.platforms.push(p);
 
                 // 1. Tool Generation
-                if (Math.random() < 0.15 && (!gameState.player || gameState.player.currentTool === 'none')) {
-                    const toolW = 15;
-                    const toolH = 15;
-                    const toolX = p.x + (p.w / 2) - (toolW / 2);
-                    const toolY = p.y - toolH - 2;
-                    gameState.tools.push(new Tool(toolX, toolY, 'laser_gun', p));
+                if (p.type === 'static' && Math.random() < 0.08 && (!gameState.player || gameState.player.currentTool === 'none')) {
+                    const tool_w = 15;
+                    const tool_h = 15;
+                    const tool_x = p.x + (p.w / 2) - (tool_w / 2);
+                    const tool_y = p.y - tool_h - 2;
+                    gameState.tools.push(new Tool(tool_x, tool_y, 'laser_gun'));
                 }
 
                 // 2. Poison Mushroom Generation (Red, 15% chance)
                 if (p.type === 'static' && Math.random() < 0.15 && p.w > 40) {
-                    const mushW = 15;
-                    const mushH = 15;
-                    const mushX = p.x + (p.w / 2) - (mushW / 2); // Start in center
-                    const mushY = p.y - mushH;
-                    gameState.mushrooms.push(new PoisonMushroom(mushX, mushY, p));
+                    const mush_w = 15;
+                    const mush_h = 15;
+                    const mush_x = p.x + (p.w / 2) - (mush_w / 2); // Start in center
+                    const mush_y = p.y - mush_h;
+                    gameState.mushrooms.push(new PoisonMushroom(mush_x, mush_y, p));
                 }
                 
                 // 3. Antidote Mushroom Generation (Green, 8% chance)
                 if (p.type === 'static' && Math.random() < 0.08 && p.w > 40) {
-                    const mushW = 15;
-                    const mushH = 15;
-                    const mushX = p.x + (p.w / 2) - (mushW / 2);
-                    const mushY = p.y - mushH;
-                    gameState.antidotes.push(new AntidoteMushroom(mushX, mushY, p));
+                    const mush_w = 15;
+                    const mush_h = 15;
+                    const mush_x = p.x + (p.w / 2) - (mush_w / 2);
+                    const mush_y = p.y - mush_h;
+                    gameState.antidotes.push(new AntidoteMushroom(mush_x, mush_y, p));
                 }
 
                 // 4. Obstacle Generation Logic (between platforms)
                 if (Math.random() < 0.25) {
-                    const obsW = Math.floor(Math.random() * 40) + 20;
-                    const obsH = 20;
-                    const safeMargin = 10;
-                    const obsYMin = currentY + obsH + safeMargin;
-                    const obsYMax = currentY + yGap - safeMargin - 30;
+                    const obs_w = Math.floor(Math.random() * 40) + 20;
+                    const obs_h = 20;
+                    const safe_margin = 10;
+                    const obs_y_min = current_y + obs_h + safe_margin;
+                    const obs_y_max = previous_y - safe_margin - 30;
                     
-                    if (obsYMax > obsYMin) {
-                        const obsY = Math.floor(Math.random() * (obsYMax - obsYMin) + obsYMin);
-                        const obsXMax = WALL_X + WALL_WIDTH - obsW;
-                        const obsX = Math.floor(Math.random() * (obsXMax - WALL_X) + WALL_X);
+                    if (obs_y_max > obs_y_min) {
+                        const obs_y = Math.floor(Math.random() * (obs_y_max - obs_y_min) + obs_y_min);
+                        const obs_x_max = WALL_X + WALL_WIDTH - obs_w;
+                        const obs_x = Math.floor(Math.random() * (obs_x_max - WALL_X) + WALL_X);
                         
-                        const obsType = Math.random() > 0.5 ? 'sweeper' : 'bouncer';
-                        const obsSpeed = obsType === 'sweeper' ? (Math.random() < 0.5 ? 2.5 : -2.5) : (Math.random() < 0.5 ? 1.5 : -1.5);
+                        let obs_type = Math.random() > 0.5 ? 'sweeper' : 'bouncer';
+                        let obs_speed = obs_type === 'sweeper' ? (Math.random() < 0.5 ? 2.5 : -2.5) : (Math.random() < 0.5 ? 1.5 : -1.5);
 
-                        gameState.obstacles.push(new Obstacle(obsX, obsY, obsW, obsH, obsType, obsSpeed));
+                        gameState.obstacles.push(new Obstacle(obs_x, obs_y, obs_w, obs_h, obs_type, obs_speed));
                     }
                 }
 
-                highestPlatformY = Math.min(highestPlatformY, currentY);
+                previous_y = current_y + y_gap;
+                highestPlatformY = Math.min(highestPlatformY, current_y);
             }
         }
 
@@ -901,8 +873,8 @@
             gameState.player.poisonHits = 0;
             gameState.player.flashTimer = 0;
 
-            // Generate initial set of platforms to fill the screen and beyond
-            generateNewPlatforms(canvas.height - 100, canvas.height + GENERATION_BUFFER_Y);
+            // Generate initial set of platforms
+            generateNewPlatforms(canvas.height - 100);
 
             // Reset scroll and score
             scrollY = 0;
@@ -911,6 +883,9 @@
             updateToolDisplay();
             updatePoisonDisplay();
             
+            // Ensure the score submission form is hidden upon restart
+            scoreSubmitForm.classList.add('hidden'); 
+            messageBox.style.display = 'none'; 
         }
 
         function checkCollision(obj1, obj2) {
@@ -933,8 +908,6 @@
             // Update and Filter Entities
             gameState.platforms.forEach(p => p.update());
             gameState.platforms = gameState.platforms.filter(p => p.y < discardThresholdY);
-
-            gameState.tools.forEach(t => t.update());
             
             gameState.obstacles.forEach(o => o.update());
             gameState.obstacles = gameState.obstacles.filter(o => !o.toRemove && o.y < discardThresholdY);
@@ -950,47 +923,28 @@
 
             // --- Collision Detection ---
             const player = gameState.player;
+            const oldOnGround = player.onGround;
             player.onGround = false;
 
-            // Platform collision (Solid: collisions on all sides)
+            // Platform collision (only from top)
             gameState.platforms.forEach(p => {
-                // Check for intersection
-                if (player.x < p.x + p.w &&
-                    player.x + player.width > p.x &&
-                    player.y < p.y + p.h &&
-                    player.y + player.height > p.y) {
-
-                    const prevPlayerX = player.x - player.vx;
-                    const prevPlayerY = player.y - player.vy;
-                    const prevPlatformX = p.type === 'moving-h' ? p.x - p.speed : p.x;
-                    const prevPlatformY = p.type === 'moving-v' ? p.y - p.speed : p.y;
-
-                    // Determine which side the collision happened on based on previous positions
+                if (
+                    player.vy > 0 && // Player is falling
+                    player.x + player.width > p.x && 
+                    player.x < p.x + p.w &&
+                    player.y + player.height <= p.y + p.h / 2 && // Must be slightly above or at platform top
+                    player.y + player.height + player.vy >= p.y // Check if next position will hit the platform
+                ) {
+                    player.y = p.y - player.height;
+                    player.vy = 0;
+                    player.onGround = true;
+                    player.jumpsUsed = 0;
                     
-                    // Collision from TOP (Player landing)
-                    if (prevPlayerY + player.height <= prevPlatformY + 1) {
-                        player.y = p.y - player.height;
-                        player.vy = 0;
-                        player.onGround = true;
-                        player.jumpsUsed = 0;
-                        // Apply platform velocity
-                        if (p.type === 'moving-h') player.x += p.speed;
-                        if (p.type === 'moving-v') player.y += p.speed;
-                    }
-                    // Collision from BOTTOM (Player hitting head)
-                    else if (prevPlayerY >= prevPlatformY + p.h - 1) {
-                        player.y = p.y + p.h;
-                        player.vy = Math.max(0, player.vy); // Stop upward momentum
-                    }
-                    // Collision from LEFT
-                    else if (prevPlayerX + player.width <= prevPlatformX + 1) {
-                        player.x = p.x - player.width;
-                        player.vx = 0;
-                    }
-                    // Collision from RIGHT
-                    else if (prevPlayerX >= prevPlatformX + p.w - 1) {
-                        player.x = p.x + p.w;
-                        player.vx = 0;
+                    // If platform is moving, player moves with it
+                    if (p.type === 'moving-h') {
+                        player.x += p.speed;
+                    } else if (p.type === 'moving-v') {
+                        player.y += p.speed;
                     }
                 }
             });
@@ -1085,8 +1039,8 @@
 
 
             // Platform generation when player climbs higher
-            if (scrollY < highestPlatformY + GENERATION_BUFFER_Y) {
-                generateNewPlatforms(highestPlatformY, GENERATION_BUFFER_Y);
+            if (scrollY < highestPlatformY - GENERATION_BUFFER_Y) {
+                generateNewPlatforms(highestPlatformY - 100);
             }
         }
 
@@ -1112,8 +1066,8 @@
 
             // Draw all entities
             gameState.platforms.forEach(p => p.draw());
-            gameState.tools.forEach(t => t.draw());
             gameState.obstacles.forEach(o => o.draw());
+            gameState.tools.forEach(t => t.draw());
             gameState.mushrooms.forEach(m => m.draw());
             gameState.antidotes.forEach(a => a.draw());
             gameState.lasers.forEach(l => l.draw());
@@ -1143,17 +1097,24 @@
              }
         }
 
-        async function gameOver(reason) {
+        function gameOver(reason) {
             gameState.isGameOver = true;
             
-            // Automatically save the score
-            const finalName = playerNameInput.value.trim() || displayPlayerName.textContent;
-            await saveScore(finalName, distanceClimbed);
+            messageTitle.textContent = 'Game Over!';
+            messageText.innerHTML = `You fell! Your highest climb was: <span class="text-fuchsia-400 font-bold">${distanceClimbed.toFixed(0)} meters</span>. ${reason}`;
+            
+            // Hide the plain restart button
+            restartButton.classList.add('hidden'); 
 
-            // Wait a moment for the user to see the reason then restart
-            setTimeout(() => {
-                resetGame();
-            }, 1000);
+            // Show the score submission form
+            scoreSubmitForm.classList.remove('hidden'); 
+            
+            // Set a random default name for quick saving IF the input field is empty (i.e., local storage didn't load one)
+            if (!playerNameInput.value) {
+                playerNameInput.value = generateRandomName();
+            }
+
+            messageBox.style.display = 'block';
         }
 
         function resetGame() {
@@ -1200,16 +1161,14 @@
         const setupButtonEvents = (button, key, isHoldAction = false) => {
             const pressEvent = () => {
                 if (gameState.isGameOver) return;
+                gameState.keys[key] = true;
                 if (key === 'ArrowUp') {
                     if (!gameState.keys['ArrowUp']) {
                         gameState.player.jump();
                     }
-                } else if (key === 'x') {
-                    if (!gameState.keys['x']) {
-                        gameState.player.fireLaser();
-                    }
+                } else if (key === 'x' && !isHoldAction) {
+                    gameState.player.fireLaser();
                 }
-                gameState.keys[key] = true;
             };
 
             const releaseEvent = () => {
@@ -1219,6 +1178,9 @@
             button.addEventListener('touchstart', (e) => {
                 e.preventDefault(); 
                 pressEvent();
+                if (key === 'x' && isHoldAction) {
+                     gameState.player.fireLaser(); // Fire instantly on touch start
+                }
             }, { passive: false });
             
             button.addEventListener('touchend', releaseEvent);
@@ -1226,18 +1188,41 @@
             button.addEventListener('mouseup', releaseEvent);
             button.addEventListener('mouseleave', releaseEvent); // Important for mouse drag off
             
+            if (isHoldAction) {
+                 button.addEventListener('mousedown', () => { 
+                    if (gameState.isGameOver) return;
+                    gameState.player.fireLaser();
+                 });
+            }
         };
 
         // --- Leaderboard & Submission Handlers (Updated) ---
         
-        updateNameButton.onclick = () => {
-            const newName = playerNameInput.value.trim();
-            if (newName) {
-                savePlayerName(newName);
-                displayPlayerName.textContent = newName;
-                updateNameButton.textContent = 'Saved!';
-                setTimeout(() => { updateNameButton.textContent = 'Update'; }, 1500);
-            }
+        saveScoreButton.onclick = async () => {
+            const finalName = playerNameInput.value.trim() || generateRandomName();
+            
+            saveScoreButton.disabled = true;
+            saveScoreButton.textContent = 'Saving...';
+            
+            // 1. Save the score asynchronously
+            await saveScore(finalName, distanceClimbed);
+
+            // 2. Save the player's name to Local Storage for next time
+            savePlayerName(finalName);
+            
+            // 3. Reset the UI state and restart
+            saveScoreButton.disabled = false;
+            saveScoreButton.textContent = 'Save Score & Restart';
+            messageBox.style.display = 'none';
+            scoreSubmitForm.classList.add('hidden');
+            
+            resetGame();
+        };
+
+        restartWithoutSaveButton.onclick = () => {
+            messageBox.style.display = 'none';
+            scoreSubmitForm.classList.add('hidden');
+            resetGame();
         };
 
         viewLeaderboardButton.onclick = () => {
@@ -1256,15 +1241,6 @@
         // --- Initialization (Updated) ---
 
         const startGame = () => {
-            // Initial resize
-            resizeCanvas();
-            window.addEventListener('resize', () => {
-                resizeCanvas();
-                if (!gameState.isGameOver) {
-                    // Recalculate positions if necessary, or just rely on next frame
-                }
-            });
-
             // Setup controls
             const touchLeft = document.getElementById('touchLeft');
             const touchRight = document.getElementById('touchRight');
@@ -1284,14 +1260,11 @@
          * Initializes Firebase authentication and then calls startGame().
          */
         const initGame = async () => {
-            // Load or generate name
-            let savedName = loadPlayerName();
-            if (!savedName) {
-                savedName = generateRandomName();
-                savePlayerName(savedName);
+            // Load saved name from local storage immediately to pre-fill the input
+            const savedName = loadPlayerName();
+            if (savedName) {
+                playerNameInput.value = savedName;
             }
-            playerNameInput.value = savedName;
-            displayPlayerName.textContent = savedName;
 
             try {
                 if (Object.keys(firebaseConfig).length > 0) {
