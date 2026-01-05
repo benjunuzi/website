@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini-Strike: Top-Down Ops</title>
+    <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom CSS for a tactical/arcade game feel */
+        body {
+            font-family: 'Chivo Mono', monospace;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden;
+            position: relative; /* Needed for modal positioning */
+        }
+
+        .game-container {
+            border: 5px solid #4a5568;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(74, 85, 104, 0.5);
+            background-color: #2d3748;
+            max-width: 90vw;
+            position: relative; /* Context for canvas */
+        }
+
+        canvas {
+            display: block;
+            background-color: #2f4f4f; /* Dark Slate Gray background for the map */
+            border-radius: 6px;
+        }
+
+        .hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(26, 32, 44, 0.9);
+            border-bottom: 2px solid #4a5568;
+            border-top-left-radius: 6px;
+            border-top-right-radius: 6px;
+        }
+
+        .hud-item {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #a0aec0;
+        }
+
+        .health-bar {
+            width: 150px;
+            height: 20px;
+            background-color: #e53e3e;
+            border: 2px solid #a0aec0;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 0 5px rgba(229, 62, 62, 0.5);
+        }
+
+        .health-fill {
+            height: 100%;
+            background-color: #48bb78;
+            transition: width 0.3s ease;
+        }
+
+        .controls-info {
+            margin-top: 20px;
+            background: #2a313d;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .controls-info p {
+            margin: 5px 0;
+        }
+
+        .controls-info strong {
+            color: #63b3ed;
+            font-weight: 700;
+        }
+
+        /* NEW: Game Over Modal Styling */
+        .game-over-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(26, 32, 44, 0.95);
+            border: 5px solid #e53e3e;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(229, 62, 62, 0.8);
+            z-index: 100;
+        }
+
+        .game-over-modal h2 {
+            color: #e53e3e;
+            font-size: 2.5rem;
+            margin-top: 0;
+        }
+
+        .game-over-modal p {
+            font-size: 1.2rem;
+            margin: 10px 0;
+        }
+
+        .game-over-modal #final-kills {
+            color: #48bb78;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .restart-button {
+            background-color: #48bb78;
+            color: #1a1a1a;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 20px;
+            border-radius: 6px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            font-family: 'Chivo Mono', monospace;
+            font-weight: 700;
+        }
+
+        .restart-button:hover {
+            background-color: #68d391;
+            transform: translateY(-2px);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                width: 100%;
+                max-width: 100%;
+            }
+            .hud {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+            }
+            .health-bar {
+                width: 100px;
+            }
+            .game-over-modal {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="hud">
+            <div class="hud-item">Kills: <span id="kill-count">0</span></div>
+            <div class="health-bar">
+                <div id="health-fill" class="health-fill" style="width: 100%;"></div>
+            </div>
+            <div class="hud-item">Ammo: <span id="ammo-count">30</span></div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- NEW: Game Over Modal -->
+        <div id="gameOverModal" class="game-over-modal hidden">
+            <h2>Game Over</h2>
+            <p>You were eliminated in action.</p>
+            <p>Final Kills: <span id="final-kills">0</span></p>
+            <button id="restartButton" class="restart-button">Play Again</button>
+        </div>
+        <!-- END: Game Over Modal -->
+    </div>
+
+    <div class="controls-info">
+        <p><strong>Controls:</strong></p>
+        <p>Movement: <strong>W A S D</strong></p>
+        <p>Aim & Shoot: <strong>Mouse Movement & Click</strong></p>
+        <p>Reload: <strong>R</strong></p>
+    </div>
+
+    <script type="module">
+        // Import necessary components for game logic
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set initial canvas size
+        const CANVAS_WIDTH = 800;
+        const CANVAS_HEIGHT = 600;
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        // HUD elements
+        const killCountElement = document.getElementById('kill-count');
+        const healthFillElement = document.getElementById('health-fill');
+        const ammoCountElement = document.getElementById('ammo-count');
+
+        // NEW: Modal elements
+        const gameOverModal = document.getElementById('gameOverModal');
+        const finalKillsElement = document.getElementById('final-kills');
+        const restartButton = document.getElementById('restartButton');
+
+        // --- Game State ---
+        let gameState = {
+            isRunning: true,
+            killCount: 0,
+            enemies: [],
+            bullets: [],
+            walls: [],
+            player: null,
+            lastSpawnTime: 0,
+            spawnInterval: 3000, // Enemies spawn every 3 seconds
+            mouse: { x: 0, y: 0, isDown: false, lastShot: 0, fireRate: 150 } // Fire rate in ms
+        };
+
+        // --- Constants ---
+        const PLAYER_SIZE = 15;
+        const BULLET_SIZE = 5;
+        const ENEMY_SIZE = 18;
+        const WALL_COLOR = '#4a5568';
+        const PLAYER_COLOR = '#63b3ed'; // Blue
+        const ENEMY_COLOR = '#e53e3e';  // Red
+        const BULLET_COLOR = '#f6e05e'; // Yellow
+
+        // --- Player Class ---
+        class Player {
+            constructor() {
+                this.x = CANVAS_WIDTH / 2;
+                this.y = CANVAS_HEIGHT / 2;
+                this.health = 100;
+                this.maxHealth = 100;
+                this.speed = 3;
+                this.angle = 0; // Angle player is facing (radians)
+                this.maxAmmo = 30;
+                this.currentAmmo = 30;
+                this.isReloading = false;
+                this.reloadTime = 2000; // 2 seconds
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                // Body (Circle)
+                ctx.fillStyle = PLAYER_COLOR;
+                ctx.beginPath();
+                ctx.arc(0, 0, PLAYER_SIZE, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Directional pointer (Gun/Muzzle)
+                ctx.fillStyle = '#a0aec0';
+                ctx.fillRect(PLAYER_SIZE, -2, 10, 4);
+
+                ctx.restore();
+            }
+
+            update(keys) {
+                // Movement
+                let dx = 0;
+                let dy = 0;
+                if (keys['w']) dy -= 1;
+                if (keys['s']) dy += 1;
+                if (keys['a']) dx -= 1;
+                if (keys['d']) dx += 1;
+
+                // Normalize diagonal speed
+                if (dx !== 0 && dy !== 0) {
+                    const length = Math.sqrt(dx * dx + dy * dy);
+                    dx /= length;
+                    dy /= length;
+                }
+
+                this.x += dx * this.speed;
+                this.y += dy * this.speed;
+
+                // Clamp to canvas bounds
+                this.x = Math.max(PLAYER_SIZE, Math.min(CANVAS_WIDTH - PLAYER_SIZE, this.x));
+                this.y = Math.max(PLAYER_SIZE, Math.min(CANVAS_HEIGHT - PLAYER_SIZE, this.y));
+
+                // Aiming (calculate angle to mouse position)
+                this.angle = Math.atan2(gameState.mouse.y - this.y, gameState.mouse.x - this.x);
+
+                // Update HUD
+                healthFillElement.style.width = `${(this.health / this.maxHealth) * 100}%`;
+                healthFillElement.style.backgroundColor = this.health > 50 ? '#48bb78' : this.health > 20 ? '#f6e05e' : '#e53e3e';
+                ammoCountElement.textContent = this.isReloading ? 'Reloading...' : `${this.currentAmmo}/${this.maxAmmo}`;
+            }
+
+            takeDamage(amount) {
+                this.health -= amount;
+                if (this.health <= 0) {
+                    this.health = 0;
+                    gameState.isRunning = false;
+                    // Trigger custom game over screen instead of alert
+                    setTimeout(showGameOver, 50); 
+                }
+            }
+
+            // Reload function
+            reload() {
+                if (this.currentAmmo < this.maxAmmo && !this.isReloading) {
+                    this.isReloading = true;
+                    setTimeout(() => {
+                        this.currentAmmo = this.maxAmmo;
+                        this.isReloading = false;
+                    }, this.reloadTime);
+                }
+            }
+        }
+
+        // --- Enemy Class ---
+        class Enemy {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.health = 30;
+                this.speed = 1.5;
+                this.size = ENEMY_SIZE;
+                this.damage = 10;
+                this.lastAttack = 0;
+                this.attackRate = 1000; // 1 second
+            }
+
+            draw() {
+                ctx.fillStyle = ENEMY_COLOR;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw health bar above
+                const barWidth = this.size * 2;
+                const barHeight = 3;
+                const healthRatio = this.health / 30;
+                ctx.fillStyle = '#444';
+                ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 5, barWidth, barHeight);
+                ctx.fillStyle = healthRatio > 0.5 ? '#48bb78' : '#e53e3e';
+                ctx.fillRect(this.x - barWidth / 2, this.y - this.size - 5, barWidth * healthRatio, barHeight);
+            }
+
+            update(player, currentTime) {
+                // Simple AI: Move towards the player
+                const angle = Math.atan2(player.y - this.y, player.x - this.x);
+                this.x += Math.cos(angle) * this.speed;
+                this.y += Math.sin(angle) * this.speed;
+
+                // Check for collision and attack
+                const dist = distance(this.x, this.y, player.x, player.y);
+                if (dist < this.size + PLAYER_SIZE && currentTime - this.lastAttack > this.attackRate) {
+                    player.takeDamage(this.damage);
+                    this.lastAttack = currentTime;
+                }
+            }
+
+            takeDamage(amount) {
+                this.health -= amount;
+                return this.health <= 0; // Returns true if dead
+            }
+        }
+
+        // --- Bullet Class ---
+        class Bullet {
+            constructor(x, y, angle) {
+                this.x = x + Math.cos(angle) * (PLAYER_SIZE + 10); // Start slightly in front of the gun muzzle
+                this.y = y + Math.sin(angle) * (PLAYER_SIZE + 10);
+                this.angle = angle;
+                this.speed = 8;
+                this.damage = 10;
+                this.size = BULLET_SIZE;
+                this.life = 100; // Time steps until bullet despawns
+            }
+
+            draw() {
+                ctx.fillStyle = BULLET_COLOR;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            update() {
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                this.life--;
+
+                // Check if out of bounds or life expired
+                return this.life <= 0 ||
+                       this.x < 0 || this.x > CANVAS_WIDTH ||
+                       this.y < 0 || this.y > CANVAS_HEIGHT;
+            }
+        }
+
+        // --- Wall/Obstacle Class (Simplified) ---
+        class Wall {
+            constructor(x, y, w, h) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+            }
+
+            draw() {
+                ctx.fillStyle = WALL_COLOR;
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+            }
+        }
+
+        // --- Utility Functions ---
+
+        /** Calculates the distance between two points. */
+        function distance(x1, y1, x2, y2) {
+            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        }
+
+        /** Checks if a bullet hits an enemy. */
+        function checkBulletEnemyCollision(bullet, enemy) {
+            return distance(bullet.x, bullet.y, enemy.x, enemy.y) < BULLET_SIZE + enemy.size;
+        }
+
+        /** Spawn a single enemy at a random location away from the player. */
+        function spawnEnemy(player) {
+            let x, y;
+            do {
+                x = Math.random() * CANVAS_WIDTH;
+                y = Math.random() * CANVAS_HEIGHT;
+            } while (distance(x, y, player.x, player.y) < 200); // Ensure they spawn far away
+            gameState.enemies.push(new Enemy(x, y));
+        }
+
+        /** Shoot a bullet. */
+        function shoot(player, currentTime) {
+            if (player.currentAmmo > 0 && !player.isReloading && currentTime - gameState.mouse.lastShot > gameState.mouse.fireRate) {
+                // Adjust starting position for better look
+                gameState.bullets.push(new Bullet(player.x, player.y, player.angle));
+                player.currentAmmo--;
+                gameState.mouse.lastShot = currentTime;
+            } else if (player.currentAmmo === 0 && !player.isReloading) {
+                // Automatically prompt reload if ammo is 0
+                player.reload();
+            }
+        }
+        
+        // --- Game Over and Reset Functions ---
+
+        /** Shows the custom game over modal with final stats. */
+        function showGameOver() {
+            finalKillsElement.textContent = gameState.killCount;
+            gameOverModal.classList.remove('hidden');
+        }
+
+        /** Resets the game state and restarts the game loop. */
+        function resetGame() {
+            // Reset core game state variables
+            gameState.isRunning = true;
+            gameState.killCount = 0;
+            gameState.enemies = [];
+            gameState.bullets = [];
+            gameState.lastSpawnTime = 0;
+            gameState.spawnInterval = 3000;
+            gameState.mouse.lastShot = 0;
+            
+            // Hide modal
+            gameOverModal.classList.add('hidden');
+
+            // Re-initialize player and environment
+            init();
+        }
+
+        // --- Game Setup ---
+
+        function init() {
+            // Hide the game over modal on start/restart
+            gameOverModal.classList.add('hidden');
+
+            gameState.player = new Player();
+
+            // Define some simple walls for cover
+            gameState.walls = [ // Resetting walls array
+                new Wall(CANVAS_WIDTH / 4, CANVAS_HEIGHT / 4, 50, 200),
+                new Wall(CANVAS_WIDTH * 0.75 - 50, CANVAS_HEIGHT / 4, 50, 200),
+                new Wall(CANVAS_WIDTH / 3, CANVAS_HEIGHT * 0.75 - 50, 200, 50)
+            ];
+
+            // Initial enemies
+            for (let i = 0; i < 3; i++) {
+                spawnEnemy(gameState.player);
+            }
+
+            // Only start the loop if it's not already running (or if we just reset)
+            if (gameState.isRunning) {
+                 requestAnimationFrame(gameLoop); // Restart the loop
+            }
+        }
+
+        // --- Input Handling ---
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key.toLowerCase() === 'r') {
+                gameState.player.reload();
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            gameState.mouse.x = e.clientX - rect.left;
+            gameState.mouse.y = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousedown', () => {
+            gameState.mouse.isDown = true;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            gameState.mouse.isDown = false;
+        });
+
+        // Handle touch events for mobile aiming and shooting
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            // Use the first touch point for position and shooting
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                gameState.mouse.x = touch.clientX - rect.left;
+                gameState.mouse.y = touch.clientY - rect.top;
+                gameState.mouse.isDown = true;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            gameState.mouse.isDown = false;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                gameState.mouse.x = touch.clientX - rect.left;
+                gameState.mouse.y = touch.clientY - rect.top;
+            }
+        }, { passive: false });
+
+        // NEW: Add event listener for the restart button
+        restartButton.addEventListener('click', resetGame);
+
+        // --- Main Game Loop ---
+
+        function gameLoop(currentTime) {
+            if (!gameState.isRunning) return;
+
+            // 1. Clear Canvas
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            ctx.fillStyle = '#2f4f4f';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // 2. Spawn Enemies
+            if (currentTime - gameState.lastSpawnTime > gameState.spawnInterval) {
+                spawnEnemy(gameState.player);
+                gameState.lastSpawnTime = currentTime;
+                // Gradually increase difficulty by reducing spawn interval (up to a point)
+                gameState.spawnInterval = Math.max(1000, gameState.spawnInterval - 50);
+            }
+
+            // 3. Update Player
+            gameState.player.update(keys);
+            if (gameState.mouse.isDown) {
+                shoot(gameState.player, currentTime);
+            }
+
+            // 4. Update and Draw Walls
+            gameState.walls.forEach(wall => wall.draw());
+
+            // 5. Update and Draw Enemies
+            for (let i = 0; i < gameState.enemies.length; i++) {
+                const enemy = gameState.enemies[i];
+                enemy.update(gameState.player, currentTime);
+                enemy.draw();
+            }
+
+            // 6. Update and Draw Bullets, and check collisions
+            gameState.bullets = gameState.bullets.filter(bullet => {
+                const expired = bullet.update();
+
+                if (!expired) {
+                    let hit = false;
+
+                    // Check bullet-enemy collision
+                    gameState.enemies = gameState.enemies.filter(enemy => {
+                        if (checkBulletEnemyCollision(bullet, enemy)) {
+                            hit = true; // Mark bullet as hit
+                            if (enemy.takeDamage(bullet.damage)) {
+                                gameState.killCount++;
+                                killCountElement.textContent = gameState.killCount;
+                                return false; // Remove enemy
+                            }
+                        }
+                        return true; // Keep enemy
+                    });
+
+                    // Check bullet-wall collision (simple center point check)
+                    for (const wall of gameState.walls) {
+                        if (bullet.x > wall.x && bullet.x < wall.x + wall.w &&
+                            bullet.y > wall.y && bullet.y < wall.y + wall.h) {
+                            hit = true;
+                            break;
+                        }
+                    }
+
+                    if (!hit) {
+                        bullet.draw();
+                        return true; // Keep bullet
+                    }
+                }
+                return false; // Remove bullet (expired or hit)
+            });
+
+
+            // 7. Draw Player (last so it's on top)
+            gameState.player.draw();
+
+            // 8. Loop
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game when the window loads
+        window.onload = function () {
+            init();
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Audio Piano</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Custom styles for the piano layout */
+        .piano-container {
+            position: relative;
+            display: flex;
+            background-color: #333;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.1);
+            max-width: 90vw; /* Ensure responsiveness */
+            width: 800px;
+            height: 250px;
+        }
+
+        .white-key, .black-key {
+            cursor: pointer;
+            transition: transform 0.05s ease, box-shadow 0.05s ease;
+            position: relative;
+            z-index: 10;
+        }
+
+        .white-key {
+            width: 14.2857%; /* 100% / 7 white keys */
+            height: 100%;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 0 0 6px 6px;
+            margin-right: -1px; /* Overlap borders slightly */
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 5px;
+            user-select: none;
+        }
+        
+        /* White Key Active State */
+        .white-key.active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            background-color: #f0f0f0;
+        }
+
+        .black-key {
+            width: 6.5%; /* Adjust width relative to white key */
+            height: 60%; /* Shorter */
+            background-color: #111;
+            position: absolute;
+            z-index: 20;
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            /* Positioning is handled in JS/HTML data attributes */
+            margin-left: -3.25%; /* Half width to center it over the gap */
+            user-select: none;
+        }
+
+        /* Black Key Active State */
+        .black-key.active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+            background-color: #333;
+        }
+
+        /* Positions for the black keys relative to the white keys */
+        .black-pos-1 { left: calc(14.2857% * 1); } /* Between C and D */
+        .black-pos-2 { left: calc(14.2857% * 2); } /* Between D and E */
+        /* E to F has no black key */
+        .black-pos-4 { left: calc(14.2857% * 4); } /* Between F and G */
+        .black-pos-5 { left: calc(14.2857% * 5); } /* Between G and A */
+        .black-pos-6 { left: calc(14.2857% * 6); } /* Between A and B */
+    </style>
+</head>
+<body>
+
+    <div class="flex flex-col items-center">
+        <h1 class="text-3xl font-bold mb-4 text-gray-800">Web Piano</h1>
+        <p class="text-sm mb-6 text-gray-600">Play with mouse/touch or use the keys below:</p>
+
+        <!-- Piano Container -->
+        <div class="piano-container" id="piano">
+
+            <!-- White Keys (C4 to B4) -->
+            <div id="key-C4" data-note="C4" data-freq="261.63" data-keyboard="A" class="white-key"><span class="key-label">A / C4</span></div>
+            <div id="key-D4" data-note="D4" data-freq="293.66" data-keyboard="S" class="white-key"><span class="key-label">S / D4</span></div>
+            <div id="key-E4" data-note="E4" data-freq="329.63" data-keyboard="D" class="white-key"><span class="key-label">D / E4</span></div>
+            <div id="key-F4" data-note="F4" data-freq="349.23" data-keyboard="F" class="white-key"><span class="key-label">F / F4</span></div>
+            <div id="key-G4" data-note="G4" data-freq="392.00" data-keyboard="G" class="white-key"><span class="key-label">G / G4</span></div>
+            <div id="key-A4" data-note="A4" data-freq="440.00" data-keyboard="H" class="white-key"><span class="key-label">H / A4</span></div>
+            <div id="key-B4" data-note="B4" data-freq="493.88" data-keyboard="J" class="white-key"><span class="key-label">J / B4</span></div>
+
+            <!-- Black Keys (C#4 to A#4) - Positioned absolutely -->
+            <div id="key-Csharp4" data-note="C#4" data-freq="277.18" data-keyboard="W" class="black-key black-pos-1"><span class="key-label-black">W / C#4</span></div>
+            <div id="key-Dsharp4" data-note="D#4" data-freq="311.13" data-keyboard="E" class="black-key black-pos-2"><span class="key-label-black">E / D#4</span></div>
+            <!-- Skip E# (F) -->
+            <div id="key-Fsharp4" data-note="F#4" data-freq="369.99" data-keyboard="T" class="black-key black-pos-4"><span class="key-label-black">T / F#4</span></div>
+            <div id="key-Gsharp4" data-note="G#4" data-freq="415.30" data-keyboard="Y" class="black-key black-pos-5"><span class="key-label-black">Y / G#4</span></div>
+            <div id="key-Asharp4" data-note="A#4" data-freq="466.16" data-keyboard="U" class="black-key black-pos-6"><span class="key-label-black">U / A#4</span></div>
+            <!-- Skip B# (C) -->
+
+        </div>
+
+        <div class="mt-8 p-4 bg-white rounded-lg shadow-lg max-w-lg text-center">
+            <h3 class="text-lg font-semibold mb-2 text-indigo-600">How to Play</h3>
+            <p class="text-gray-700">Click or tap the keys, or use your computer keyboard:</p>
+            <div class="mt-2 text-sm text-gray-800 font-mono tracking-wider">
+                <span class="p-1 bg-gray-200 rounded-md shadow-sm">A S D F G H J</span> (White Keys)
+                <span class="p-1 bg-gray-200 rounded-md shadow-sm ml-4">W E T Y U</span> (Black Keys)
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Web Audio API Setup ---
+        let audioContext;
+        let compressor; // Global Dynamics Compressor for mastering the sound
+        
+        // Map to hold currently playing note components
+        const playingNotes = new Map();
+        // Map for quick lookup of key elements by keyboard code
+        const keyboardMap = {};
+
+        // Helper function to initialize the AudioContext and Compressor
+        function initAudioContext() {
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Create the Dynamics Compressor for better sound quality
+                    // This helps manage volume peaks and makes the sound punchier
+                    compressor = audioContext.createDynamicsCompressor();
+                    compressor.threshold.setValueAtTime(-24, audioContext.currentTime);
+                    compressor.knee.setValueAtTime(30, audioContext.currentTime);
+                    compressor.ratio.setValueAtTime(12, audioContext.currentTime);
+                    compressor.attack.setValueAtTime(0.003, audioContext.currentTime);
+                    compressor.release.setValueAtTime(0.25, audioContext.currentTime);
+
+                    // Connect compressor to the main output
+                    compressor.connect(audioContext.destination);
+
+                    console.log("AudioContext and Compressor initialized.");
+                } catch (e) {
+                    console.error('Web Audio API is not supported in this browser:', e);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+
+        /**
+         * Starts the sound for a given frequency using three detuned oscillators (for a thicker sound) 
+         * and a piano-like ADSR envelope.
+         * @param {number} frequency - The frequency of the note to play.
+         * @param {string} noteId - The ID of the key (e.g., 'key-C4').
+         */
+        function startNote(frequency, noteId) {
+            if (!initAudioContext()) return;
+            if (playingNotes.has(noteId)) return;
+
+            // --- Advanced Piano ADSR Configuration ---
+            const ATTACK_TIME = 0.003; // Even faster attack (more percussive)
+            const DECAY_TIME = 0.3;    
+            const SUSTAIN_LEVEL = 0.02; // Very low sustain level 
+            const now = audioContext.currentTime;
+            const PEAK_VOLUME = 0.6; // Base volume for the note
+
+            // Master Gain Node for this note
+            const masterGainNode = audioContext.createGain();
+            masterGainNode.gain.setValueAtTime(0, now);
+            
+            // Connect master gain to the compressor (for final volume shaping)
+            masterGainNode.connect(compressor);
+
+            const oscillators = [];
+            // Detune values in cents: Main, slightly flat (-2 cents), slightly sharp (+3 cents)
+            const detuneValues = [0, -2, 3]; 
+
+            detuneValues.forEach(detuneCents => {
+                const oscillator = audioContext.createOscillator();
+                oscillator.type = 'sawtooth'; // Richer harmonics than sine wave
+                
+                // Set base frequency and apply detune for the "thickening" effect
+                oscillator.frequency.setValueAtTime(frequency, now);
+                oscillator.detune.setValueAtTime(detuneCents, now); 
+                
+                oscillator.connect(masterGainNode);
+                oscillators.push(oscillator);
+                
+                oscillator.start(now);
+                oscillator.stop(now + 5); // Safety stop
+            });
+
+            // 1. Attack: Ramp up quickly to peak volume
+            masterGainNode.gain.linearRampToValueAtTime(PEAK_VOLUME, now + ATTACK_TIME);
+
+            // 2. Decay: Drop quickly from peak to sustain level
+            masterGainNode.gain.linearRampToValueAtTime(SUSTAIN_LEVEL, now + ATTACK_TIME + DECAY_TIME);
+
+
+            // Store the note information (all three oscillators and the gain node)
+            playingNotes.set(noteId, { oscillators, masterGainNode });
+
+            // Visual feedback
+            const keyElement = document.getElementById(noteId);
+            if (keyElement) {
+                keyElement.classList.add('active');
+            }
+        }
+
+        /**
+         * Stops the sound associated with a key (Release phase).
+         * @param {string} noteId - The ID of the key (e.g., 'key-C4').
+         */
+        function stopNote(noteId) {
+            const note = playingNotes.get(noteId);
+            if (!note) {
+                return;
+            }
+
+            const { oscillators, masterGainNode } = note;
+            const now = audioContext.currentTime;
+            const RELEASE_TIME = 0.7; // Longer release for a smooth, natural piano decay
+
+            // Release: ramp down volume from current level (Sustain) to zero
+            masterGainNode.gain.cancelScheduledValues(now);
+            // Use exponential ramp for a more natural sound fade
+            masterGainNode.gain.exponentialRampToValueAtTime(0.0001, now + RELEASE_TIME); 
+            
+            // Stop all oscillators after the release is complete
+            oscillators.forEach(osc => {
+                osc.stop(now + RELEASE_TIME + 0.05); 
+                osc.disconnect();
+            });
+            
+            // Disconnect the master gain node
+            masterGainNode.disconnect();
+            
+            // Remove from playing map
+            playingNotes.delete(noteId);
+            
+            // Visual feedback
+            const keyElement = document.getElementById(noteId);
+            if (keyElement) {
+                keyElement.classList.remove('active');
+            }
+        }
+
+        // --- Event Handlers (Unchanged) ---
+
+        function handleKeyDown(event) {
+            const targetKey = event.target.closest('.white-key, .black-key');
+            if (!targetKey) return;
+            
+            const frequency = parseFloat(targetKey.dataset.freq);
+            const noteId = targetKey.id;
+
+            if (frequency && noteId) {
+                startNote(frequency, noteId);
+                if (event.type.startsWith('touch')) {
+                    event.preventDefault();
+                }
+            }
+        }
+
+        function handleKeyUp(event) {
+            const targetKey = event.target.closest('.white-key, .black-key');
+            if (!targetKey) return;
+
+            const noteId = targetKey.id;
+            stopNote(noteId);
+        }
+
+        function handleKeyboardDown(event) {
+            if (event.repeat) return; 
+
+            const key = event.key.toUpperCase();
+            const noteId = keyboardMap[key];
+            
+            if (noteId) {
+                const keyElement = document.getElementById(noteId);
+                if (keyElement) {
+                    const frequency = parseFloat(keyElement.dataset.freq);
+                    startNote(frequency, noteId);
+                }
+                event.preventDefault(); 
+            }
+        }
+
+        function handleKeyboardUp(event) {
+            const key = event.key.toUpperCase();
+            const noteId = keyboardMap[key];
+
+            if (noteId) {
+                stopNote(noteId);
+                event.preventDefault();
+            }
+        }
+
+        // --- Initialization ---
+
+        function initPiano() {
+            const piano = document.getElementById('piano');
+            const keys = piano.querySelectorAll('.white-key, .black-key');
+
+            keys.forEach(key => {
+                const keyboardKey = key.dataset.keyboard;
+                if (keyboardKey) {
+                    keyboardMap[keyboardKey] = key.id;
+                }
+
+                // Mouse Events
+                key.addEventListener('mousedown', handleKeyDown);
+                key.addEventListener('mouseup', handleKeyUp);
+                key.addEventListener('mouseleave', () => stopNote(key.id));
+
+                // Touch Events
+                key.addEventListener('touchstart', handleKeyDown, { passive: true });
+                key.addEventListener('touchend', handleKeyUp, { passive: true });
+                key.addEventListener('touchcancel', handleKeyUp, { passive: true });
+            });
+
+            // Global Keyboard Listeners
+            document.addEventListener('keydown', handleKeyboardDown);
+            document.addEventListener('keyup', handleKeyboardUp);
+
+            console.log("Advanced Piano initialized. Ready to play with rich, compressed sound.");
+        }
+
+        // Start everything when the window loads
+        window.onload = initPiano;
+    </script>
+</body>
+</html>
