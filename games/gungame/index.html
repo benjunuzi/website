@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monster Multiplier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a202c;
+            font-family: 'Inter', sans-serif;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            image-rendering: auto;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        .health-bar-container {
+            width: 200px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid white;
+        }
+        #health-fill {
+            width: 100%;
+            height: 100%;
+            background: #48bb78;
+            transition: width 0.3s ease-out, background-color 0.3s;
+        }
+        #overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            border: 2px solid #4a5568;
+            color: white;
+            display: none;
+            z-index: 20;
+            min-width: 300px;
+        }
+        button {
+            pointer-events: auto;
+            background: #48bb78;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-top: 1.5rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div>
+            <h1 class="text-2xl font-bold">Wave: <span id="monster-count">1</span> / 20</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="font-bold">HEALTH</span>
+            <div class="health-bar-container">
+                <div id="health-fill"></div>
+            </div>
+        </div>
+        <p class="text-sm opacity-75">WASD to Move | Click to Zap Monsters</p>
+    </div>
+
+    <div id="overlay">
+        <h2 id="status-title" class="text-4xl font-bold mb-4 text-red-500">DEFEATED</h2>
+        <p id="status-msg" class="text-xl mb-4"></p>
+        <button onclick="resetGame()">Play Again</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const monsterCountEl = document.getElementById('monster-count');
+        const healthFill = document.getElementById('health-fill');
+        const overlay = document.getElementById('overlay');
+        const statusTitle = document.getElementById('status-title');
+        const statusMsg = document.getElementById('status-msg');
+
+        const MAX_HEALTH = 100;
+        let animationId;
+
+        let player = {
+            x: 0,
+            y: 0,
+            size: 24,
+            speed: 5,
+            color: '#4299e1',
+            angle: 0,
+            hp: MAX_HEALTH,
+            invulnerable: 0
+        };
+
+        let keys = {};
+        let bullets = [];
+        let monsters = [];
+        let particles = [];
+        let walls = [];
+        let targetMonsterCount = 1;
+        let gameOver = false;
+
+        function createWalls() {
+            walls = [];
+            const w = canvas.width;
+            const h = canvas.height;
+            const th = 30;
+
+            walls.push({x: w * 0.2, y: h * 0.2, w: th, h: h * 0.3});
+            walls.push({x: w * 0.2, y: h * 0.2, w: w * 0.2, h: th});
+            walls.push({x: w * 0.6, y: h * 0.1, w: w * 0.3, h: th});
+            walls.push({x: w * 0.75, y: h * 0.1, w: th, h: h * 0.4});
+            walls.push({x: w * 0.1, y: h * 0.7, w: w * 0.4, h: th});
+            walls.push({x: w * 0.3, y: h * 0.6, w: th, h: h * 0.3});
+            walls.push({x: w * 0.6, y: h * 0.6, w: w * 0.2, h: th});
+            walls.push({x: w * 0.7, y: h * 0.75, w: w * 0.1, h: th});
+        }
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            createWalls();
+            centerPlayer();
+        }
+
+        function centerPlayer() {
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+        }
+
+        function updateHealthUI() {
+            const percent = Math.max(0, player.hp);
+            healthFill.style.width = percent + '%';
+            
+            // Visual feedback: change color based on health
+            if (percent > 60) healthFill.style.backgroundColor = '#48bb78'; // Green
+            else if (percent > 30) healthFill.style.backgroundColor = '#ecc94b'; // Yellow
+            else healthFill.style.backgroundColor = '#f56565'; // Red
+        }
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+        window.addEventListener('mousemove', e => {
+            player.angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
+        });
+        window.addEventListener('mousedown', shoot);
+
+        function shoot() {
+            if (gameOver) return;
+            bullets.push({
+                x: player.x,
+                y: player.y,
+                vx: Math.cos(player.angle) * 12,
+                vy: Math.sin(player.angle) * 12,
+                size: 6
+            });
+        }
+
+        function checkWallCollision(x, y, size) {
+            const buffer = size / 2;
+            for (let wall of walls) {
+                if (x + buffer > wall.x && 
+                    x - buffer < wall.x + wall.w && 
+                    y + buffer > wall.y && 
+                    y - buffer < wall.y + wall.h) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function createMonster() {
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+            const margin = 100;
+            if (side === 0) { x = Math.random() * canvas.width; y = -margin; }
+            else if (side === 1) { x = canvas.width + margin; y = Math.random() * canvas.height; }
+            else if (side === 2) { x = Math.random() * canvas.width; y = canvas.height + margin; }
+            else { x = -margin; y = Math.random() * canvas.height; }
+
+            return {
+                x: x,
+                y: y,
+                size: 34,
+                speed: 1.4 + (targetMonsterCount * 0.06),
+                color: '#f56565'
+            };
+        }
+
+        function spawnWave() {
+            monsters = [];
+            for (let i = 0; i < targetMonsterCount; i++) {
+                monsters.push(createMonster());
+            }
+            monsterCountEl.innerText = targetMonsterCount;
+        }
+
+        function resetGame() {
+            cancelAnimationFrame(animationId);
+            resize();
+            centerPlayer();
+            player.hp = MAX_HEALTH;
+            player.invulnerable = 0;
+            updateHealthUI();
+            targetMonsterCount = 1;
+            bullets = [];
+            particles = [];
+            gameOver = false;
+            overlay.style.display = 'none';
+            spawnWave();
+            update();
+        }
+
+        function createExplosion(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    life: 1.0,
+                    color
+                });
+            }
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            if (player.invulnerable > 0) player.invulnerable--;
+
+            // Player Movement
+            let nextPX = player.x;
+            let nextPY = player.y;
+            
+            if (keys['KeyW'] || keys['ArrowUp']) nextPY -= player.speed;
+            if (keys['KeyS'] || keys['ArrowDown']) nextPY += player.speed;
+            if (!checkWallCollision(player.x, nextPY, player.size)) player.y = nextPY;
+            
+            if (keys['KeyA'] || keys['ArrowLeft']) nextPX -= player.speed;
+            if (keys['KeyD'] || keys['ArrowRight']) nextPX += player.speed;
+            if (!checkWallCollision(nextPX, player.y, player.size)) player.x = nextPX;
+
+            player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
+            player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
+
+            // Update Bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.x += b.vx;
+                b.y += b.vy;
+                if (checkWallCollision(b.x, b.y, b.size)) {
+                    createExplosion(b.x, b.y, '#ecc94b', 3);
+                    bullets.splice(i, 1);
+                    continue;
+                }
+                if (b.x < -100 || b.x > canvas.width + 100 || b.y < -100 || b.y > canvas.height + 100) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.life -= 0.03;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            // Update Monsters
+            for (let mi = monsters.length - 1; mi >= 0; mi--) {
+                let m = monsters[mi];
+                const dx = player.x - m.x;
+                const dy = player.y - m.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const angle = Math.atan2(dy, dx);
+                
+                const vx = Math.cos(angle) * m.speed;
+                const vy = Math.sin(angle) * m.speed;
+
+                if (!checkWallCollision(m.x + vx, m.y, m.size)) m.x += vx;
+                if (!checkWallCollision(m.x, m.y + vy, m.size)) m.y += vy;
+
+                if (dist < (player.size/2 + m.size/2) && player.invulnerable === 0) {
+                    player.hp -= 34;
+                    player.invulnerable = 60;
+                    createExplosion(player.x, player.y, '#ffffff', 15);
+                    updateHealthUI();
+                    if (player.hp <= 0) endGame(false);
+                }
+
+                for (let bi = bullets.length - 1; bi >= 0; bi--) {
+                    const b = bullets[bi];
+                    const bdx = b.x - m.x;
+                    const bdy = b.y - m.y;
+                    const bdist = Math.sqrt(bdx*bdx + bdy*bdy);
+                    if (bdist < m.size/2 + b.size/2) {
+                        createExplosion(m.x, m.y, m.color, 10);
+                        monsters.splice(mi, 1);
+                        bullets.splice(bi, 1);
+                        break;
+                    }
+                }
+            }
+
+            if (monsters.length === 0 && !gameOver) {
+                if (targetMonsterCount >= 20) {
+                    endGame(true);
+                } else {
+                    targetMonsterCount++;
+                    // RESET HEALTH FOR NEW ROUND
+                    player.hp = MAX_HEALTH;
+                    player.invulnerable = 30; // Small grace period
+                    updateHealthUI();
+                    
+                    centerPlayer();
+                    spawnWave();
+                }
+            }
+
+            draw();
+            animationId = requestAnimationFrame(update);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            walls.forEach(w => {
+                ctx.fillStyle = '#4a5568';
+                ctx.strokeStyle = '#2d3748';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.roundRect(w.x, w.y, w.w, w.h, 6);
+                ctx.fill();
+                ctx.stroke();
+            });
+
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+
+            if (player.invulnerable % 8 < 4) {
+                ctx.save();
+                ctx.translate(player.x, player.y);
+                ctx.rotate(player.angle);
+                ctx.fillStyle = player.color;
+                ctx.beginPath(); ctx.roundRect(-12, -12, 24, 24, 4); ctx.fill();
+                ctx.fillStyle = '#2d3748';
+                ctx.fillRect(8, -4, 15, 8);
+                ctx.fillStyle = 'white';
+                ctx.fillRect(4, -8, 4, 4); ctx.fillRect(4, 4, 4, 4);
+                ctx.restore();
+            }
+
+            ctx.fillStyle = '#ecc94b';
+            bullets.forEach(b => {
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.size, 0, Math.PI*2); ctx.fill();
+            });
+
+            monsters.forEach(m => {
+                ctx.save();
+                ctx.translate(m.x, m.y);
+                const wiggle = Math.sin(Date.now() / 80) * 3;
+                ctx.translate(wiggle, 0);
+                ctx.fillStyle = m.color;
+                ctx.beginPath();
+                ctx.moveTo(-18, 18); ctx.lineTo(0, -18); ctx.lineTo(18, 18);
+                ctx.closePath(); ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.beginPath(); ctx.arc(0, 4, 8, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'black';
+                ctx.beginPath(); ctx.arc(0, 4, 4, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function endGame(won) {
+            gameOver = true;
+            overlay.style.display = 'block';
+            if (won) {
+                statusTitle.innerText = "VICTORY!";
+                statusTitle.className = "text-5xl font-bold mb-4 text-green-500";
+                statusMsg.innerText = "You survived all 20 waves!";
+            } else {
+                statusTitle.innerText = "GAME OVER";
+                statusTitle.className = "text-5xl font-bold mb-4 text-red-500";
+                statusMsg.innerText = `You fell at Wave ${targetMonsterCount}.`;
+            }
+        }
+
+        resetGame();
+    </script>
+</body>
+</html>
