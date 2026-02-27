@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>F1 Multiplayer Prix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            background-color: #333;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            max-width: 100%;
+            max-height: 80vh;
+            display: block;
+        }
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            pointer-events: none;
+            width: calc(100% - 40px);
+            display: flex;
+            justify-content: space-between;
+        }
+        #leaderboard {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px;
+            border-radius: 8px;
+            border-right: 4px solid #e10600;
+            min-width: 160px;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        #setup-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+        }
+        .f1-button {
+            background: #e10600;
+            color: white;
+            padding: 15px 40px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .f1-button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        .f1-button:hover:not(:disabled) { background: #ff0800; transform: scale(1.05); }
+        .f1-input {
+            background: #222;
+            border: 2px solid #444;
+            color: white;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="setup-screen">
+        <h1 class="text-white text-5xl font-black mb-4 italic text-center">F1 MULTIPLAYER</h1>
+        <p id="status-text" class="text-gray-400 mb-6 text-center">Initialising systems...</p>
+        <input type="text" id="driver-name" class="f1-input w-64" placeholder="DRIVER NAME" maxlength="12">
+        <button id="join-btn" class="f1-button text-xl" disabled>Please Wait</button>
+    </div>
+
+    <div class="ui-overlay">
+        <div>
+            <div class="text-2xl font-bold italic">SCORE: <span id="score-val">0</span></div>
+            <div class="text-sm text-red-500 font-bold uppercase tracking-widest">SPEED: <span id="speed-val">0</span> KM/H</div>
+        </div>
+        
+        <div id="leaderboard">
+            <div class="text-xs font-black text-red-500 mb-2 underline italic">LEADERBOARD</div>
+            <div id="leaderboard-list">
+                <!-- Entries will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="controls-hint">
+        Desktop: Arrow Keys or A/D <br>
+        Mobile: Tap/Hold sides of screen
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreElement = document.getElementById('score-val');
+    const speedElement = document.getElementById('speed-val');
+    const setupScreen = document.getElementById('setup-screen');
+    const joinBtn = document.getElementById('join-btn');
+    const nameInput = document.getElementById('driver-name');
+    const statusText = document.getElementById('status-text');
+    const leaderboardListEl = document.getElementById('leaderboard-list');
+
+    // Firebase Config
+    const firebaseConfig = JSON.parse(__firebase_config);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'f1-multi-race';
+
+    // Constants
+    const CANVAS_WIDTH = 400;
+    const CANVAS_HEIGHT = 600;
+    const LANE_WIDTH = 80;
+    const PLAYER_WIDTH = 40;
+    const PLAYER_HEIGHT = 70;
+    const ROAD_WIDTH = LANE_WIDTH * 4;
+
+    // State
+    let gameRunning = false;
+    let user = null;
+    let driverName = "";
+    let score = 0;
+    let speed = 6;
+    let playerX = CANVAS_WIDTH / 2;
+    let enemies = [];
+    let allPlayers = {}; 
+    let roadOffset = 0;
+    let keys = {};
+
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
+
+    // Authentication
+    const initAuth = async () => {
+        try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        } catch (error) {
+            console.error("Auth failed:", error);
+            statusText.innerText = "Connection Error. Retrying...";
+            setTimeout(initAuth, 2000);
+        }
+    };
+
+    onAuthStateChanged(auth, (u) => {
+        if (u) {
+            user = u;
+            joinBtn.disabled = false;
+            joinBtn.innerText = "Join Race";
+            statusText.innerText = "System Ready. Enter name to start.";
+            startSync();
+        }
+    });
+
+    const startSync = () => {
+        if (!user) return;
+        const playersCol = collection(db, 'artifacts', appId, 'public', 'data', 'players');
+        onSnapshot(playersCol, (snapshot) => {
+            const currentPlayers = {};
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                // Filter out stale players (older than 30 seconds)
+                if (Date.now() - (data.lastSeen || 0) < 30000) {
+                    currentPlayers[doc.id] = data;
+                }
+            });
+            allPlayers = currentPlayers;
+            updateLeaderboardUI();
+        }, (err) => console.error("Sync error:", err));
+    };
+
+    const updateLeaderboardUI = () => {
+        const sorted = Object.values(allPlayers)
+            .sort((a, b) => (b.score || 0) - (a.score || 0))
+            .slice(0, 5);
+
+        leaderboardListEl.innerHTML = sorted.map((p, i) => `
+            <div class="leaderboard-entry ${p.name === driverName ? 'text-yellow-400 font-bold' : 'text-white'}">
+                <span>${i+1}. ${p.name.substring(0, 8)}</span>
+                <span>${Math.floor(p.score || 0)}</span>
+            </div>
+        `).join('');
+    };
+
+    const updateMyPosition = async () => {
+        if (!user || !gameRunning) return;
+        const playerRef = doc(db, 'artifacts', appId, 'public', 'data', 'players', user.uid);
+        await setDoc(playerRef, {
+            x: playerX,
+            name: driverName,
+            score: score,
+            lastSeen: Date.now()
+        }, { merge: true });
+    };
+
+    // Input
+    window.addEventListener('keydown', (e) => keys[e.key] = true);
+    window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+    let touchLeft = false, touchRight = false;
+    canvas.addEventListener('touchstart', (e) => {
+        const x = e.touches[0].clientX;
+        if (x < window.innerWidth / 2) touchLeft = true;
+        else touchRight = true;
+    }, { passive: true });
+    canvas.addEventListener('touchend', () => { touchLeft = false; touchRight = false; });
+
+    // Rendering
+    function drawF1Car(x, y, color, label = "", isPlayer = false) {
+        ctx.save();
+        ctx.translate(x, y);
+
+        if (label) {
+            ctx.fillStyle = isPlayer ? "#ffff00" : "white";
+            ctx.font = "bold 10px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(label.toUpperCase(), 0, -PLAYER_HEIGHT/2 - 10);
+        }
+
+        ctx.fillStyle = color;
+        ctx.fillRect(-PLAYER_WIDTH/4, -PLAYER_HEIGHT/2, PLAYER_WIDTH/2, PLAYER_HEIGHT);
+        ctx.fillStyle = '#111';
+        ctx.fillRect(-PLAYER_WIDTH/2, -PLAYER_HEIGHT/2, PLAYER_WIDTH, 10);
+        ctx.fillRect(-PLAYER_WIDTH/2, PLAYER_HEIGHT/2 - 5, PLAYER_WIDTH, 10);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(-PLAYER_WIDTH/2 - 2, -PLAYER_HEIGHT/2 + 5, 8, 15);
+        ctx.fillRect(PLAYER_WIDTH/2 - 6, -PLAYER_HEIGHT/2 + 5, 8, 15);
+        ctx.fillRect(-PLAYER_WIDTH/2 - 2, PLAYER_HEIGHT/2 - 20, 8, 18);
+        ctx.fillRect(PLAYER_WIDTH/2 - 6, PLAYER_HEIGHT/2 - 20, 8, 18);
+        ctx.fillStyle = isPlayer ? '#fff' : '#444';
+        ctx.beginPath();
+        ctx.arc(0, -5, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawRoad() {
+        const roadX = (CANVAS_WIDTH - ROAD_WIDTH) / 2;
+        ctx.fillStyle = '#2d5a27'; // Grass
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        ctx.fillStyle = '#333'; // Road
+        ctx.fillRect(roadX, 0, ROAD_WIDTH, CANVAS_HEIGHT);
+
+        for (let i = -100; i < CANVAS_HEIGHT; i += 40) {
+            const y = i + (roadOffset % 40);
+            ctx.fillStyle = (Math.floor(y/40) % 2 === 0) ? '#e10600' : '#fff';
+            ctx.fillRect(roadX - 10, y, 10, 40);
+            ctx.fillRect(roadX + ROAD_WIDTH, y, 10, 40);
+        }
+
+        ctx.setLineDash([20, 20]);
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        for (let i = 1; i < 4; i++) {
+            ctx.beginPath();
+            ctx.moveTo(roadX + i * LANE_WIDTH, 0);
+            ctx.lineTo(roadX + i * LANE_WIDTH, CANVAS_HEIGHT);
+            ctx.lineDashOffset = -roadOffset;
+            ctx.stroke();
+        }
+        ctx.setLineDash([]);
+    }
+
+    function spawnEnemy() {
+        const lane = Math.floor(Math.random() * 4);
+        const x = (CANVAS_WIDTH - ROAD_WIDTH) / 2 + (lane * LANE_WIDTH) + (LANE_WIDTH / 2);
+        enemies.push({ x, y: -100, color: '#555' });
+    }
+
+    let syncCounter = 0;
+    function update() {
+        if (!gameRunning) return;
+
+        roadOffset += speed;
+        score += speed / 10;
+        scoreElement.innerText = Math.floor(score);
+        speedElement.innerText = Math.floor(speed * 40);
+
+        if (keys['ArrowLeft'] || keys['a'] || touchLeft) playerX -= 6;
+        if (keys['ArrowRight'] || keys['d'] || touchRight) playerX += 6;
+
+        const roadX = (CANVAS_WIDTH - ROAD_WIDTH) / 2;
+        playerX = Math.max(roadX + 20, Math.min(roadX + ROAD_WIDTH - 20, playerX));
+
+        if (Math.random() < 0.02) spawnEnemy();
+
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            enemies[i].y += speed - 2;
+            const dx = Math.abs(enemies[i].x - playerX);
+            const dy = Math.abs(enemies[i].y - (CANVAS_HEIGHT - 100));
+            if (dx < 30 && dy < 60) {
+                gameRunning = false;
+                gameOver();
+            }
+            if (enemies[i].y > CANVAS_HEIGHT + 100) enemies.splice(i, 1);
+        }
+
+        syncCounter++;
+        if (syncCounter % 15 === 0) updateMyPosition();
+        if (syncCounter % 500 === 0) speed += 0.2;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        drawRoad();
+        enemies.forEach(e => drawF1Car(e.x, e.y, '#666', "AI"));
+        
+        Object.entries(allPlayers).forEach(([id, p]) => {
+            if (id !== user?.uid) {
+                drawF1Car(p.x, CANVAS_HEIGHT - 100, '#0070ff', p.name);
+            }
+        });
+
+        drawF1Car(playerX, CANVAS_HEIGHT - 100, '#e10600', driverName, true);
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        if (gameRunning) requestAnimationFrame(gameLoop);
+    }
+
+    function gameOver() {
+        setupScreen.style.display = 'flex';
+        setupScreen.querySelector('h1').innerText = "DNF: CRASHED";
+        statusText.innerText = `Final Score: ${Math.floor(score)}`;
+        joinBtn.innerText = "Restart Engine";
+    }
+
+    joinBtn.onclick = async () => {
+        if (!user) {
+            statusText.innerText = "Reconnecting...";
+            await initAuth();
+            return;
+        }
+        driverName = nameInput.value.trim() || "Racer_" + Math.floor(Math.random()*100);
+        gameRunning = true;
+        setupScreen.style.display = 'none';
+        score = 0;
+        speed = 6;
+        enemies = [];
+        playerX = CANVAS_WIDTH / 2;
+        gameLoop();
+    };
+
+    // Bootstrap
+    initAuth();
+    drawRoad();
+</script>
+</body>
+</html>
