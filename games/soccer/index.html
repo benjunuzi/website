@@ -112,7 +112,7 @@
     <div id="leaderboard">
         <div class="leaderboard-title">Top Keepers</div>
         <div id="leaderboard-list">
-            <div class="text-xs italic">Loading...</div>
+            <div class="text-xs italic" id="leaderboard-status">Offline Mode</div>
         </div>
     </div>
     
@@ -129,13 +129,30 @@
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
     import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, limit } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
-    const firebaseConfig = JSON.parse(__firebase_config);
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'keeper-game';
-    let currentUser = null;
+    // --- BROWSER COMPATIBILITY FIX ---
+    let firebaseConfig = null;
+    let appId = 'keeper-game';
+    let storageEnabled = false;
 
+    try {
+        // Attempt to load from the environment
+        if (typeof __firebase_config !== 'undefined') {
+            firebaseConfig = JSON.parse(__firebase_config);
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'keeper-game';
+            storageEnabled = true;
+        }
+    } catch (e) {
+        console.warn("Firebase config not found. Running in Offline Mode.");
+    }
+
+    let auth, db;
+    if (storageEnabled && firebaseConfig) {
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+    }
+
+    let currentUser = null;
     let scene, camera, renderer, ball, pitch, gloves = [];
     let ballVelocity = new THREE.Vector3();
     let isBallActive = false;
@@ -154,23 +171,32 @@
     const PITCH_LENGTH = 100;
 
     const initAuth = async () => {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-            await signInAnonymously(auth);
+        if (!storageEnabled) return;
+        try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        } catch (err) {
+            console.error("Auth failed:", err);
+            storageEnabled = false;
         }
     };
 
-    onAuthStateChanged(auth, (user) => {
-        currentUser = user;
-        if (user) {
-            setupLeaderboardListener();
-            loadBestScore();
-        }
-    });
+    if (storageEnabled) {
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                document.getElementById('leaderboard-status').innerText = "Loading scores...";
+                setupLeaderboardListener();
+                loadBestScore();
+            }
+        });
+    }
 
     const setupLeaderboardListener = () => {
-        if (!currentUser) return;
+        if (!storageEnabled || !currentUser) return;
         const leaderboardRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
         onSnapshot(leaderboardRef, (snapshot) => {
             const scores = [];
@@ -185,14 +211,14 @@
         list.innerHTML = '';
         topScores.forEach((entry, index) => {
             const item = document.createElement('div');
-            item.className = `leaderboard-entry ${entry.userId === currentUser.uid ? 'current-user' : ''}`;
+            item.className = `leaderboard-entry ${currentUser && entry.userId === currentUser.uid ? 'current-user' : ''}`;
             item.innerHTML = `<span>${index + 1}. ${entry.userId.substring(0, 6)}</span> <span>${entry.score}</span>`;
             list.appendChild(item);
         });
     };
 
     const loadBestScore = async () => {
-        if (!currentUser) return;
+        if (!storageEnabled || !currentUser) return;
         const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'stats'));
         if (userDoc.exists()) {
             bestScore = userDoc.data().bestScore || 0;
@@ -200,7 +226,7 @@
     };
 
     const saveScore = async () => {
-        if (!currentUser || saves <= bestScore) return;
+        if (!storageEnabled || !currentUser || saves <= bestScore) return;
         bestScore = saves;
         const scoreData = { userId: currentUser.uid, score: bestScore, timestamp: Date.now() };
         await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'stats'), { bestScore });
@@ -286,7 +312,7 @@
         if (missed >= MAX_MISSES) { gameOver(); return; }
         resetBall();
         isBallActive = true;
-        const targetX = (Math.random() - 0.5) * (GOAL_WIDTH * 1.5); // Wider range to allow 'out' shots
+        const targetX = (Math.random() - 0.5) * (GOAL_WIDTH * 1.5);
         const targetY = Math.random() * (GOAL_HEIGHT * 1.2);
         const targetZ = 0.5;
         const direction = new THREE.Vector3(targetX, targetY, targetZ).sub(ball.position);
@@ -363,7 +389,6 @@
                     missed++;
                     showStatus("GOAL!");
                 } else {
-                    // It went out - count as a save!
                     saves++;
                     showStatus("WIDE!");
                     saveScore();
@@ -381,16 +406,21 @@
         if (renderer) renderer.render(scene, camera);
     }
 
-    window.onload = () => { initAuth(); init(); };
+    window.onload = () => { 
+        initAuth(); 
+        init(); 
+    };
     window.addEventListener('mousemove', (e) => handleInput(e.clientX, e.clientY));
     window.addEventListener('touchmove', (e) => {
         if (e.touches[0]) handleInput(e.touches[0].clientX, e.touches[0].clientY);
         e.preventDefault();
     }, { passive: false });
     window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        if (camera && renderer) {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
     });
 
     document.getElementById('zoomInBtn').onclick = () => { camera.fov = Math.max(20, camera.fov - 5); camera.updateProjectionMatrix(); };
