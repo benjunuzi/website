@@ -135,7 +135,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, onSnapshot, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -147,12 +147,33 @@
     const statusText = document.getElementById('status-text');
     const leaderboardListEl = document.getElementById('leaderboard-list');
 
-    // Firebase Config
-    const firebaseConfig = JSON.parse(__firebase_config);
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    // --- FIREBASE CONFIGURATION ---
+    // This part handles the environment variables. If you run this in a normal browser,
+    // you would normally need to provide your own Firebase config object here.
+    let firebaseConfig;
+    try {
+        firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+    } catch (e) {
+        firebaseConfig = {};
+    }
+
+    // Check if config is valid. If not, we show a helpful message.
+    const isConfigValid = firebaseConfig && firebaseConfig.apiKey;
+
+    let app, auth, db;
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'f1-multi-race';
+
+    if (isConfigValid) {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+    } else {
+        // Fallback for local browser testing without Firebase
+        console.warn("Firebase configuration not found. Multiplayer and Leaderboards are disabled.");
+        statusText.innerText = "Offline Mode: Multiplayer Disabled.";
+        joinBtn.disabled = false;
+        joinBtn.innerText = "Start Solo Race";
+    }
 
     // Constants
     const CANVAS_WIDTH = 400;
@@ -179,6 +200,7 @@
 
     // Authentication
     const initAuth = async () => {
+        if (!isConfigValid) return;
         try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token);
@@ -192,24 +214,25 @@
         }
     };
 
-    onAuthStateChanged(auth, (u) => {
-        if (u) {
-            user = u;
-            joinBtn.disabled = false;
-            joinBtn.innerText = "Join Race";
-            statusText.innerText = "System Ready. Enter name to start.";
-            startSync();
-        }
-    });
+    if (isConfigValid) {
+        onAuthStateChanged(auth, (u) => {
+            if (u) {
+                user = u;
+                joinBtn.disabled = false;
+                joinBtn.innerText = "Join Race";
+                statusText.innerText = "System Ready. Enter name to start.";
+                startSync();
+            }
+        });
+    }
 
     const startSync = () => {
-        if (!user) return;
+        if (!user || !db) return;
         const playersCol = collection(db, 'artifacts', appId, 'public', 'data', 'players');
         onSnapshot(playersCol, (snapshot) => {
             const currentPlayers = {};
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // Filter out stale players (older than 30 seconds)
                 if (Date.now() - (data.lastSeen || 0) < 30000) {
                     currentPlayers[doc.id] = data;
                 }
@@ -233,7 +256,7 @@
     };
 
     const updateMyPosition = async () => {
-        if (!user || !gameRunning) return;
+        if (!user || !gameRunning || !db) return;
         const playerRef = doc(db, 'artifacts', appId, 'public', 'data', 'players', user.uid);
         await setDoc(playerRef, {
             x: playerX,
@@ -355,12 +378,12 @@
         enemies.forEach(e => drawF1Car(e.x, e.y, '#666', "AI"));
         
         Object.entries(allPlayers).forEach(([id, p]) => {
-            if (id !== user?.uid) {
+            if (user && id !== user.uid) {
                 drawF1Car(p.x, CANVAS_HEIGHT - 100, '#0070ff', p.name);
             }
         });
 
-        drawF1Car(playerX, CANVAS_HEIGHT - 100, '#e10600', driverName, true);
+        drawF1Car(playerX, CANVAS_HEIGHT - 100, '#e10600', driverName || "Racer", true);
     }
 
     function gameLoop() {
@@ -377,7 +400,7 @@
     }
 
     joinBtn.onclick = async () => {
-        if (!user) {
+        if (isConfigValid && !user) {
             statusText.innerText = "Reconnecting...";
             await initAuth();
             return;
