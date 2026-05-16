@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Soccer Heads</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle, #1a2035 0%, #0a0c16 100%);
+            overscroll-behavior: none;
+            user-select: none;
+        }
+        canvas {
+            image-rendering: auto;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            touch-action: none;
+        }
+        kbd {
+            background: #2d3748;
+            border-radius: 4px;
+            padding: 2px 6px;
+            border: 1px solid #4a5568;
+            font-size: 0.8em;
+            color: #cbd5e0;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between overflow-hidden text-white p-2 md:p-4">
+
+    <!-- Scoreboard -->
+    <header class="w-full max-w-4xl mx-auto flex justify-between items-center bg-gray-900/90 border border-gray-700 rounded-2xl px-6 py-3 shadow-2xl z-10">
+        <div class="flex flex-col">
+            <span class="text-[10px] uppercase tracking-widest text-blue-400 font-bold">Player 1</span>
+            <span class="text-3xl font-black text-blue-400" id="score-p1">0</span>
+        </div>
+        
+        <div class="flex flex-col items-center">
+            <div class="bg-black/50 px-4 py-1 rounded-full border border-gray-800 mb-1">
+                <span class="font-mono font-bold text-xl text-yellow-400" id="timer">01:30</span>
+            </div>
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-tighter" id="game-mode-display">VS AI</span>
+        </div>
+
+        <div class="flex flex-col items-end">
+            <span class="text-[10px] uppercase tracking-widest text-red-400 font-bold">Player 2</span>
+            <span class="text-3xl font-black text-red-400" id="score-p2">0</span>
+        </div>
+    </header>
+
+    <!-- Main Arena -->
+    <main class="flex-grow w-full max-w-5xl mx-auto flex items-center justify-center relative my-2 min-h-0">
+        <canvas id="game-canvas" class="rounded-3xl border-8 border-gray-800 bg-black aspect-[16/9] w-full max-h-full object-contain"></canvas>
+
+        <!-- Main Menu -->
+        <div id="overlay-menu" class="absolute inset-0 bg-slate-950/95 rounded-3xl flex flex-col items-center justify-center p-8 z-20 text-center">
+            <h1 class="text-6xl md:text-8xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-orange-600 mb-8 drop-shadow-2xl">
+                SOCCER HEADS
+            </h1>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
+                <button id="btn-select-1p" class="group p-6 rounded-2xl border-4 border-blue-500 bg-blue-500/10 hover:bg-blue-500/20 transition-all text-left">
+                    <span class="text-3xl block mb-2">👤</span>
+                    <h3 class="text-xl font-bold text-blue-400">Solo Career</h3>
+                    <p class="text-xs text-blue-300/60">Challenge the AI Bot</p>
+                </button>
+                <button id="btn-select-2p" class="group p-6 rounded-2xl border-4 border-gray-700 bg-gray-800/20 hover:border-red-500 hover:bg-red-500/10 transition-all text-left">
+                    <span class="text-3xl block mb-2">👥</span>
+                    <h3 class="text-xl font-bold text-gray-400 group-hover:text-red-400">Local Versus</h3>
+                    <p class="text-xs text-gray-500 group-hover:text-red-300/60">Play with a friend locally</p>
+                </button>
+            </div>
+
+            <button id="btn-start" class="mt-8 px-12 py-5 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl text-2xl font-black hover:scale-105 active:scale-95 transition shadow-xl">
+                KICK OFF!
+            </button>
+            
+            <div class="mt-8 grid grid-cols-2 gap-8 text-xs text-gray-500">
+                <div>
+                    <p class="font-bold text-blue-400 mb-1 uppercase">P1 Controls</p>
+                    <p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> + <kbd>Space</kbd></p>
+                </div>
+                <div>
+                    <p class="font-bold text-red-400 mb-1 uppercase">P2 Controls</p>
+                    <p><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> + <kbd>P</kbd></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Goal / Pause Overlay -->
+        <div id="overlay-msg" class="absolute inset-0 bg-black/80 rounded-3xl hidden flex-col items-center justify-center z-30">
+            <h2 id="msg-text" class="text-7xl font-black italic text-yellow-400">GOAL!</h2>
+            <p id="msg-subtext" class="text-xl text-white mt-4 font-bold"></p>
+            <div id="pause-btns" class="mt-10 flex gap-4 hidden">
+                <button id="btn-resume" class="px-8 py-3 bg-green-600 rounded-xl font-bold">Continue</button>
+                <button id="btn-restart" class="px-8 py-3 bg-gray-700 rounded-xl font-bold">Quit to Menu</button>
+            </div>
+        </div>
+        
+        <!-- Focus Helper -->
+        <div id="focus-nag" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black px-4 py-1 rounded-full text-xs font-bold animate-bounce z-40 hidden pointer-events-none">
+            CLICK SCREEN TO MOVE!
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const VIEW_WIDTH = 1200;
+        const VIEW_HEIGHT = 675;
+        canvas.width = VIEW_WIDTH;
+        canvas.height = VIEW_HEIGHT;
+
+        const STATE = {
+            MENU: 0,
+            PLAYING: 1,
+            GOAL: 2,
+            PAUSED: 3,
+            GAMEOVER: 4
+        };
+
+        let currentGameState = STATE.MENU;
+        let isP2AI = true;
+        let p1Score = 0;
+        let p2Score = 0;
+        let timeLeft = 90;
+        let particles = [];
+        let timerId;
+
+        // Key Tracking
+        const keyMap = {};
+        window.addEventListener('keydown', e => {
+            keyMap[e.code] = true;
+            keyMap[e.key.toLowerCase()] = true;
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code)) e.preventDefault();
+            document.getElementById('focus-nag').classList.add('hidden');
+        });
+        window.addEventListener('keyup', e => {
+            keyMap[e.code] = false;
+            keyMap[e.key.toLowerCase()] = false;
+        });
+        
+        // Ensure focus
+        canvas.addEventListener('mousedown', () => window.focus());
+
+        class Ball {
+            constructor() {
+                this.reset();
+            }
+            reset(side = 'center') {
+                this.x = side === 'left' ? VIEW_WIDTH * 0.3 : (side === 'right' ? VIEW_WIDTH * 0.7 : VIEW_WIDTH / 2);
+                this.y = 100;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = 22;
+                this.rotation = 0;
+                this.restitution = 0.8;
+            }
+            update() {
+                this.vy += 0.5; // Gravity
+                this.vx *= 0.99; // Air drag
+                
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Wall collisions
+                if (this.x < this.radius) { this.x = this.radius; this.vx *= -this.restitution; }
+                if (this.x > VIEW_WIDTH - this.radius) { this.x = VIEW_WIDTH - this.radius; this.vx *= -this.restitution; }
+                if (this.y < this.radius) { this.y = this.radius; this.vy *= -this.restitution; }
+                
+                // Ground
+                if (this.y > VIEW_HEIGHT - 80 - this.radius) {
+                    this.y = VIEW_HEIGHT - 80 - this.radius;
+                    this.vy *= -this.restitution;
+                    this.vx *= 0.98; // Pitch friction
+                }
+                
+                this.rotation += this.vx * 0.05;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                
+                // Ball Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.ellipse(0, VIEW_HEIGHT - 80 - this.y, this.radius, 5, 0, 0, Math.PI*2);
+                ctx.fill();
+
+                // Ball Body
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Hexagons
+                ctx.fillStyle = '#333';
+                for(let i=0; i<5; i++) {
+                    ctx.rotate(Math.PI*2/5);
+                    ctx.beginPath();
+                    ctx.rect(-5, -15, 10, 10);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        class Player {
+            constructor(x, color, side) {
+                this.startX = x;
+                this.color = color;
+                this.side = side;
+                this.reset();
+            }
+            reset() {
+                this.x = this.startX;
+                this.y = VIEW_HEIGHT - 80 - 50;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = 50;
+                this.jumpForce = 14;
+                this.speed = 8;
+                this.isGrounded = false;
+                this.kickAngle = 0;
+                this.isKicking = false;
+            }
+            update(input) {
+                if (input.left) this.vx = -this.speed;
+                else if (input.right) this.vx = this.speed;
+                else this.vx *= 0.8;
+
+                if (input.jump && this.isGrounded) {
+                    this.vy = -this.jumpForce;
+                    this.isGrounded = false;
+                }
+
+                if (input.kick && !this.isKicking) {
+                    this.isKicking = true;
+                    this.kickAngle = 0;
+                }
+
+                this.vy += 0.6; // Gravity
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Limits
+                const minX = this.side === 'left' ? this.radius : VIEW_WIDTH/2 + this.radius;
+                const maxX = this.side === 'left' ? VIEW_WIDTH/2 - this.radius : VIEW_WIDTH - this.radius;
+                
+                if (this.x < minX) this.x = minX;
+                if (this.x > maxX) this.x = maxX;
+
+                if (this.y > VIEW_HEIGHT - 80 - this.radius) {
+                    this.y = VIEW_HEIGHT - 80 - this.radius;
+                    this.vy = 0;
+                    this.isGrounded = true;
+                }
+
+                if (this.isKicking) {
+                    this.kickAngle += 0.4;
+                    if (this.kickAngle > Math.PI / 1.5) {
+                        this.isKicking = false;
+                        this.kickAngle = 0;
+                    }
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // Head
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Eyes
+                ctx.fillStyle = '#fff';
+                const eyeDir = this.side === 'left' ? 1 : -1;
+                ctx.beginPath();
+                ctx.arc(15 * eyeDir, -10, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(20 * eyeDir, -10, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Foot/Shoe
+                ctx.translate(0, 40);
+                ctx.rotate(this.side === 'left' ? this.kickAngle : -this.kickAngle);
+                ctx.fillStyle = '#222';
+                ctx.beginPath();
+                ctx.roundRect(this.side === 'left' ? 10 : -50, 0, 40, 20, 10);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        const ball = new Ball();
+        const p1 = new Player(200, '#3b82f6', 'left');
+        const p2 = new Player(VIEW_WIDTH - 200, '#ef4444', 'right');
+
+        function checkCollisions() {
+            [p1, p2].forEach(p => {
+                const dx = ball.x - p.x;
+                const dy = ball.y - p.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const minDist = ball.radius + p.radius;
+
+                if (dist < minDist) {
+                    const angle = Math.atan2(dy, dx);
+                    const tx = p.x + Math.cos(angle) * minDist;
+                    const ty = p.y + Math.sin(angle) * minDist;
+                    
+                    ball.vx = (ball.x - p.x) * 0.2 + p.vx;
+                    ball.vy = (ball.y - p.y) * 0.2 + p.vy - 2;
+
+                    // Kick boost
+                    if (p.isKicking) {
+                        ball.vx += (p.side === 'left' ? 15 : -15);
+                        ball.vy -= 10;
+                    }
+                }
+            });
+
+            // Goals
+            const goalHeight = 250;
+            const goalY = VIEW_HEIGHT - 80 - goalHeight;
+            
+            // Score P1
+            if (ball.x > VIEW_WIDTH - 40 && ball.y > goalY) {
+                p1Score++;
+                goalScored('PLAYER 1');
+            }
+            // Score P2
+            if (ball.x < 40 && ball.y > goalY) {
+                p2Score++;
+                goalScored('PLAYER 2');
+            }
+        }
+
+        function goalScored(who) {
+            currentGameState = STATE.GOAL;
+            document.getElementById('msg-text').innerText = 'GOAL!';
+            document.getElementById('msg-subtext').innerText = who + ' SCORED';
+            document.getElementById('overlay-msg').classList.remove('hidden');
+            document.getElementById('score-p1').innerText = p1Score;
+            document.getElementById('score-p2').innerText = p2Score;
+            
+            setTimeout(() => {
+                if (currentGameState === STATE.GOAL) {
+                    ball.reset(who === 'PLAYER 1' ? 'right' : 'left');
+                    p1.reset();
+                    p2.reset();
+                    currentGameState = STATE.PLAYING;
+                    document.getElementById('overlay-msg').classList.add('hidden');
+                }
+            }, 2000);
+        }
+
+        function updateAI() {
+            if (!isP2AI) return {
+                left: keyMap['ArrowLeft'],
+                right: keyMap['ArrowRight'],
+                jump: keyMap['ArrowUp'],
+                kick: keyMap['p'] || keyMap['KeyP']
+            };
+
+            const inputs = { left: false, right: false, jump: false, kick: false };
+            const targetX = ball.x;
+            
+            // Move toward ball
+            if (p2.x > targetX + 40) inputs.left = true;
+            else if (p2.x < targetX - 40) inputs.right = true;
+
+            // Jump if ball is high
+            if (ball.y < p2.y - 50 && Math.abs(ball.x - p2.x) < 100) inputs.jump = true;
+
+            // Kick if close
+            if (Math.abs(ball.x - p2.x) < 100 && Math.abs(ball.y - p2.y) < 100) inputs.kick = true;
+
+            return inputs;
+        }
+
+        function drawField() {
+            // Sky
+            const grad = ctx.createLinearGradient(0,0,0, VIEW_HEIGHT);
+            grad.addColorStop(0, '#0f172a');
+            grad.addColorStop(1, '#1e293b');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0,0, VIEW_WIDTH, VIEW_HEIGHT);
+
+            // Turf
+            ctx.fillStyle = '#14532d';
+            ctx.fillRect(0, VIEW_HEIGHT - 80, VIEW_WIDTH, 80);
+            ctx.fillStyle = '#166534';
+            for(let i=0; i<VIEW_WIDTH; i+=100) {
+                if((i/100)%2==0) ctx.fillRect(i, VIEW_HEIGHT-80, 50, 80);
+            }
+
+            // Goals
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 8;
+            const gh = 250;
+            const gy = VIEW_HEIGHT - 80 - gh;
+            
+            // Left Goal
+            ctx.strokeRect(-10, gy, 50, gh);
+            // Right Goal
+            ctx.strokeRect(VIEW_WIDTH - 40, gy, 50, gh);
+            
+            // Midline
+            ctx.beginPath();
+            ctx.moveTo(VIEW_WIDTH/2, VIEW_HEIGHT-80);
+            ctx.lineTo(VIEW_WIDTH/2, VIEW_HEIGHT-200);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(VIEW_WIDTH/2, VIEW_HEIGHT-80, 100, Math.PI, 0);
+            ctx.stroke();
+        }
+
+        function gameLoop() {
+            if (currentGameState === STATE.PLAYING) {
+                const p1Input = {
+                    left: keyMap['KeyA'] || keyMap['a'],
+                    right: keyMap['KeyD'] || keyMap['d'],
+                    jump: keyMap['KeyW'] || keyMap['w'],
+                    kick: keyMap['Space'] || keyMap[' ']
+                };
+                
+                const p2Input = updateAI();
+
+                p1.update(p1Input);
+                p2.update(p2Input);
+                ball.update();
+                checkCollisions();
+            }
+
+            drawField();
+            p1.draw();
+            p2.draw();
+            ball.draw();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Timer
+        function startTimer() {
+            timeLeft = 90;
+            clearInterval(timerId);
+            timerId = setInterval(() => {
+                if (currentGameState === STATE.PLAYING) {
+                    timeLeft--;
+                    const m = Math.floor(timeLeft/60).toString().padStart(2, '0');
+                    const s = (timeLeft%60).toString().padStart(2, '0');
+                    document.getElementById('timer').innerText = `${m}:${s}`;
+                    
+                    if (timeLeft <= 0) {
+                        currentGameState = STATE.GAMEOVER;
+                        document.getElementById('msg-text').innerText = 'GAME OVER';
+                        document.getElementById('msg-subtext').innerText = p1Score > p2Score ? 'BLUE WINS!' : (p2Score > p1Score ? 'RED WINS!' : 'DRAW');
+                        document.getElementById('overlay-msg').classList.remove('hidden');
+                        document.getElementById('pause-btns').classList.remove('hidden');
+                        document.getElementById('btn-resume').classList.add('hidden');
+                    }
+                }
+            }, 1000);
+        }
+
+        // UI Events
+        document.getElementById('btn-select-1p').onclick = () => {
+            isP2AI = true;
+            document.getElementById('btn-select-1p').classList.add('border-blue-500', 'bg-blue-500/10');
+            document.getElementById('btn-select-2p').classList.remove('border-red-500', 'bg-red-500/10');
+        };
+        document.getElementById('btn-select-2p').onclick = () => {
+            isP2AI = false;
+            document.getElementById('btn-select-2p').classList.add('border-red-500', 'bg-red-500/10');
+            document.getElementById('btn-select-1p').classList.remove('border-blue-500', 'bg-blue-500/10');
+        };
+
+        document.getElementById('btn-start').onclick = () => {
+            document.getElementById('overlay-menu').classList.add('hidden');
+            document.getElementById('game-mode-display').innerText = isP2AI ? 'VS AI' : 'LOCAL 2P';
+            p1Score = 0; p2Score = 0;
+            document.getElementById('score-p1').innerText = 0;
+            document.getElementById('score-p2').innerText = 0;
+            p1.reset(); p2.reset(); ball.reset();
+            currentGameState = STATE.PLAYING;
+            startTimer();
+            document.getElementById('focus-nag').classList.remove('hidden');
+        };
+
+        document.getElementById('btn-restart').onclick = () => {
+            location.reload();
+        };
+
+        gameLoop();
+    </script>
+</body>
+</html>
