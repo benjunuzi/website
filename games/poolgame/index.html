@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Ball Billiards Classic</title>
+    <!-- Tailwind CSS for modern UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for clean icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at center, #1e293b, #0f172a);
+            overflow-x: hidden;
+        }
+        /* Custom scrollbar for game logs */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col items-center justify-between p-3 md:p-6 select-none">
+
+    <!-- Header / HUD -->
+    <header class="w-full max-w-5xl flex flex-wrap items-center justify-between gap-4 mb-4 bg-slate-800/80 backdrop-blur-md p-4 rounded-2xl border border-slate-700/50 shadow-xl">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 p-2.5 rounded-xl shadow-inner font-black text-xl flex items-center justify-center w-12 h-12">
+                <i class="fa-solid fa-circle-notch animate-spin-slow"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-amber-400 to-yellow-200 bg-clip-text text-transparent">8-Ball Billiards</h1>
+                <p class="text-xs text-slate-400 font-medium">Retro Physics Simulation</p>
+            </div>
+        </div>
+
+        <!-- Player Status Bars -->
+        <div class="flex items-center gap-4 flex-grow md:flex-grow-0 justify-center md:justify-end">
+            <!-- Player 1 -->
+            <div id="p1-card" class="px-4 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-center transition-all duration-300 min-w-[120px]">
+                <div class="text-xs font-semibold text-slate-400">Player 1</div>
+                <div id="p1-type" class="text-xs font-bold text-amber-400 mt-0.5">Any Ball</div>
+                <!-- Sunk Balls Icons -->
+                <div id="p1-balls" class="flex gap-1 justify-center mt-1.5 min-h-[16px]"></div>
+            </div>
+
+            <div class="text-slate-500 font-black text-lg">VS</div>
+
+            <!-- Player 2 -->
+            <div id="p2-card" class="px-4 py-2 rounded-xl border border-slate-700 bg-slate-800/50 text-center transition-all duration-300 min-w-[120px]">
+                <div class="text-xs font-semibold text-slate-400">Player 2</div>
+                <div id="p2-type" class="text-xs font-bold text-slate-400 mt-0.5">Any Ball</div>
+                <!-- Sunk Balls Icons -->
+                <div id="p2-balls" class="flex gap-1 justify-center mt-1.5 min-h-[16px]"></div>
+            </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="flex items-center gap-2">
+            <button id="btn-sound" class="w-10 h-10 rounded-xl bg-slate-700/50 hover:bg-slate-700 border border-slate-600/30 flex items-center justify-center transition-all text-slate-300 active:scale-95" title="Toggle Sound">
+                <i class="fa-solid fa-volume-high text-sm"></i>
+            </button>
+            <button id="btn-settings" class="w-10 h-10 rounded-xl bg-slate-700/50 hover:bg-slate-700 border border-slate-600/30 flex items-center justify-center transition-all text-slate-300 active:scale-95" title="Settings">
+                <i class="fa-solid fa-sliders text-sm"></i>
+            </button>
+            <button id="btn-restart" class="px-4 h-10 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-bold flex items-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95 transition-all">
+                <i class="fa-solid fa-rotate-right"></i> Reset
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Board Container -->
+    <main class="w-full max-w-5xl flex flex-col lg:flex-row gap-6 items-stretch justify-center flex-grow">
+        <!-- Canvas wrapper ensuring correct proportions -->
+        <div class="flex-grow flex flex-col items-center justify-center bg-slate-950/40 p-2 md:p-4 rounded-3xl border border-slate-800/80 backdrop-blur-sm relative overflow-hidden">
+            <!-- Background lights decoration -->
+            <div class="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+            <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+            <!-- Turn overlay/announcements -->
+            <div id="turn-banner" class="mb-3 px-6 py-1.5 rounded-full bg-slate-800 border border-slate-700/80 shadow-md text-sm font-semibold text-amber-400 flex items-center gap-2 animate-pulse">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
+                <span>Player 1's Turn</span>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative w-full aspect-[2/1] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border-4 border-slate-950 max-w-[900px]">
+                <canvas id="gameCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+            </div>
+
+            <!-- Rotating Coach Advice Tips Banner -->
+            <div id="coach-tips-banner" class="mt-3 w-full max-w-[900px] bg-slate-850/60 border border-slate-800/80 p-3 rounded-xl flex items-start gap-3 text-xs shadow-inner">
+                <div class="text-amber-400 mt-0.5"><i class="fa-solid fa-lightbulb animate-bounce"></i></div>
+                <div class="flex-grow">
+                    <span class="font-bold text-slate-300">Coach's Advice:</span>
+                    <span id="rotating-tip-text" class="text-slate-400 transition-opacity duration-300 ml-1">Aim carefully! The dotted guide line projects the path of the cue ball and highlights ball-on-ball collision angles.</span>
+                </div>
+            </div>
+
+            <!-- Instruction Banner / Hints -->
+            <div class="mt-4 flex flex-wrap justify-between items-center w-full max-w-[900px] px-2 text-xs text-slate-400 gap-2">
+                <div class="flex items-center gap-2">
+                    <kbd class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-[10px] text-slate-300 font-bold">DRAG & RELEASE</kbd>
+                    <span>from cue ball to aim & shoot</span>
+                </div>
+                <div id="speed-indicator" class="font-semibold text-slate-500 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Ready to shoot
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar / Statistics & Control Logs -->
+        <div class="w-full lg:w-80 flex flex-col gap-4">
+            <!-- Settings panel (collapsible) -->
+            <div id="settings-panel" class="hidden bg-slate-800/80 border border-slate-700 p-4 rounded-2xl flex-col gap-4 shadow-xl">
+                <h3 class="font-bold text-sm text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-gear text-amber-400"></i> Settings
+                </h3>
+                
+                <!-- Table Color Selector -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-2">Felt Color</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button class="color-btn border-2 border-white rounded-xl h-8 bg-emerald-700" data-color="emerald" title="Classic Emerald"></button>
+                        <button class="color-btn border border-slate-600 rounded-xl h-8 bg-blue-700" data-color="blue" title="Royal Blue"></button>
+                        <button class="color-btn border border-slate-600 rounded-xl h-8 bg-red-700" data-color="red" title="Crimson Red"></button>
+                        <button class="color-btn border border-slate-600 rounded-xl h-8 bg-zinc-800" data-color="dark" title="Midnight Onyx"></button>
+                    </div>
+                </div>
+
+                <!-- Physics Sliders -->
+                <div class="flex flex-col gap-3">
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold text-slate-400 mb-1">
+                            <span>Table Friction</span>
+                            <span id="val-friction" class="text-amber-400">Normal</span>
+                        </div>
+                        <input type="range" id="slide-friction" min="0.975" max="0.995" step="0.002" value="0.988" class="w-full accent-amber-500 bg-slate-700 h-1.5 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold text-slate-400 mb-1">
+                            <span>Power Guide Assist</span>
+                            <span id="val-guide" class="text-amber-400">On</span>
+                        </div>
+                        <input type="checkbox" id="check-guide" checked class="w-4 h-4 rounded accent-amber-500 cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Billiards Academy Panel -->
+            <div class="bg-slate-800/40 backdrop-blur-sm border border-slate-800 p-4 rounded-2xl flex flex-col shadow-lg">
+                <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap text-amber-400"></i> Billiards Academy
+                </h3>
+                <div class="flex flex-col gap-2">
+                    <button onclick="toggleAcademyTip(1)" class="w-full text-left py-2 px-3 rounded-lg bg-slate-800/60 hover:bg-slate-850 border border-slate-700/50 flex justify-between items-center text-xs transition-all outline-none">
+                        <span class="font-semibold text-slate-300">How to Win (8-Ball Rules)</span>
+                        <i id="acad-icon-1" class="fa-solid fa-chevron-down text-slate-500"></i>
+                    </button>
+                    <div id="acad-body-1" class="hidden px-3 py-2 text-[11px] text-slate-400 bg-slate-900/60 rounded-lg border border-slate-800 leading-relaxed">
+                        To win, pocket any object ball to claim your group: <strong class="text-sky-400">Solids (1-7)</strong> or <strong class="text-amber-400">Stripes (9-15)</strong>. Once you clear all balls in your group, pocket the black <strong class="text-slate-200">8-Ball</strong> cleanly to claim victory!
+                    </div>
+
+                    <button onclick="toggleAcademyTip(2)" class="w-full text-left py-2 px-3 rounded-lg bg-slate-800/60 hover:bg-slate-850 border border-slate-700/50 flex justify-between items-center text-xs transition-all outline-none">
+                        <span class="font-semibold text-slate-300">Understanding Fouls</span>
+                        <i id="acad-icon-2" class="fa-solid fa-chevron-down text-slate-500"></i>
+                    </button>
+                    <div id="acad-body-2" class="hidden px-3 py-2 text-[11px] text-slate-400 bg-slate-900/60 rounded-lg border border-slate-800 leading-relaxed">
+                        A foul occurs if you:
+                        <ul class="list-disc pl-4 mt-1 space-y-1 text-rose-300">
+                            <li>Sink the white cue ball (Scratch).</li>
+                            <li>Strike your opponent's ball first.</li>
+                            <li>Fail to strike any ball with your shot.</li>
+                        </ul>
+                        Fouls give the turn to your opponent!
+                    </div>
+
+                    <button onclick="toggleAcademyTip(3)" class="w-full text-left py-2 px-3 rounded-lg bg-slate-800/60 hover:bg-slate-850 border border-slate-700/50 flex justify-between items-center text-xs transition-all outline-none">
+                        <span class="font-semibold text-slate-300">Aiming & Cuts</span>
+                        <i id="acad-icon-3" class="fa-solid fa-chevron-down text-slate-500"></i>
+                    </button>
+                    <div id="acad-body-3" class="hidden px-3 py-2 text-[11px] text-slate-400 bg-slate-900/60 rounded-lg border border-slate-800 leading-relaxed">
+                        Watch the projection guide! It points exactly where the target ball will go. For straight shots, aim directly through the center. For angled cut shots, line up the guide indicator on the outer side edge of the target ball.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Log / Action feed -->
+            <div class="flex-grow bg-slate-800/40 backdrop-blur-sm border border-slate-800 p-4 rounded-2xl flex flex-col min-h-[180px] lg:min-h-0 shadow-lg justify-between">
+                <div>
+                    <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-2">
+                        <i class="fa-solid fa-list-ul text-slate-500"></i> Match History
+                    </h3>
+                    <div id="game-logs" class="flex flex-col gap-1.5 max-h-32 lg:max-h-52 overflow-y-auto custom-scrollbar pr-1 text-xs text-slate-300">
+                        <div class="py-1 px-2 rounded bg-slate-800/30 text-slate-400">Match started. Strike cue ball to begin!</div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-slate-800/80 mt-3 flex items-center justify-between text-xs text-slate-400">
+                    <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-[8px] text-amber-500"></i> Active Turn</span>
+                    <span id="log-counter">1 Shot taken</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Interactive Custom Modals (Game Over, Foul alerts) -->
+    <div id="game-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md p-6 rounded-3xl text-center shadow-2xl relative overflow-hidden">
+            <!-- Modal glow effects -->
+            <div class="absolute -top-10 -left-10 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-yellow-500/10 rounded-full blur-3xl"></div>
+
+            <div class="w-16 h-16 bg-amber-500/10 text-amber-400 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-4 border border-amber-500/30">
+                <i class="fa-solid fa-trophy animate-bounce"></i>
+            </div>
+            
+            <h2 id="modal-title" class="text-2xl font-black bg-gradient-to-r from-amber-400 to-yellow-200 bg-clip-text text-transparent">Congratulations!</h2>
+            <p id="modal-desc" class="text-slate-300 mt-2 mb-6 text-sm">Player 1 wins the standard 8-ball pool game!</p>
+
+            <div class="flex flex-col gap-2">
+                <button id="modal-btn-restart" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all">
+                    Play Again
+                </button>
+                <button id="modal-btn-close" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl active:scale-[0.98] transition-all text-xs">
+                    View Table
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Foul Overlay (Quick slide up toast) -->
+    <div id="foul-toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-rose-500 text-white font-bold px-6 py-3 rounded-full flex items-center gap-3 shadow-xl border border-rose-400/30 z-40 transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none">
+        <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-sm"><i class="fa-solid fa-triangle-exclamation"></i></span>
+        <span id="foul-text">Scratch Foul! Cue ball returned.</span>
+    </div>
+
+    <!-- Web Audio API Synthesizer & Physics engine scripts -->
+    <script>
+        // --- SOUND EFFECTS (Web Audio API Synthesizer) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playClinkSound(velocity) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const volume = Math.min(velocity / 12, 1); // dynamic volume depending on hit velocity
+            if (volume < 0.05) return;
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            // Billiard hit is crisp and contains higher frequencies
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(800 + Math.random() * 400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.08);
+
+            gainNode.gain.setValueAtTime(0.3 * volume, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.13);
+        }
+
+        function playCushionSound(velocity) {
+            if (!soundEnabled) return;
+            initAudio();
+            const volume = Math.min(velocity / 8, 1);
+            if (volume < 0.05) return;
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            // Cushion is a soft, deep thud
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(60, audioCtx.currentTime + 0.1);
+
+            gainNode.gain.setValueAtTime(0.4 * volume, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.16);
+        }
+
+        function playPocketSound() {
+            if (!soundEnabled) return;
+            initAudio();
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            // Sinking is a hollow dropping sound
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(45, audioCtx.currentTime + 0.35);
+
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.45);
+        }
+
+        // --- GAME PHYSICS & SETUP ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Target coordinates (Physics engine uses 800x400 virtual space)
+        const V_WIDTH = 800;
+        const V_HEIGHT = 400;
+
+        // Visual Colors Config
+        const FELT_COLORS = {
+            emerald: { table: '#047857', light: '#059669', darker: '#064e3b', border: '#1e293b' },
+            blue: { table: '#1d4ed8', light: '#2563eb', darker: '#1e3a8a', border: '#1e293b' },
+            red: { table: '#be123c', light: '#e11d48', darker: '#881337', border: '#1e293b' },
+            dark: { table: '#27272a', light: '#3f3f46', darker: '#18181b', border: '#09090b' }
+        };
+        let currentFeltTheme = 'emerald';
+
+        // Physics constants
+        let FRICTION = 0.988; 
+        const BALL_RADIUS = 11;
+        const POCKET_RADIUS = 18;
+        
+        // Pocket centers on 800x400 table
+        const POCKETS = [
+            { x: 15, y: 15 },                     // Top Left
+            { x: V_WIDTH / 2, y: 12 },           // Top Middle
+            { x: V_WIDTH - 15, y: 15 },          // Top Right
+            { x: 15, y: V_HEIGHT - 15 },          // Bottom Left
+            { x: V_WIDTH / 2, y: V_HEIGHT - 12 },// Bottom Middle
+            { x: V_WIDTH - 15, y: V_HEIGHT - 15 } // Bottom Right
+        ];
+
+        // Cushion offsets (visual bumpers for precise boundary collisions)
+        const C_LEFT = 28;
+        const C_RIGHT = V_WIDTH - 28;
+        const C_TOP = 28;
+        const C_BOTTOM = V_HEIGHT - 28;
+
+        // Ball Definition
+        class Ball {
+            constructor(x, y, color, number, type) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = BALL_RADIUS;
+                this.color = color;
+                this.number = number;
+                this.type = type; // 'cue', 'solid', 'stripe', 'black' (8-ball)
+                this.active = true;
+                this.isSinking = false;
+                this.sinkScale = 1;
+            }
+
+            draw() {
+                if (!this.active) return;
+
+                ctx.save();
+                
+                // If ball is falling into a pocket, shrink it
+                let drawRadius = this.radius;
+                if (this.isSinking) {
+                    drawRadius *= this.sinkScale;
+                }
+
+                // Ball sphere shadow gradient
+                const grad = ctx.createRadialGradient(
+                    this.x - drawRadius * 0.3, this.y - drawRadius * 0.3, drawRadius * 0.1,
+                    this.x, this.y, drawRadius
+                );
+
+                if (this.type === 'cue') {
+                    grad.addColorStop(0, '#ffffff');
+                    grad.addColorStop(0.6, '#f1f5f9');
+                    grad.addColorStop(1, '#cbd5e1');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, drawRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'black') {
+                    grad.addColorStop(0, '#52525b');
+                    grad.addColorStop(0.4, '#18181b');
+                    grad.addColorStop(1, '#09090b');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, drawRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw White Center circle
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, drawRadius * 0.45, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Number Text
+                    ctx.fillStyle = 'black';
+                    ctx.font = `bold ${drawRadius * 0.55}px Outfit`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('8', this.x, this.y + 0.5);
+                } else if (this.type === 'solid') {
+                    grad.addColorStop(0, '#ffffff');
+                    grad.addColorStop(0.2, this.color);
+                    grad.addColorStop(1, this.darkenColor(this.color));
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, drawRadius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // White number field
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, drawRadius * 0.45, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Number
+                    ctx.fillStyle = 'black';
+                    ctx.font = `bold ${drawRadius * 0.5}px Outfit`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.number.toString(), this.x, this.y + 0.5);
+                } else if (this.type === 'stripe') {
+                    // Draw Stripe: First fill standard white base
+                    grad.addColorStop(0, '#ffffff');
+                    grad.addColorStop(1, '#e2e8f0');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, drawRadius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Draw colored belt/stripe
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, drawRadius, 0, Math.PI * 2);
+                    ctx.clip();
+                    
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(this.x - drawRadius, this.y - drawRadius * 0.5, drawRadius * 2, drawRadius);
+                    ctx.restore();
+
+                    // White central circle
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, drawRadius * 0.45, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Number
+                    ctx.fillStyle = 'black';
+                    ctx.font = `bold ${drawRadius * 0.5}px Outfit`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.number.toString(), this.x, this.y + 0.5);
+                }
+
+                ctx.restore();
+            }
+
+            darkenColor(col) {
+                // Utility to generate a darker shade for gradients
+                const colors = {
+                    '#eab308': '#a16207', // yellow
+                    '#3b82f6': '#1d4ed8', // blue
+                    '#ef4444': '#b91c1c', // red
+                    '#8b5cf6': '#5b21b6', // purple
+                    '#f97316': '#c2410c', // orange
+                    '#22c55e': '#15803d', // green
+                    '#b91c1c': '#7f1d1d', // dark red
+                    '#1e3a8a': '#172554'  // dark blue
+                };
+                return colors[col] || '#0f172a';
+            }
+        }
+
+        // --- GAME STATE ---
+        let balls = [];
+        let cueBall = null;
+        let shotCount = 0;
+
+        let currentPlayer = 1;
+        let playerTypes = { 1: null, 2: null }; // 'solid' or 'stripe'
+        let hasSunkBallThisTurn = false;
+        let activeFouls = []; // Track any foul during current shot
+        let firstBallHitThisShot = null;
+
+        let interaction = {
+            isAiming: false,
+            startX: 0,
+            startY: 0,
+            currentX: 0,
+            currentY: 0,
+            cueAngle: 0,
+            power: 0
+        };
+
+        const MAX_POWER = 35;
+
+        // Custom list of billiard colors for standard solids & stripes
+        const BALL_CONFIG = [
+            { num: 1, col: '#eab308', type: 'solid' },  // Yellow
+            { num: 2, col: '#3b82f6', type: 'solid' },  // Blue
+            { num: 3, col: '#ef4444', type: 'solid' },  // Red
+            { num: 4, col: '#8b5cf6', type: 'solid' },  // Purple
+            { num: 5, col: '#f97316', type: 'solid' },  // Orange
+            { num: 6, col: '#22c55e', type: 'solid' },  // Green
+            { num: 7, col: '#b91c1c', type: 'solid' },  // Maroon
+            { num: 8, col: '#000000', type: 'black' },  // 8 Ball
+            { num: 9, col: '#eab308', type: 'stripe' },
+            { num: 10, col: '#3b82f6', type: 'stripe' },
+            { num: 11, col: '#ef4444', type: 'stripe' },
+            { num: 12, col: '#8b5cf6', type: 'stripe' },
+            { num: 13, col: '#f97316', type: 'stripe' },
+            { num: 14, col: '#22c55e', type: 'stripe' },
+            { num: 15, col: '#b91c1c', type: 'stripe' }
+        ];
+
+        // Rotating Strategy Coach Tips List
+        const COACH_TIPS = [
+            "Aim carefully! The dotted guide line projects the path of the cue ball and highlights ball-on-ball collision angles.",
+            "Don't shoot at full power every time! Gentle shots keep the cue ball controlled and make it easier to line up your next run.",
+            "Plan ahead! Before you take your shot, look at where you want the cue ball to stop for your next turn.",
+            "Sinking an opponent's ball is allowed, but you won't get an extra turn unless you sink one of your own balls too!",
+            "Avoid scratches! Pocketing the white cue ball hands the table over to your opponent and gives them a kitchen reposition.",
+            "The 8-Ball must be saved for last. Sinking it before you clear your color group results in an immediate loss!",
+            "Bank shots are a great way to escape tight spots! Bounce your object ball off the cushions to reach distant pockets."
+        ];
+        let currentTipIndex = 0;
+
+        // --- GAME INITIALIZATION & RESTART ---
+        function initGame() {
+            balls = [];
+            shotCount = 0;
+            currentPlayer = 1;
+            playerTypes[1] = null;
+            playerTypes[2] = null;
+            hasSunkBallThisTurn = false;
+            activeFouls = [];
+            firstBallHitThisShot = null;
+
+            // Update UI
+            updateHUD();
+            logMessage("New game started. Solid & Striped split is active!");
+
+            // 1. Create Cue Ball on Head Spot (at roughly 1/4 the table width)
+            cueBall = new Ball(V_WIDTH * 0.28, V_HEIGHT / 2, '#ffffff', 0, 'cue');
+            balls.push(cueBall);
+
+            // 2. Set up standard Triangle/Rack at foot spot (3/4 table width)
+            const rackStartX = V_WIDTH * 0.72;
+            const rackStartY = V_HEIGHT / 2;
+
+            // Standard triangle positioning math
+            // Row 0: 1 ball, Row 1: 2 balls, Row 2: 3 balls, Row 3: 4 balls, Row 4: 5 balls
+            // Total = 15 balls
+            const rowSpacing = BALL_RADIUS * 1.732; // sqrt(3) spacing
+            
+            // Randomize ball assignment positions keeping 8-ball in center
+            let poolToAssign = [...BALL_CONFIG];
+            // Remove 8 ball to guarantee it's in center (row 2, slot 1)
+            const index8 = poolToAssign.findIndex(b => b.num === 8);
+            const eightBallConfig = poolToAssign.splice(index8, 1)[0];
+
+            // Shuffling remaining pool
+            poolToAssign.sort(() => Math.random() - 0.5);
+
+            // Put 8-ball back in exact middle spot
+            // Spot index representation: Row 2, position 1 (the 5th slot overall)
+            const finalRackOrder = [];
+            for (let i = 0; i < 4; i++) finalRackOrder.push(poolToAssign.pop());
+            finalRackOrder.push(eightBallConfig); // 8-Ball is 5th in our layout list
+            while(poolToAssign.length > 0) finalRackOrder.push(poolToAssign.pop());
+
+            let idx = 0;
+            for (let row = 0; row < 5; row++) {
+                const rowX = rackStartX + row * rowSpacing;
+                const rowWidth = row * BALL_RADIUS * 2;
+                const topY = rackStartY - rowWidth / 2;
+
+                for (let col = 0; col <= row; col++) {
+                    const ballY = topY + col * BALL_RADIUS * 2;
+                    const config = finalRackOrder[idx++];
+                    balls.push(new Ball(rowX, ballY, config.col, config.num, config.type));
+                }
+            }
+
+            resizeCanvas();
+        }
+
+        // --- RENDER GAME SCENE ---
+        function drawScene() {
+            ctx.clearRect(0, 0, V_WIDTH, V_HEIGHT);
+
+            // Get Theme Colors
+            const theme = FELT_COLORS[currentFeltTheme];
+
+            // 1. Wooden Outer Rails Border
+            ctx.fillStyle = theme.border;
+            ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
+
+            // Draw Rails / Inner Felt Background
+            ctx.fillStyle = theme.table;
+            ctx.fillRect(C_LEFT, C_TOP, C_RIGHT - C_LEFT, C_BOTTOM - C_TOP);
+
+            // Table shadow / ambient lighting depth
+            const innerGlow = ctx.createRadialGradient(
+                V_WIDTH/2, V_HEIGHT/2, 100,
+                V_WIDTH/2, V_HEIGHT/2, V_WIDTH/2
+            );
+            innerGlow.addColorStop(0, theme.light + '44');
+            innerGlow.addColorStop(1, theme.darker + 'aa');
+            ctx.fillStyle = innerGlow;
+            ctx.fillRect(C_LEFT, C_TOP, C_RIGHT - C_LEFT, C_BOTTOM - C_TOP);
+
+            // 2. Head string / Kitchen line
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(V_WIDTH * 0.28, C_TOP);
+            ctx.lineTo(V_WIDTH * 0.28, C_BOTTOM);
+            ctx.stroke();
+
+            // Head spot dot
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(V_WIDTH * 0.28, V_HEIGHT/2, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Foot spot dot
+            ctx.beginPath();
+            ctx.arc(V_WIDTH * 0.72, V_HEIGHT/2, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 3. Draw Table Cushions
+            ctx.fillStyle = theme.darker;
+            // Left Bumper
+            ctx.beginPath();
+            ctx.moveTo(C_LEFT, C_TOP + 20);
+            ctx.lineTo(C_LEFT + 12, C_TOP + 32);
+            ctx.lineTo(C_LEFT + 12, C_BOTTOM - 32);
+            ctx.lineTo(C_LEFT, C_BOTTOM - 20);
+            ctx.fill();
+
+            // Right Bumper
+            ctx.beginPath();
+            ctx.moveTo(C_RIGHT, C_TOP + 20);
+            ctx.lineTo(C_RIGHT - 12, C_TOP + 32);
+            ctx.lineTo(C_RIGHT - 12, C_BOTTOM - 32);
+            ctx.lineTo(C_RIGHT, C_BOTTOM - 20);
+            ctx.fill();
+
+            // Top Left Bumper
+            ctx.beginPath();
+            ctx.moveTo(C_LEFT + 20, C_TOP);
+            ctx.lineTo(C_LEFT + 32, C_TOP + 12);
+            ctx.lineTo(V_WIDTH / 2 - 18, C_TOP + 12);
+            ctx.lineTo(V_WIDTH / 2 - 12, C_TOP);
+            ctx.fill();
+
+            // Top Right Bumper
+            ctx.beginPath();
+            ctx.moveTo(V_WIDTH / 2 + 12, C_TOP);
+            ctx.lineTo(V_WIDTH / 2 + 18, C_TOP + 12);
+            ctx.lineTo(C_RIGHT - 32, C_TOP + 12);
+            ctx.lineTo(C_RIGHT - 20, C_TOP);
+            ctx.fill();
+
+            // Bottom Left Bumper
+            ctx.beginPath();
+            ctx.moveTo(C_LEFT + 20, C_BOTTOM);
+            ctx.lineTo(C_LEFT + 32, C_BOTTOM - 12);
+            ctx.lineTo(V_WIDTH / 2 - 18, C_BOTTOM - 12);
+            ctx.lineTo(V_WIDTH / 2 - 12, C_BOTTOM);
+            ctx.fill();
+
+            // Bottom Right Bumper
+            ctx.beginPath();
+            ctx.moveTo(V_WIDTH / 2 + 12, C_BOTTOM);
+            ctx.lineTo(V_WIDTH / 2 + 18, C_BOTTOM - 12);
+            ctx.lineTo(C_RIGHT - 32, C_BOTTOM - 12);
+            ctx.lineTo(C_RIGHT - 20, C_BOTTOM);
+            ctx.fill();
+
+            // 4. Draw pockets (Outer metal plate + inner black hole)
+            POCKETS.forEach(p => {
+                // Outer ring
+                ctx.fillStyle = '#475569';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, POCKET_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Inner hole
+                ctx.fillStyle = '#020617';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, POCKET_RADIUS * 0.85, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 5. Draw active Balls
+            balls.forEach(ball => ball.draw());
+
+            // 6. Draw Aiming Stick & Guide Line
+            if (interaction.isAiming && isTableAsleep() && cueBall.active) {
+                drawAimGuide();
+            }
+        }
+
+        // Draws the interactive aiming helpers
+        function drawAimGuide() {
+            const hasGuideAssist = document.getElementById('check-guide').checked;
+
+            // Target vector (normalized shooting direction)
+            let dx = interaction.currentX - cueBall.x;
+            let dy = interaction.currentY - cueBall.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 5) return; // ignore tiny taps
+
+            // Calculate angle and stick strength projection
+            const angle = Math.atan2(dy, dx);
+            const shootAngle = angle + Math.PI; // Shoot in opposite direction of mouse drag
+
+            // Aiming Guide Line Extending from Cue Ball
+            if (hasGuideAssist) {
+                const stepX = Math.cos(shootAngle);
+                const stepY = Math.sin(shootAngle);
+
+                // Quick Raycast to find wall bounds or nearest ball collision
+                let guideLen = 450;
+                let collidedBall = null;
+                let closestDist = Infinity;
+
+                // Simple ray collision check with other balls
+                balls.forEach(ball => {
+                    if (ball === cueBall || !ball.active) return;
+                    
+                    // project point to ray line
+                    const vX = ball.x - cueBall.x;
+                    const vY = ball.y - cueBall.y;
+                    const projection = vX * stepX + vY * stepY;
+
+                    if (projection > 0) { // Forward direction only
+                        // Closest point on line
+                        const pX = cueBall.x + stepX * projection;
+                        const pY = cueBall.y + stepY * projection;
+                        const distToLine = Math.sqrt((ball.x - pX) ** 2 + (ball.y - pY) ** 2);
+
+                        if (distToLine < BALL_RADIUS * 2) {
+                            const intersectionDist = projection - Math.sqrt((BALL_RADIUS * 2) ** 2 - distToLine ** 2);
+                            if (intersectionDist > 0 && intersectionDist < closestDist) {
+                                closestDist = intersectionDist;
+                                collidedBall = ball;
+                            }
+                        }
+                    }
+                });
+
+                // Default to table wall bounds if no ball is hit first
+                if (collidedBall) {
+                    guideLen = closestDist;
+                } else {
+                    // Approximate cushion border ray intercepts
+                    let tMin = Infinity;
+                    if (stepX > 0) tMin = Math.min(tMin, (C_RIGHT - BALL_RADIUS - cueBall.x) / stepX);
+                    if (stepX < 0) tMin = Math.min(tMin, (C_LEFT + BALL_RADIUS - cueBall.x) / stepX);
+                    if (stepY > 0) tMin = Math.min(tMin, (C_BOTTOM - BALL_RADIUS - cueBall.y) / stepY);
+                    if (stepY < 0) tMin = Math.min(tMin, (C_TOP + BALL_RADIUS - cueBall.y) / stepY);
+                    if (tMin !== Infinity) guideLen = tMin;
+                }
+
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 5]);
+                
+                // Draw dashed line
+                ctx.beginPath();
+                ctx.moveTo(cueBall.x, cueBall.y);
+                const endX = cueBall.x + stepX * guideLen;
+                const endY = cueBall.y + stepY * guideLen;
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+
+                // Draw end target circle
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.setLineDash([]);
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(endX, endY, BALL_RADIUS, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // If targeting a ball, draw bounce direction projection
+                if (collidedBall) {
+                    const normalX = (collidedBall.x - endX) / (BALL_RADIUS * 2);
+                    const normalY = (collidedBall.y - endY) / (BALL_RADIUS * 2);
+                    
+                    // Ball tangent projection
+                    ctx.strokeStyle = 'rgba(234, 179, 8, 0.6)';
+                    ctx.beginPath();
+                    ctx.moveTo(collidedBall.x, collidedBall.y);
+                    ctx.lineTo(collidedBall.x + normalX * 40, collidedBall.y + normalY * 40);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            // Power visualization meter
+            const pct = Math.min(dist / 120, 1); // 120px max drag limit
+            const drawPower = pct * MAX_POWER;
+
+            // Draw Pool Cue Stick
+            // Extending behind the cue ball opposite the aim direction
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 8;
+
+            const stickLength = 180;
+            const gap = 15 + pct * 25; // Cue retreats back with more power
+            
+            const startX = cueBall.x - stepX() * gap;
+            const startY = cueBall.y - stepY() * gap;
+            const endX = cueBall.x - stepX() * (gap + stickLength);
+            const endY = cueBall.y - stepY() * (gap + stickLength);
+
+            // Cue Stick wood color styling (Linear Gradient)
+            const cueGrad = ctx.createLinearGradient(startX, startY, endX, endY);
+            cueGrad.addColorStop(0, '#fef08a'); // Tip / Cream wood
+            cueGrad.addColorStop(0.1, '#ca8a04'); // Yellow Wood
+            cueGrad.addColorStop(0.8, '#451a03'); // Dark end handle
+            cueGrad.addColorStop(1, '#1c1917');
+
+            // 1. Draw Cue Stick body
+            ctx.strokeStyle = cueGrad;
+            ctx.lineWidth = 4.5;
+            ctx.lineCap = 'flat';
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            // 2. Draw Ivory Ferrule (White collar right before the cue tip)
+            ctx.strokeStyle = '#f8fafc'; // clean ivory white
+            ctx.lineWidth = 4.5;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(cueBall.x - stepX() * (gap + 5), cueBall.y - stepY() * (gap + 5));
+            ctx.stroke();
+
+            // 3. Draw Blue Chalked Leather Cue Tip (At the very front of the stick)
+            ctx.strokeStyle = '#38bdf8'; // Sky blue cue chalk
+            ctx.lineWidth = 4.5;
+            ctx.beginPath();
+            ctx.moveTo(cueBall.x - stepX() * gap, cueBall.y - stepY() * gap);
+            ctx.lineTo(cueBall.x - stepX() * (gap + 2.5), cueBall.y - stepY() * (gap + 2.5));
+            ctx.stroke();
+
+            ctx.restore();
+
+            // Helpers to get direct step vectors
+            function stepX() { return Math.cos(shootAngle); }
+            function stepY() { return Math.sin(shootAngle); }
+        }
+
+        // --- PHYSICS RESOLUTIONS & GAME LOOPS ---
+        function updatePhysics() {
+            let movementActive = false;
+
+            // 1. Move balls & check boundaries
+            balls.forEach(ball => {
+                if (!ball.active) return;
+
+                // Handle falling into pockets animation (Scale down)
+                if (ball.isSinking) {
+                    ball.sinkScale -= 0.08;
+                    ball.vx *= 0.8;
+                    ball.vy *= 0.8;
+                    if (ball.sinkScale <= 0.1) {
+                        ball.active = false;
+                        ball.isSinking = false;
+                        handleBallSunk(ball);
+                    }
+                    movementActive = true;
+                    return;
+                }
+
+                // Normal movement
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // Apply Friction / Drag
+                ball.vx *= FRICTION;
+                ball.vy *= FRICTION;
+
+                // Snap low speed to 0 to avoid perpetual sliding physics
+                if (Math.abs(ball.vx) < 0.035) ball.vx = 0;
+                if (Math.abs(ball.vy) < 0.035) ball.vy = 0;
+
+                if (ball.vx !== 0 || ball.vy !== 0) {
+                    movementActive = true;
+                }
+
+                // Table Pocket detection check
+                POCKETS.forEach(p => {
+                    const dx = ball.x - p.x;
+                    const dy = ball.y - p.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    // Standard trigger rule is less than pocket radius
+                    if (dist < POCKET_RADIUS * 1.05 && !ball.isSinking) {
+                        ball.isSinking = true;
+                        ball.sinkScale = 1;
+                        playPocketSound();
+                    }
+                });
+
+                // Boundary bounce resolution (Cushions)
+                // Offset checks considering radius padding
+                if (!ball.isSinking) {
+                    if (ball.x < C_LEFT + ball.radius) {
+                        ball.x = C_LEFT + ball.radius;
+                        ball.vx *= -0.85;
+                        playCushionSound(Math.abs(ball.vx));
+                    } else if (ball.x > C_RIGHT - ball.radius) {
+                        ball.x = C_RIGHT - ball.radius;
+                        ball.vx *= -0.85;
+                        playCushionSound(Math.abs(ball.vx));
+                    }
+
+                    if (ball.y < C_TOP + ball.radius) {
+                        ball.y = C_TOP + ball.radius;
+                        ball.vy *= -0.85;
+                        playCushionSound(Math.abs(ball.vy));
+                    } else if (ball.y > C_BOTTOM - ball.radius) {
+                        ball.y = C_BOTTOM - ball.radius;
+                        ball.vy *= -0.85;
+                        playCushionSound(Math.abs(ball.vy));
+                    }
+                }
+            });
+
+            // 2. Resolve Ball-to-Ball Elastic Collisions
+            for (let i = 0; i < balls.length; i++) {
+                const b1 = balls[i];
+                if (!b1.active || b1.isSinking) continue;
+
+                for (let j = i + 1; j < balls.length; j++) {
+                    const b2 = balls[j];
+                    if (!b2.active || b2.isSinking) continue;
+
+                    const dx = b2.x - b1.x;
+                    const dy = b2.y - b1.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    // If overlapping, trigger elastic physics response
+                    if (dist < b1.radius + b2.radius) {
+                        // Keep track of first hit for rule checks
+                        if (b1 === cueBall && firstBallHitThisShot === null) {
+                            firstBallHitThisShot = b2;
+                        } else if (b2 === cueBall && firstBallHitThisShot === null) {
+                            firstBallHitThisShot = b1;
+                        }
+
+                        // Static resolution (overlap correction to prevent sticking)
+                        const overlap = (b1.radius + b2.radius) - dist;
+                        const normalX = dx / dist;
+                        const normalY = dy / dist;
+
+                        // Separate balls proportionally
+                        b1.x -= normalX * overlap * 0.5;
+                        b1.y -= normalY * overlap * 0.5;
+                        b2.x += normalX * overlap * 0.5;
+                        b2.y += normalY * overlap * 0.5;
+
+                        // Dynamic collision (conservation of momentum)
+                        // 1. Vector normals and tangents
+                        const kx = b1.vx - b2.vx;
+                        const ky = b1.vy - b2.vy;
+                        
+                        // relative velocity along normal
+                        const p = 2 * (normalX * kx + normalY * ky) / 2; // Equal masses (mass=1)
+
+                        // Apply new momentum changes
+                        b1.vx -= p * normalX;
+                        b1.vy -= p * normalY;
+                        b2.vx += p * normalX;
+                        b2.vy += p * normalY;
+
+                        // Speed threshold sounds
+                        const relativeVel = Math.sqrt(kx*kx + ky*ky);
+                        playClinkSound(relativeVel);
+                    }
+                }
+            }
+
+            // Detect when transition finishes (Table returns to absolute rest)
+            const speedIndicator = document.getElementById('speed-indicator');
+            if (movementActive) {
+                speedIndicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Balls are rolling...`;
+                speedIndicator.className = "font-semibold text-amber-500 flex items-center gap-1.5";
+            } else {
+                if (speedIndicator.textContent.includes("rolling")) {
+                    // Just came to a stop, finalize shot evaluations
+                    evaluateTurnEnd();
+                }
+                speedIndicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Ready to shoot`;
+                speedIndicator.className = "font-semibold text-emerald-500 flex items-center gap-1.5";
+            }
+        }
+
+        // --- RULE & TURN EVALUATION LOGIC ---
+        function handleBallSunk(ball) {
+            if (ball.type === 'cue') {
+                activeFouls.push("cue-scratch");
+                logMessage("Foul: Cue ball scratched!", "rose");
+            } else if (ball.type === 'black') {
+                // Sunk the 8-Ball! Determine win/loss immediately
+                evaluateEightBallSunk();
+            } else {
+                // Object ball sunk (Solid or Stripe)
+                logMessage(`Sunk Ball #${ball.number} (${ball.type})!`, "emerald");
+
+                // Assign player groups if not yet decided
+                if (playerTypes[1] === null) {
+                    // Assign groups based on current shooter
+                    playerTypes[currentPlayer] = ball.type;
+                    playerTypes[currentPlayer === 1 ? 2 : 1] = ball.type === 'solid' ? 'stripe' : 'solid';
+                    logMessage(`Groups assigned: Player ${currentPlayer} is ${ball.type}s!`, "amber");
+                    hasSunkBallThisTurn = true;
+                } else {
+                    // Group has already been split
+                    const expectedType = playerTypes[currentPlayer];
+                    if (ball.type === expectedType) {
+                        hasSunkBallThisTurn = true;
+                    } else {
+                        // Potting opponent's ball does not count as turn continuation
+                        logMessage(`Sunk opponent's ball! Correct type needed for extra shot.`, "slate");
+                    }
+                }
+            }
+            updateHUD();
+        }
+
+        function evaluateEightBallSunk() {
+            const expectedType = playerTypes[currentPlayer];
+            
+            // Check if player has cleared all of their respective group first
+            const remainingGroupCount = balls.filter(b => b.active && b.type === expectedType).length;
+
+            if (activeFouls.includes("cue-scratch")) {
+                // Scratched on 8-ball = Immediate Loss
+                endMatch(currentPlayer === 1 ? 2 : 1, "Loss: Scratched while sinking the 8-Ball!");
+            } else if (remainingGroupCount > 0 && expectedType !== null) {
+                // Sunk 8-ball too early = Loss
+                endMatch(currentPlayer === 1 ? 2 : 1, `Loss: Sunk the 8-Ball too early! Still had ${remainingGroupCount} ${expectedType}s remaining.`);
+            } else {
+                // Valid win condition!
+                endMatch(currentPlayer, `Win: Successfully cleared table and potted the 8-Ball!`);
+            }
+        }
+
+        function rotateTip() {
+            const textEl = document.getElementById('rotating-tip-text');
+            if (textEl) {
+                textEl.style.opacity = '0';
+                setTimeout(() => {
+                    currentTipIndex = (currentTipIndex + 1) % COACH_TIPS.length;
+                    textEl.textContent = COACH_TIPS[currentTipIndex];
+                    textEl.style.opacity = '1';
+                }, 300);
+            }
+        }
+
+        function evaluateTurnEnd() {
+            // First hit foul check: Did cue hit expected type first?
+            const currentType = playerTypes[currentPlayer];
+            if (cueBall.active) {
+                if (firstBallHitThisShot === null) {
+                    activeFouls.push("no-hit");
+                    logMessage("Foul: No ball hit!", "rose");
+                } else if (currentType !== null) {
+                    // Check if it hit the incorrect group first
+                    if (firstBallHitThisShot.type !== 'black' && firstBallHitThisShot.type !== currentType) {
+                        activeFouls.push("wrong-ball");
+                        logMessage(`Foul: Must strike your own balls (${currentType}s) first!`, "rose");
+                    } else if (firstBallHitThisShot.type === 'black') {
+                        // Can only hit 8-ball first if all others are gone
+                        const remainingGroup = balls.filter(b => b.active && b.type === currentType).length;
+                        if (remainingGroup > 0) {
+                            activeFouls.push("eight-ball-hit");
+                            logMessage(`Foul: 8-Ball hit first while having ${currentType}s remaining!`, "rose");
+                        }
+                    }
+                }
+            }
+
+            // Process scratch repositioning
+            if (activeFouls.includes("cue-scratch") || !cueBall.active) {
+                repositionCueBall();
+                triggerFoulToast("Scratch Foul! Cue ball returned.");
+                switchTurn();
+            } else if (activeFouls.length > 0) {
+                // Non-scratch foul results in normal turn switch
+                triggerFoulToast("Foul Committed! Turn switches.");
+                switchTurn();
+            } else if (hasSunkBallThisTurn) {
+                // Valid pot, keep shooting
+                logMessage(`Player ${currentPlayer} keeps shooting!`);
+            } else {
+                // Normal miss, switch turn
+                switchTurn();
+            }
+
+            // Reset flags for the next shot
+            activeFouls = [];
+            hasSunkBallThisTurn = false;
+            firstBallHitThisShot = null;
+            updateHUD();
+        }
+
+        function repositionCueBall() {
+            cueBall.x = V_WIDTH * 0.28;
+            cueBall.y = V_HEIGHT / 2;
+            cueBall.vx = 0;
+            cueBall.vy = 0;
+            cueBall.active = true;
+            cueBall.isSinking = false;
+            cueBall.sinkScale = 1;
+
+            // Make sure cueball is not directly overlapping any other object ball
+            let safetyOffset = 0;
+            let overlapResolved = false;
+            while (!overlapResolved) {
+                overlapResolved = true;
+                for (let i = 0; i < balls.length; i++) {
+                    const b = balls[i];
+                    if (b === cueBall || !b.active) continue;
+                    const d = Math.sqrt((b.x - cueBall.x)**2 + (b.y - cueBall.y)**2);
+                    if (d < BALL_RADIUS * 2) {
+                        // shift cueball slightly to right
+                        cueBall.x += 15;
+                        overlapResolved = false;
+                        break;
+                    }
+                }
+                safetyOffset++;
+                if (safetyOffset > 100) break; // emergency break
+            }
+        }
+
+        function switchTurn() {
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            logMessage(`Turn switched to Player ${currentPlayer}`);
+        }
+
+        function triggerFoulToast(msg) {
+            const toast = document.getElementById('foul-toast');
+            document.getElementById('foul-text').textContent = msg;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translate(-50%, -24px)';
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, 96px)';
+            }, 3000);
+        }
+
+        // Check if all table motion is completely dead
+        function isTableAsleep() {
+            for (let i = 0; i < balls.length; i++) {
+                if (balls[i].active && (balls[i].vx !== 0 || balls[i].vy !== 0)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // --- MATCH END MODAL HANDLERS ---
+        function endMatch(winner, reason) {
+            const modal = document.getElementById('game-modal');
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+
+            title.textContent = `Player ${winner} Wins!`;
+            desc.innerHTML = `<span class="text-amber-400 font-bold">${reason}</span><br><br>The table statistics took ${shotCount} shots during this match. Ready for another challenge?`;
+            modal.classList.remove('hidden');
+        }
+
+        // --- EVENT LISTENERS & COORD MAPPINGS ---
+        // Scale viewport coordinate mappings to standard virtual 800x400 math
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            
+            // support touch gestures
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            // Normal relative scaling mapping
+            const x = (clientX - rect.left) / rect.width * V_WIDTH;
+            const y = (clientY - rect.top) / rect.height * V_HEIGHT;
+            return { x, y };
+        }
+
+        // Start Drag-to-Aim mechanics
+        function onPointerDown(e) {
+            if (!isTableAsleep() || !cueBall.active) return;
+            initAudio(); // Initialize audio node on initial interaction for strict modern browser policies
+
+            const coords = getCanvasCoordinates(e);
+            
+            // Check distance of tap to cueball for aiming action
+            const dist = Math.sqrt((coords.x - cueBall.x)**2 + (coords.y - cueBall.y)**2);
+            
+            // Allowing aim-trigger from anywhere to keep screen space simple to drag
+            interaction.isAiming = true;
+            interaction.startX = cueBall.x;
+            interaction.startY = cueBall.y;
+            interaction.currentX = coords.x;
+            interaction.currentY = coords.y;
+        }
+
+        function onPointerMove(e) {
+            if (!interaction.isAiming) return;
+            const coords = getCanvasCoordinates(e);
+            
+            // Constrain aim pull vector to virtual box size 
+            interaction.currentX = coords.x;
+            interaction.currentY = coords.y;
+        }
+
+        function onPointerUp(e) {
+            if (!interaction.isAiming) return;
+            interaction.isAiming = false;
+
+            let dx = interaction.currentX - cueBall.x;
+            let dy = interaction.currentY - cueBall.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // Cancel trigger threshold
+            if (dist < 10) return;
+
+            // Vector trajectory shooting opposite direction of pull
+            const angle = Math.atan2(dy, dx);
+            const shootAngle = angle + Math.PI;
+
+            // Calculate strength power based on drag distance
+            const pct = Math.min(dist / 120, 1);
+            const shootPower = pct * MAX_POWER;
+
+            // Apply energy forces!
+            cueBall.vx = Math.cos(shootAngle) * shootPower;
+            cueBall.vy = Math.sin(shootAngle) * shootPower;
+
+            shotCount++;
+            document.getElementById('log-counter').textContent = `${shotCount} Shot${shotCount > 1 ? 's' : ''} taken`;
+            
+            // Audio cue hit feedback
+            playClinkSound(shootPower * 0.8);
+
+            // Rotate advice tips dynamically after every shot taken
+            rotateTip();
+        }
+
+        // Support window resizing smoothly
+        function resizeCanvas() {
+            // Keep actual canvas element scaled internally to 800x400 standard proportions
+            canvas.width = V_WIDTH;
+            canvas.height = V_HEIGHT;
+        }
+
+        // UI Feed helper logs
+        function logMessage(text, colorClass = "slate") {
+            const logs = document.getElementById('game-logs');
+            const el = document.createElement('div');
+            
+            const textColors = {
+                slate: 'text-slate-300 border-slate-800/50 bg-slate-800/20',
+                amber: 'text-amber-400 border-amber-500/20 bg-amber-500/5 font-semibold',
+                rose: 'text-rose-400 border-rose-500/20 bg-rose-500/5 font-medium',
+                emerald: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5'
+            };
+
+            el.className = `py-1.5 px-3 rounded-lg border text-xs ${textColors[colorClass] || textColors.slate} flex items-center justify-between transition-all`;
+            
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            el.innerHTML = `<span>${text}</span> <span class="text-[10px] opacity-40">${timestamp}</span>`;
+            
+            logs.appendChild(el);
+            // scroll logs container down
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        function updateHUD() {
+            // 1. Switch active turn badges
+            const card1 = document.getElementById('p1-card');
+            const card2 = document.getElementById('p2-card');
+            const turnBanner = document.getElementById('turn-banner');
+
+            if (currentPlayer === 1) {
+                card1.className = "px-4 py-2 rounded-xl border border-amber-500 bg-amber-500/10 text-center scale-105 transition-all duration-300 min-w-[120px]";
+                card2.className = "px-4 py-2 rounded-xl border border-slate-700 bg-slate-800/50 text-center opacity-60 transition-all duration-300 min-w-[120px]";
+                turnBanner.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span><span>Player 1's Turn</span>`;
+            } else {
+                card2.className = "px-4 py-2 rounded-xl border border-amber-500 bg-amber-500/10 text-center scale-105 transition-all duration-300 min-w-[120px]";
+                card1.className = "px-4 py-2 rounded-xl border border-slate-700 bg-slate-800/50 text-center opacity-60 transition-all duration-300 min-w-[120px]";
+                turnBanner.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span><span>Player 2's Turn</span>`;
+            }
+
+            // 2. Output categorized groups (Solids / Stripes) status
+            const p1TypeVal = playerTypes[1] ? playerTypes[1].charAt(0).toUpperCase() + playerTypes[1].slice(1) + 's' : 'Any Ball';
+            const p2TypeVal = playerTypes[2] ? playerTypes[2].charAt(0).toUpperCase() + playerTypes[2].slice(1) + 's' : 'Any Ball';
+            
+            document.getElementById('p1-type').textContent = p1TypeVal;
+            document.getElementById('p2-type').textContent = p2TypeVal;
+
+            if (playerTypes[1] === 'solid') {
+                document.getElementById('p1-type').className = "text-xs font-bold text-sky-400 mt-0.5";
+                document.getElementById('p2-type').className = "text-xs font-bold text-amber-500 mt-0.5";
+            } else if (playerTypes[1] === 'stripe') {
+                document.getElementById('p1-type').className = "text-xs font-bold text-amber-500 mt-0.5";
+                document.getElementById('p2-type').className = "text-xs font-bold text-sky-400 mt-0.5";
+            }
+
+            // 3. Render list of balls remaining visually on cards
+            renderMiniBalls('p1-balls', playerTypes[1]);
+            renderMiniBalls('p2-balls', playerTypes[2]);
+        }
+
+        // Draw small indicator circles to show which balls are left to pot
+        function renderMiniBalls(containerId, groupType) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = "";
+
+            if (!groupType) {
+                // simple placeholder representation
+                const span = document.createElement('span');
+                span.className = "text-[10px] text-slate-500 italic";
+                span.textContent = "No group assigned";
+                container.appendChild(span);
+                return;
+            }
+
+            // Collect active balls left in this category
+            const remaining = balls.filter(b => b.active && b.type === groupType);
+            
+            if (remaining.length === 0) {
+                const winIndicator = document.createElement('span');
+                winIndicator.className = "text-[10px] text-emerald-400 font-bold uppercase tracking-wider animate-pulse";
+                winIndicator.textContent = "Aim 8-Ball next!";
+                container.appendChild(winIndicator);
+                return;
+            }
+
+            remaining.forEach(b => {
+                const indicator = document.createElement('span');
+                // style of solids/stripes representation
+                indicator.className = `w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-black text-slate-950 font-sans shadow-md border border-white/30`;
+                indicator.style.backgroundColor = b.color;
+                indicator.textContent = b.number;
+                container.appendChild(indicator);
+            });
+        }
+
+        // Interactive Sidebar Academy Accordion handler
+        function toggleAcademyTip(id) {
+            const body = document.getElementById(`acad-body-${id}`);
+            const icon = document.getElementById(`acad-icon-${id}`);
+            if (body.classList.contains('hidden')) {
+                body.classList.remove('hidden');
+                icon.className = "fa-solid fa-chevron-up text-amber-400";
+            } else {
+                body.classList.add('hidden');
+                icon.className = "fa-solid fa-chevron-down text-slate-500";
+            }
+        }
+
+        // --- ATTACH LISTENERS ---
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('load', () => {
+            initGame();
+            
+            // Continuous Frame Loop
+            function tick() {
+                updatePhysics();
+                drawScene();
+                requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        });
+
+        // Mouse listeners
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            onPointerDown(e);
+        }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            onPointerMove(e);
+        }, { passive: false });
+        window.addEventListener('touchend', (e) => {
+            onPointerUp(e);
+        });
+
+        // Button Controls
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            if (confirm("Are you sure you want to reset the current match?")) {
+                initGame();
+            }
+        });
+
+        // Toggle Sounds
+        const btnSound = document.getElementById('btn-sound');
+        btnSound.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            if (soundEnabled) {
+                btnSound.innerHTML = `<i class="fa-solid fa-volume-high text-sm"></i>`;
+                btnSound.className = "w-10 h-10 rounded-xl bg-slate-700/50 hover:bg-slate-700 border border-slate-600/30 flex items-center justify-center transition-all text-slate-300 active:scale-95";
+            } else {
+                btnSound.innerHTML = `<i class="fa-solid fa-volume-xmark text-sm"></i>`;
+                btnSound.className = "w-10 h-10 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 flex items-center justify-center transition-all text-rose-400 active:scale-95";
+            }
+        });
+
+        // Collapsible custom settings panel
+        const btnSettings = document.getElementById('btn-settings');
+        const settingsPanel = document.getElementById('settings-panel');
+        btnSettings.addEventListener('click', () => {
+            settingsPanel.classList.toggle('hidden');
+            settingsPanel.classList.toggle('flex');
+        });
+
+        // Table felt color adjustments
+        const colorBtns = document.querySelectorAll('.color-btn');
+        colorBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                colorBtns.forEach(b => {
+                    b.classList.remove('border-white');
+                    b.classList.add('border-slate-600');
+                });
+                
+                btn.classList.remove('border-slate-600');
+                btn.classList.add('border-white');
+
+                currentFeltTheme = btn.dataset.color;
+                logMessage(`Felt changed to ${currentFeltTheme}!`);
+            });
+        });
+
+        // Table Friction Slider Adjustments
+        const slideFriction = document.getElementById('slide-friction');
+        const frictionLabel = document.getElementById('val-friction');
+        slideFriction.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            FRICTION = val;
+            if (val <= 0.980) {
+                frictionLabel.textContent = "Slow Felt";
+                frictionLabel.className = "text-rose-400";
+            } else if (val >= 0.992) {
+                frictionLabel.textContent = "Slick Ice";
+                frictionLabel.className = "text-sky-400";
+            } else {
+                frictionLabel.textContent = "Standard";
+                frictionLabel.className = "text-emerald-400";
+            }
+        });
+
+        // Modals Buttons
+        document.getElementById('modal-btn-restart').addEventListener('click', () => {
+            document.getElementById('game-modal').classList.add('hidden');
+            initGame();
+        });
+        document.getElementById('modal-btn-close').addEventListener('click', () => {
+            document.getElementById('game-modal').classList.add('hidden');
+        });
+
+        // Set up automatic rotating tips interval
+        setInterval(rotateTip, 10000); // changes every 10 seconds automatically
+    </script>
+</body>
+</html>
