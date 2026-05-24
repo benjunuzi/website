@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>coolbaseball</title>
+    <title>Retro Arcade Baseball</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome for Icons -->
@@ -26,7 +26,7 @@
 
     <!-- Header & Scoreboard -->
     <header class="bg-slate-900 border-b-4 border-slate-800 p-3 shadow-xl">
-        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <!-- Title -->
             <div class="flex items-center gap-3">
                 <span class="text-3xl text-amber-500"><i class="fa-solid fa-baseball-bat-ball"></i></span>
@@ -70,10 +70,10 @@
     </header>
 
     <!-- Main Game Frame -->
-    <main class="flex-grow p-4 max-w-5xl mx-auto w-full flex flex-col lg:flex-row gap-6 items-center justify-center">
+    <main class="flex-grow p-4 max-w-6xl mx-auto w-full flex flex-col lg:flex-row gap-6 items-center justify-center">
         
         <!-- Interactive Game Screen -->
-        <div class="bg-slate-900 border-4 border-slate-800 rounded-2xl p-4 flex flex-col items-center shadow-2xl w-full max-w-md">
+        <div class="bg-slate-900 border-4 border-slate-800 rounded-2xl p-4 flex flex-col items-center shadow-2xl w-full max-w-xl">
             
             <!-- Pitch/Bat View Badge header -->
             <div class="w-full flex justify-between items-center mb-2.5 border-b border-slate-800 pb-1.5">
@@ -85,8 +85,8 @@
                 </span>
             </div>
 
-            <!-- Main Canvas Viewport -->
-            <div class="relative bg-emerald-950 rounded-lg overflow-hidden border-2 border-slate-700 w-full aspect-square">
+            <!-- Main Canvas Viewport (Tall 3:4 Aspect Ratio) -->
+            <div class="relative bg-emerald-950 rounded-lg overflow-hidden border-2 border-slate-700 w-full aspect-[3/4]">
                 <canvas id="gameCanvas" class="w-full h-full block cursor-pointer"></canvas>
                 
                 <!-- Game Event Banner Overlay -->
@@ -147,7 +147,7 @@
                         </li>
                         <li class="flex items-start gap-2">
                             <i class="fa-solid fa-circle-info text-amber-400 mt-0.5 shrink-0"></i>
-                            <span class="text-slate-300">Perfect timing sends it deep. Early/late swings make shorter hits or fly outs!</span>
+                            <span class="text-slate-300">Defenders are now faster and have better gloves. Time your hits perfectly to escape them!</span>
                         </li>
                     </ul>
 
@@ -306,12 +306,19 @@
             } catch(e) {}
         }
 
-        // Setup unified Canvas
+        // Setup unified Canvas - Elongated 3:4 resolution ratio for a longer field depth
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const size = 360;
+        
+        // Logical coordinates for math mapping (Stretched vertically)
+        const logicalWidth = 360; 
+        const logicalHeight = 480; 
+        
+        // Physical high-res pixels rendering
+        const size = 480;       
+        const sizeHeight = 640; // 3:4 physical canvas aspect upscaling ratio
         canvas.width = size;
-        canvas.height = size;
+        canvas.height = sizeHeight;
 
         // In-memory Leaderboard default values
         let leaderboard = [
@@ -322,13 +329,13 @@
             { name: "ROB", hr: 0 }
         ];
 
-        // Simplified Game State
+        // Game State values
         let state = {
             active: true,
             runs: 0,
             hits: 0,
-            hrs: 0, // Track Home Runs hit in the active round
-            strikes: 0, // The main counter now! 3 strikes = game over
+            hrs: 0, 
+            strikes: 0, // The main counter! 3 strikes = game over
             runners: [false, false, false], // 1st, 2nd, 3rd base states
 
             // Pitch parameters
@@ -338,8 +345,8 @@
             ballX: 180,
             ballY: 100,
             ballR: 4,
-            pitchType: 'fast', // 'fast', 'curve'
-            pitchDelayActive: false, // Prevents overlapping pitch triggers
+            pitchType: 'fast', 
+            pitchDelayActive: false, 
 
             // Batter swing parameters
             isBatSwinging: false,
@@ -350,24 +357,25 @@
             // Hit Flying parameters
             ballHitActive: false,
             hitX: 180,
-            hitY: 330,
+            hitY: 430,
             hitZ: 0,
             hitVX: 0,
             hitVY: 0,
             hitVZ: 0,
+            hasBounced: false, 
 
-            // Outfield Defense
+            // Outfield Defense (Positioned further back in the deep 3:4 outfield)
             fielders: [
-                { x: 90, y: 110, tx: 90, ty: 110 },   // Left Field
-                { x: 180, y: 80, tx: 180, ty: 80 },   // Center Field
-                { x: 270, y: 110, tx: 270, ty: 110 }   // Right Field
+                { x: 80, y: 150, tx: 80, ty: 150 },   // Left Field
+                { x: 180, y: 100, tx: 180, ty: 100 },  // Center Field
+                { x: 280, y: 150, tx: 280, ty: 150 }   // Right Field
             ],
             hrGlow: 0,
             bannerText: ""
         };
 
-        const swingZoneY = 325;
-        const swingZoneH = 32; // Expanded vertical range for ease of hit!
+        const swingZoneY = 425; // Home base zone on the stretched field
+        const swingZoneH = 32;
 
         function announce(title, sub = "") {
             const banner = document.getElementById('event-announcement');
@@ -390,7 +398,7 @@
             document.getElementById('score-hits').innerText = state.hits;
             document.getElementById('score-hrs').innerText = state.hrs;
             
-            // Render Strike Dots (now 3 dots instead of 2!)
+            // Render Strike Dots (now 3 dots!)
             drawDots('strikes-dots', state.strikes, 3, 'bg-red-500 border-red-400 shadow-[0_0_8px_#ef4444]');
 
             // Render Runners
@@ -466,11 +474,11 @@
             state.pitchProgress = 0;
             state.isSwingChecked = false;
             state.ballX = 180;
-            state.ballY = 140;
+            state.ballY = 240; // Pitcher starts at Y = 240 on longer field
 
             // Random Pitch Attributes
             state.pitchType = Math.random() < 0.45 ? 'curve' : 'fast';
-            state.pitchSpeed = state.pitchType === 'fast' ? 0.021 : 0.015; // Balanced speed rates
+            state.pitchSpeed = state.pitchType === 'fast' ? 0.024 : 0.017; // Adjusted speed rates for longer path
 
             playSound('whistle');
         }
@@ -490,6 +498,7 @@
                     // Solid Hit!
                     state.pitchActive = false;
                     state.ballHitActive = true;
+                    state.hasBounced = false; // Fresh hit hasn't bounced yet!
 
                     // Compute timing angle (-PI/2 is straight up, early curves left, late curves right)
                     const timingOffset = (state.ballY - swingZoneY) / swingZoneH;
@@ -500,23 +509,13 @@
                     state.hitY = swingZoneY;
                     state.hitZ = 0;
                     
-                    // Velocity mapping with lower bounds to avoid every hit sailing past the screen automatically
-                    state.hitVX = Math.cos(angle) * power * 0.9;
-                    state.hitVY = Math.sin(angle) * power * 0.9;
-                    state.hitVZ = power * 0.85;
+                    // Stretched vertical launcher velocities, slightly tuned hang time for fly-out playability
+                    state.hitVX = Math.cos(angle) * power * 1.20; 
+                    state.hitVY = Math.sin(angle) * power * 1.20; 
+                    state.hitVZ = power * 1.05; 
 
                     playSound('crack');
                     announce("CRACK!", "Deep fly ball!");
-
-                    // Tell defensive fielders to run towards estimated landing spot
-                    const flightTime = (state.hitVZ * 2) / 0.18;
-                    const destX = 180 + state.hitVX * flightTime;
-                    const destY = swingZoneY + state.hitVY * flightTime;
-
-                    state.fielders.forEach(f => {
-                        f.tx = Math.max(30, Math.min(330, f.x + (destX - f.x) * 0.75));
-                        f.ty = Math.max(50, Math.min(180, f.y + (destY - f.y) * 0.75));
-                    });
 
                 } else {
                     // Strike
@@ -596,10 +595,10 @@
             state.isBatSwinging = false;
             state.pitchDelayActive = false;
             
-            // Reset Fielders
-            state.fielders[0] = { x: 90, y: 110, tx: 90, ty: 110 };
-            state.fielders[1] = { x: 180, y: 80, tx: 180, ty: 80 };
-            state.fielders[2] = { x: 270, y: 110, tx: 270, ty: 110 };
+            // Reset Fielders further back in the long 3:4 field
+            state.fielders[0] = { x: 80, y: 150, tx: 80, ty: 150 };
+            state.fielders[1] = { x: 180, y: 100, tx: 180, ty: 100 };
+            state.fielders[2] = { x: 280, y: 150, tx: 280, ty: 150 };
 
             document.getElementById('gameover-modal').classList.add('hidden');
             document.getElementById('gameover-modal').classList.remove('flex');
@@ -613,42 +612,46 @@
 
         // Main Draw Loop
         function draw() {
-            ctx.clearRect(0, 0, size, size);
+            ctx.clearRect(0, 0, size, sizeHeight);
+
+            // SAVE and SCALE context to draw upscaled retro graphics cleanly
+            ctx.save();
+            ctx.scale(size / logicalWidth, sizeHeight / logicalHeight);
 
             // 1. Draw Green Field Turf
             ctx.fillStyle = '#065f46';
-            ctx.fillRect(0, 0, size, size);
+            ctx.fillRect(0, 0, logicalWidth, logicalHeight);
 
-            // Draw Outfield Arc chalk
+            // Draw Outfield Arc chalk (Stretched)
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 2.5;
             ctx.beginPath();
-            ctx.arc(180, 340, 290, Math.PI, 0, false);
+            ctx.arc(180, 450, 400, Math.PI, 0, false);
             ctx.stroke();
 
-            // Draw Base diamond line paths
+            // Draw Base diamond line paths (Elongated diamond)
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.moveTo(180, 335); // Home
-            ctx.lineTo(250, 260); // 1st Base
-            ctx.lineTo(180, 190); // 2nd Base
-            ctx.lineTo(110, 260); // 3rd Base
+            ctx.moveTo(180, 435); // Home
+            ctx.lineTo(260, 345); // 1st Base
+            ctx.lineTo(180, 255); // 2nd Base
+            ctx.lineTo(100, 345); // 3rd Base
             ctx.closePath();
             ctx.stroke();
 
-            // Outfield Wall (Y = 40)
+            // Outfield Wall (Pulled further up the screen, Y = 50)
             ctx.fillStyle = '#1e293b';
-            ctx.fillRect(0, 0, size, 40);
+            ctx.fillRect(0, 0, logicalWidth, 50);
             ctx.fillStyle = '#f59e0b';
-            ctx.fillRect(0, 36, size, 4);
+            ctx.fillRect(0, 46, logicalWidth, 4);
 
-            // 2. Draw Pitcher Character
+            // 2. Draw Pitcher Character (Further up the screen at Y = 220)
             ctx.fillStyle = '#94a3b8';
             ctx.beginPath();
-            ctx.arc(180, 140, 6, 0, Math.PI * 2); // Pitcher head
+            ctx.arc(180, 220, 6, 0, Math.PI * 2); // Pitcher head
             ctx.fill();
-            ctx.fillRect(177, 146, 6, 12); // body
+            ctx.fillRect(177, 226, 6, 12); // body
 
             // Check if ball is currently inside the safe swing zone (for Visual Cue)
             const ballInHittingZone = state.pitchActive && (Math.abs(state.ballY - swingZoneY) < swingZoneH);
@@ -662,23 +665,23 @@
             ctx.fill();
             ctx.stroke();
 
-            // Home Plate Pentagon
+            // Home Plate Pentagon (Lowered down to Y = 430)
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.moveTo(180, 330);
-            ctx.lineTo(190, 340);
-            ctx.lineTo(190, 348);
-            ctx.lineTo(170, 348);
-            ctx.lineTo(170, 340);
+            ctx.moveTo(180, 430);
+            ctx.lineTo(190, 440);
+            ctx.lineTo(190, 448);
+            ctx.lineTo(170, 448);
+            ctx.lineTo(170, 440);
             ctx.closePath();
             ctx.fill();
 
-            // 4. Draw Batter Stance Character
+            // 4. Draw Batter Stance Character (Shifted lower down to Y = 435)
             ctx.fillStyle = '#ef4444';
             ctx.beginPath();
-            ctx.arc(146, 335, 6, 0, Math.PI*2);
+            ctx.arc(146, 435, 6, 0, Math.PI*2);
             ctx.fill();
-            ctx.fillRect(142, 341, 8, 12);
+            ctx.fillRect(142, 441, 8, 12);
 
             // Animated Bat Angle
             if (state.isBatSwinging) {
@@ -693,16 +696,39 @@
             ctx.lineWidth = 3;
             ctx.lineCap = 'round';
             ctx.beginPath();
-            ctx.moveTo(146, 345);
-            ctx.lineTo(146 + Math.cos(state.batAngle) * 22, 345 + Math.sin(state.batAngle) * 22);
+            ctx.moveTo(146, 445);
+            ctx.lineTo(146 + Math.cos(state.batAngle) * 22, 445 + Math.sin(state.batAngle) * 22);
             ctx.stroke();
             ctx.lineCap = 'butt'; // reset
 
-            // 5. Draw Fielders (3 defensive dots)
+            // 5. Draw and update Fielders (Chasing the ball shadow in deep outfield)
             state.fielders.forEach((f, idx) => {
-                // Move towards target smoothly
-                f.x += (f.tx - f.x) * 0.08;
-                f.y += (f.ty - f.y) * 0.08;
+                if (state.ballHitActive) {
+                    // Chase the ball's current coordinates directly
+                    f.tx = state.hitX;
+                    f.ty = state.hitY;
+                } else {
+                    // Return to standard defensive rest positions in deeper outfield
+                    if (idx === 0) { f.tx = 80; f.ty = 150; }
+                    if (idx === 1) { f.tx = 180; f.ty = 100; }
+                    if (idx === 2) { f.tx = 280; f.ty = 150; }
+                }
+
+                // Move with a constant realistic speed for smooth visual pursuit
+                const dx = f.tx - f.x;
+                const dy = f.ty - f.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                // ADJUSTMENT: Incremented speed to 1.45 (up from 1.2) to make fly outs easier/more common
+                const speed = 1.45; 
+
+                if (dist > speed) {
+                    f.x += (dx / dist) * speed;
+                    f.y += (dy / dist) * speed;
+                } else {
+                    f.x = f.tx;
+                    f.y = f.ty;
+                }
 
                 ctx.fillStyle = '#3b82f6'; // Blue shirts
                 ctx.beginPath();
@@ -722,14 +748,14 @@
                     state.pitchProgress = 1.15;
                 }
 
-                // Pitch trajectory
+                // Pitch trajectory starts at Pitcher hand (Y = 232)
                 const startX = 180;
-                const startY = 152;
+                const startY = 232;
                 state.ballX = startX;
                 state.ballY = startY + (swingZoneY - startY) * state.pitchProgress;
 
                 if (state.pitchType === 'curve') {
-                    // Simple curving arc
+                    // Curving arc
                     state.ballX += Math.sin(state.pitchProgress * Math.PI) * 20;
                 }
 
@@ -763,60 +789,61 @@
                 state.hitZ += state.hitVZ;
                 state.hitVZ -= gravity;
 
-                // Apply realistic air drag/friction to make hits land inside the park
+                // Air drag to bring the hit ball back down into the park naturally
                 if (state.hitZ > 0) {
-                    state.hitVX *= 0.982;
-                    state.hitVY *= 0.982;
+                    state.hitVX *= 0.976;
+                    state.hitVY *= 0.976;
                 }
 
-                // Ground landing limit
+                // Ground landing check
                 if (state.hitZ <= 0) {
                     state.hitZ = 0;
+                    state.hasBounced = true; // Mark that it has officially bounced
                     state.hitVX *= 0.65;
                     state.hitVY *= 0.65;
                 }
 
-                // Check Outfield Wall boundary - Only hits that maintain enough velocity/distance get over the fence!
-                if (state.hitY <= 40 && state.hitZ > 0) {
+                // Check Outfield Wall boundary - Only clean hits that clear the wall in-flight are Home Runs!
+                if (state.hitY <= 50 && state.hitZ > 0) {
                     state.ballHitActive = false;
                     playSound('cheer');
                     announce("HOME RUN!!!", "Clear out of the park!");
                     state.hits++;
-                    state.hrs++; // Increment active game session's Home Runs
+                    state.hrs++; // Increment session HR count
                     advanceRunners(4);
                 } else {
-                    // Check Fielders catch
+                    // Check Fielders catch (Fly out can only happen if it has NOT bounced on the ground yet)
                     let isCaught = false;
                     state.fielders.forEach(f => {
                         const dx = state.hitX - f.x;
                         const dy = state.hitY - f.y;
                         const dist = Math.sqrt(dx*dx + dy*dy);
 
-                        // If ball shadow is close and ball is low enough to catch
-                        if (dist < 11 && state.hitZ < 25 && state.ballHitActive) {
+                        // ADJUSTMENT: Expanded catching glove tolerance (dist < 15 and height state.hitZ < 22) to make fly outs easier
+                        if (dist < 15 && state.hitZ < 22 && !state.hasBounced && state.ballHitActive) {
                             isCaught = true;
                         }
                     });
 
                     if (isCaught) {
                         state.ballHitActive = false;
-                        state.strikes++; // Getting caught counts as a Strike/Out to keep game fast
+                        state.strikes++; // Counts as a strike to progress the turn
                         playSound('out');
                         announce("OUT!", "Caught on fly!");
                         checkStrikesOuts();
                     } else if (Math.abs(state.hitVX) < 0.15 && Math.abs(state.hitVY) < 0.15 && state.hitZ === 0) {
-                        // Ball came to stop: Base hit! Let's decide depth (Single, Double, Triple)
+                        // Ball has rolled to a complete stop on the ground: Safe Base hit!
                         state.ballHitActive = false;
                         state.hits++;
                         
                         let hitBases = 1;
                         let hitTitle = "SINGLE!";
                         
-                        // Decide hit type depending on where the ball landed in outfield
-                        if (state.hitY < 120) {
+                        // Dynamically award bases depending on how deep into the outfield grass the ball landed in the 3:4 field
+                        if (state.hitY < 150) {
                             hitBases = 3;
                             hitTitle = "TRIPLE!";
-                        } else if (state.hitY < 210) {
+                        } else if (state.hitY < 260) {
                             hitBases = 2;
                             hitTitle = "DOUBLE!";
                         }
@@ -841,6 +868,9 @@
                 ctx.lineWidth = 0.5;
                 ctx.stroke();
             }
+
+            // RESTORE state to clear coordinate scaling transformations
+            ctx.restore();
 
             requestAnimationFrame(draw);
         }
