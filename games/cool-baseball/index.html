@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Arcade Baseball</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
+        .retro-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+        .digital-font {
+            font-family: 'Share Tech Mono', monospace;
+        }
+        canvas {
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col justify-between overflow-x-hidden select-none">
+
+    <!-- Header & Scoreboard -->
+    <header class="bg-slate-900 border-b-4 border-slate-800 p-3 shadow-xl">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <!-- Title -->
+            <div class="flex items-center gap-3">
+                <span class="text-3xl text-amber-500"><i class="fa-solid fa-baseball-bat-ball"></i></span>
+                <div>
+                    <h1 class="retro-font text-sm md:text-base text-amber-400 tracking-wider">RETRO BATTER</h1>
+                    <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-widest">Home Run Championship</p>
+                </div>
+            </div>
+
+            <!-- Arcade LED Board -->
+            <div class="bg-black border-2 border-slate-700 rounded-lg p-2.5 flex items-center gap-6 shadow-inner digital-font text-lg tracking-wider w-full sm:w-auto justify-around">
+                <!-- Runs -->
+                <div class="text-center pr-4 border-r border-slate-800">
+                    <div class="text-[10px] uppercase text-amber-400 font-bold">RUNS</div>
+                    <div id="score-runs" class="text-2xl text-amber-500 font-bold">0</div>
+                </div>
+                <!-- Home Runs Counter -->
+                <div class="text-center pr-4 border-r border-slate-800">
+                    <div class="text-[10px] uppercase text-red-400 font-bold">HRs</div>
+                    <div id="score-hrs" class="text-2xl text-red-500 font-bold">0</div>
+                </div>
+                <!-- Hits -->
+                <div class="text-center pr-4 border-r border-slate-800">
+                    <div class="text-[10px] uppercase text-emerald-400 font-bold">HITS</div>
+                    <div id="score-hits" class="text-2xl text-emerald-500 font-bold">0</div>
+                </div>
+                <!-- Strikes (3 misses and Game Over!) -->
+                <div class="flex flex-col text-xs font-bold gap-1 justify-center">
+                    <div class="flex items-center gap-2">
+                        <span class="w-16 text-red-400">STRIKES:</span>
+                        <div class="flex gap-1" id="strikes-dots">
+                            <span class="w-3 h-3 rounded-full border border-slate-700 bg-slate-900"></span>
+                            <span class="w-3 h-3 rounded-full border border-slate-700 bg-slate-900"></span>
+                            <span class="w-3 h-3 rounded-full border border-slate-700 bg-slate-900"></span>
+                        </div>
+                    </div>
+                    <div class="text-[9px] text-slate-500 uppercase tracking-widest">3 Misses = Out!</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Frame -->
+    <main class="flex-grow p-4 max-w-5xl mx-auto w-full flex flex-col lg:flex-row gap-6 items-center justify-center">
+        
+        <!-- Interactive Game Screen -->
+        <div class="bg-slate-900 border-4 border-slate-800 rounded-2xl p-4 flex flex-col items-center shadow-2xl w-full max-w-md">
+            
+            <!-- Pitch/Bat View Badge header -->
+            <div class="w-full flex justify-between items-center mb-2.5 border-b border-slate-800 pb-1.5">
+                <span id="current-batter" class="text-[10px] font-bold tracking-wider retro-font text-amber-400">
+                    BATTER: PLAYER 1
+                </span>
+                <span id="runners-state" class="px-2 py-0.5 rounded text-[9px] bg-slate-800 text-slate-300 font-bold uppercase">
+                    NO RUNNERS
+                </span>
+            </div>
+
+            <!-- Main Canvas Viewport -->
+            <div class="relative bg-emerald-950 rounded-lg overflow-hidden border-2 border-slate-700 w-full aspect-square">
+                <canvas id="gameCanvas" class="w-full h-full block cursor-pointer"></canvas>
+                
+                <!-- Game Event Banner Overlay -->
+                <div id="event-announcement" class="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 pointer-events-none transition-opacity duration-200">
+                    <div class="text-center transform scale-75 transition-transform duration-200" id="announcement-box">
+                        <h3 id="announcement-title" class="retro-font text-xl text-amber-400 drop-shadow-md">STRIKE!</h3>
+                        <p id="announcement-subtitle" class="text-xs text-slate-300 font-semibold mt-2 tracking-wide"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Control Buttons -->
+            <div class="w-full mt-4 flex flex-col gap-2">
+                <button id="btn-swing" class="w-full py-4 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-bold rounded-xl text-lg retro-font shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-baseball-bat-ball"></i> SWING!
+                </button>
+                <p class="text-[11px] text-center text-slate-400 mt-1">
+                    Press <span class="bg-slate-800 px-2 py-0.5 rounded text-white font-mono">SPACEBAR</span> or Click/Tap screen to swing!
+                </p>
+            </div>
+
+        </div>
+
+        <!-- Sidebar Panel Options -->
+        <div class="w-full max-w-xs flex flex-col gap-4">
+            
+            <!-- Home Run Leaderboard Card -->
+            <div class="bg-slate-900 border-4 border-slate-800 rounded-xl p-4 shadow-lg">
+                <h3 class="text-xs retro-font text-red-500 mb-3 border-b border-slate-800 pb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-fire animate-pulse text-amber-500"></i> HR LEADERBOARD
+                </h3>
+                
+                <!-- Leaderboard List -->
+                <div id="leaderboard-list" class="space-y-2 mb-4 digital-font text-base tracking-widest">
+                    <!-- Loaded dynamically in JavaScript -->
+                </div>
+
+                <div class="text-[9px] text-slate-400 text-center italic">
+                    Can you smash enough homers to get Rank #1?
+                </div>
+            </div>
+
+            <!-- Quick Stats & Instructions Box -->
+            <div class="bg-slate-900 border-4 border-slate-800 rounded-xl p-4 shadow-lg flex-grow flex flex-col justify-between">
+                <div>
+                    <h3 class="text-xs retro-font text-amber-500 mb-3 border-b border-slate-800 pb-2">
+                        <i class="fa-solid fa-circle-info mr-1"></i> GAME RULES
+                    </h3>
+                    
+                    <ul class="text-xs text-slate-300 space-y-2 mb-3 leading-relaxed">
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-circle-check text-emerald-400 mt-0.5 shrink-0"></i>
+                            <span>SWING when the circular ring glows <b class="text-emerald-400">GREEN</b>!</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-circle-xmark text-red-400 mt-0.5 shrink-0"></i>
+                            <span class="text-red-400 font-bold">If you miss the ball 3 times, the game ends!</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-circle-info text-amber-400 mt-0.5 shrink-0"></i>
+                            <span class="text-slate-300">Perfect timing sends it deep. Early/late swings make shorter hits or fly outs!</span>
+                        </li>
+                    </ul>
+
+                    <!-- Base Visual Mini-Diamond Map -->
+                    <div class="bg-slate-950 rounded-xl p-2 border border-slate-800 flex flex-col items-center gap-1.5">
+                        <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Diamond Radar</span>
+                        <div class="relative w-16 h-16 border border-dashed border-slate-800 rotate-45 flex items-center justify-center">
+                            <!-- Bases -->
+                            <div id="base-2" class="absolute w-2 h-2 bg-slate-800 border border-slate-700 -top-1 -left-1 rounded-sm"></div>
+                            <div id="base-3" class="absolute w-2 h-2 bg-slate-800 border border-slate-700 -bottom-1 -left-1 rounded-sm"></div>
+                            <div id="base-1" class="absolute w-2 h-2 bg-slate-800 border border-slate-700 -top-1 -right-1 rounded-sm"></div>
+                            <div class="absolute w-1.5 h-1.5 bg-white rounded-full bottom-0 right-0 translate-x-1 translate-y-1"></div> <!-- Home -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Toggles -->
+                <div class="flex flex-col gap-1.5 mt-3">
+                    <button id="btn-toggle-sound" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-2">
+                        <i id="sound-icon" class="fa-solid fa-volume-high"></i> SOUNDS: ENABLED
+                    </button>
+                    <button id="btn-restart" class="w-full py-1.5 bg-red-950/40 hover:bg-red-900/60 rounded-lg text-xs text-red-400 font-bold flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate"></i> RESTART
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-900 py-3 text-center text-xs text-slate-500">
+        <p>© 2026 Retro Baseball. Clean, quick-play Arcade Classic.</p>
+    </footer>
+
+    <!-- Initials Input Modal (Arcade-Style High Score Entry) -->
+    <div id="initials-modal" class="fixed inset-0 bg-black/95 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border-4 border-red-500 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl flex flex-col gap-4">
+            <div class="text-amber-500 text-5xl">
+                <i class="fa-solid fa-fire animate-bounce"></i>
+            </div>
+            <h2 class="retro-font text-base text-amber-400">NEW HIGH SCORE!</h2>
+            <p class="text-xs text-slate-300">
+                You hit <span id="new-hr-count" class="font-bold text-red-400 text-sm">0</span> Home Runs! Enter your 3-letter initials for the leaderboard:
+            </p>
+            
+            <div class="flex justify-center gap-3 my-2">
+                <input id="initial-1" type="text" maxlength="1" value="A" class="w-12 h-14 bg-black border-2 border-slate-700 rounded-lg text-center font-bold text-2xl retro-font text-amber-400 focus:border-amber-400 uppercase outline-none">
+                <input id="initial-2" type="text" maxlength="1" value="A" class="w-12 h-14 bg-black border-2 border-slate-700 rounded-lg text-center font-bold text-2xl retro-font text-amber-400 focus:border-amber-400 uppercase outline-none">
+                <input id="initial-3" type="text" maxlength="1" value="A" class="w-12 h-14 bg-black border-2 border-slate-700 rounded-lg text-center font-bold text-2xl retro-font text-amber-400 focus:border-amber-400 uppercase outline-none">
+            </div>
+
+            <button id="btn-save-score" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg retro-font text-xs uppercase transition tracking-wider">
+                REGISTER SCORE
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="gameover-modal" class="fixed inset-0 bg-black/95 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border-4 border-amber-500 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl flex flex-col gap-4">
+            <div class="text-red-500 text-5xl">
+                <i class="fa-solid fa-circle-xmark animate-pulse"></i>
+            </div>
+            <h2 class="retro-font text-base text-red-500">3 STRIKES! GAME OVER</h2>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                You missed the ball 3 times! Here are your stats:
+            </p>
+            
+            <!-- Score Card -->
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-around items-center digital-font text-xl">
+                <div class="text-center">
+                    <div class="text-xs uppercase text-slate-400 font-bold mb-1">TOTAL RUNS</div>
+                    <div id="final-runs" class="text-2xl text-amber-400 font-bold">0</div>
+                </div>
+                <div class="text-center border-l border-slate-800 pl-4 pr-4">
+                    <div class="text-xs uppercase text-slate-400 font-bold mb-1">HOME RUNS</div>
+                    <div id="final-hrs" class="text-2xl text-red-500 font-bold">0</div>
+                </div>
+                <div class="text-center border-l border-slate-800 pl-4">
+                    <div class="text-xs uppercase text-slate-400 font-bold mb-1">HITS</div>
+                    <div id="final-hits" class="text-2xl text-emerald-400 font-bold">0</div>
+                </div>
+            </div>
+
+            <!-- Big restart button -->
+            <button id="btn-modal-restart" class="w-full py-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl retro-font text-sm uppercase transition tracking-wider flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate"></i> RESTART GAME
+            </button>
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+        // Core Audio Setup
+        let soundEnabled = true;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'crack') {
+                    // Bat Hit
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.15);
+                } else if (type === 'whistle') {
+                    // Pitch flying
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.35);
+                    gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.35);
+                } else if (type === 'strike') {
+                    // Strike buzzer
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.25);
+                } else if (type === 'cheer') {
+                    // Score reward chime
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.4);
+                } else if (type === 'out') {
+                    // Out sound
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                }
+            } catch(e) {}
+        }
+
+        // Setup unified Canvas
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const size = 360;
+        canvas.width = size;
+        canvas.height = size;
+
+        // In-memory Leaderboard default values
+        let leaderboard = [
+            { name: "RTH", hr: 5 },
+            { name: "SHO", hr: 3 },
+            { name: "CYG", hr: 2 },
+            { name: "MKY", hr: 1 },
+            { name: "ROB", hr: 0 }
+        ];
+
+        // Simplified Game State
+        let state = {
+            active: true,
+            runs: 0,
+            hits: 0,
+            hrs: 0, // Track Home Runs hit in the active round
+            strikes: 0, // The main counter now! 3 strikes = game over
+            runners: [false, false, false], // 1st, 2nd, 3rd base states
+
+            // Pitch parameters
+            pitchActive: false,
+            pitchProgress: 0,
+            pitchSpeed: 0.020, 
+            ballX: 180,
+            ballY: 100,
+            ballR: 4,
+            pitchType: 'fast', // 'fast', 'curve'
+            pitchDelayActive: false, // Prevents overlapping pitch triggers
+
+            // Batter swing parameters
+            isBatSwinging: false,
+            batAngle: -Math.PI/4,
+            batSwingFrame: 0,
+            isSwingChecked: false,
+
+            // Hit Flying parameters
+            ballHitActive: false,
+            hitX: 180,
+            hitY: 330,
+            hitZ: 0,
+            hitVX: 0,
+            hitVY: 0,
+            hitVZ: 0,
+
+            // Outfield Defense
+            fielders: [
+                { x: 90, y: 110, tx: 90, ty: 110 },   // Left Field
+                { x: 180, y: 80, tx: 180, ty: 80 },   // Center Field
+                { x: 270, y: 110, tx: 270, ty: 110 }   // Right Field
+            ],
+            hrGlow: 0,
+            bannerText: ""
+        };
+
+        const swingZoneY = 325;
+        const swingZoneH = 32; // Expanded vertical range for ease of hit!
+
+        function announce(title, sub = "") {
+            const banner = document.getElementById('event-announcement');
+            const titleEl = document.getElementById('announcement-title');
+            const subEl = document.getElementById('announcement-subtitle');
+            
+            titleEl.innerText = title;
+            subEl.innerText = sub;
+            
+            banner.classList.remove('opacity-0');
+            banner.classList.add('opacity-100');
+            setTimeout(() => {
+                banner.classList.remove('opacity-100');
+                banner.classList.add('opacity-0');
+            }, 1000);
+        }
+
+        function updateUI() {
+            document.getElementById('score-runs').innerText = state.runs;
+            document.getElementById('score-hits').innerText = state.hits;
+            document.getElementById('score-hrs').innerText = state.hrs;
+            
+            // Render Strike Dots (now 3 dots instead of 2!)
+            drawDots('strikes-dots', state.strikes, 3, 'bg-red-500 border-red-400 shadow-[0_0_8px_#ef4444]');
+
+            // Render Runners
+            const bases = state.runners;
+            document.getElementById('base-1').className = `absolute w-2 h-2 -top-1 -right-1 rounded-sm border ${bases[0] ? 'bg-amber-400 border-amber-300 shadow-[0_0_6px_#fbbf24]' : 'bg-slate-800 border-slate-700'}`;
+            document.getElementById('base-2').className = `absolute w-2 h-2 -top-1 -left-1 rounded-sm border ${bases[1] ? 'bg-amber-400 border-amber-300 shadow-[0_0_6px_#fbbf24]' : 'bg-slate-800 border-slate-700'}`;
+            document.getElementById('base-3').className = `absolute w-2 h-2 -bottom-1 -left-1 rounded-sm border ${bases[2] ? 'bg-amber-400 border-amber-300 shadow-[0_0_6px_#fbbf24]' : 'bg-slate-800 border-slate-700'}`;
+
+            let runnerText = "NO RUNNERS";
+            if (bases[0] && bases[1] && bases[2]) runnerText = "BASES LOADED!";
+            else if (bases[0]) runnerText = "RUNNER ON 1ST";
+            else if (bases[1]) runnerText = "RUNNER ON 2ND";
+            else if (bases[2]) runnerText = "RUNNER ON 3RD";
+            else if (bases[0] || bases[1] || bases[2]) runnerText = "RUNNERS ON BASE";
+            document.getElementById('runners-state').innerText = runnerText;
+
+            renderLeaderboard();
+        }
+
+        // Render the high scores list to the sidebar card
+        function renderLeaderboard() {
+            const listEl = document.getElementById('leaderboard-list');
+            listEl.innerHTML = '';
+            
+            // Sort high scores
+            leaderboard.sort((a, b) => b.hr - a.hr);
+            
+            leaderboard.slice(0, 5).forEach((entry, idx) => {
+                let badge = `<span class="text-slate-500 text-xs w-6 inline-block">${idx + 1}.</span>`;
+                if (idx === 0) badge = `<span class="text-yellow-400 text-xs w-6 inline-block"><i class="fa-solid fa-trophy"></i></span>`;
+                if (idx === 1) badge = `<span class="text-slate-300 text-xs w-6 inline-block"><i class="fa-solid fa-medal"></i></span>`;
+                if (idx === 2) badge = `<span class="text-amber-600 text-xs w-6 inline-block"><i class="fa-solid fa-award"></i></span>`;
+
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center py-1 px-2 rounded hover:bg-slate-800/50 transition-colors";
+                row.innerHTML = `
+                    <div class="flex items-center gap-1">
+                        ${badge}
+                        <span class="font-bold text-slate-200">${entry.name}</span>
+                    </div>
+                    <span class="text-red-400 font-bold">${entry.hr} HR</span>
+                `;
+                listEl.appendChild(row);
+            });
+        }
+
+        function drawDots(id, count, max, classes) {
+            const el = document.getElementById(id);
+            el.innerHTML = '';
+            for (let i = 0; i < max; i++) {
+                const dot = document.createElement('span');
+                dot.className = i < count ? `w-3 h-3 rounded-full border ${classes}` : 'w-3 h-3 rounded-full border border-slate-800 bg-slate-950';
+                el.appendChild(dot);
+            }
+        }
+
+        // Coordinator to cleanly schedule the next pitch only ONCE
+        function queueNextPitch() {
+            if (!state.active || state.pitchActive || state.ballHitActive || state.pitchDelayActive) return;
+            
+            state.pitchDelayActive = true;
+            setTimeout(() => {
+                state.pitchDelayActive = false;
+                triggerNextPitch();
+            }, 1500);
+        }
+
+        function triggerNextPitch() {
+            if (!state.active || state.pitchActive || state.ballHitActive) return;
+
+            // Prepare Pitcher Throw
+            state.pitchActive = true;
+            state.pitchProgress = 0;
+            state.isSwingChecked = false;
+            state.ballX = 180;
+            state.ballY = 140;
+
+            // Random Pitch Attributes
+            state.pitchType = Math.random() < 0.45 ? 'curve' : 'fast';
+            state.pitchSpeed = state.pitchType === 'fast' ? 0.021 : 0.015; // Balanced speed rates
+
+            playSound('whistle');
+        }
+
+        function executeSwing() {
+            if (!state.active || state.isBatSwinging) return;
+
+            state.isBatSwinging = true;
+            state.batSwingFrame = 0;
+
+            if (state.pitchActive && !state.isSwingChecked) {
+                state.isSwingChecked = true;
+
+                // Check Hitting Y Zone range
+                const distY = Math.abs(state.ballY - swingZoneY);
+                if (distY < swingZoneH) {
+                    // Solid Hit!
+                    state.pitchActive = false;
+                    state.ballHitActive = true;
+
+                    // Compute timing angle (-PI/2 is straight up, early curves left, late curves right)
+                    const timingOffset = (state.ballY - swingZoneY) / swingZoneH;
+                    const angle = -Math.PI/2 + (timingOffset * 0.85);
+                    const power = 6.0 + (1 - Math.abs(timingOffset)) * 5.0; // Max power is 11.0, min is 6.0
+
+                    state.hitX = 180;
+                    state.hitY = swingZoneY;
+                    state.hitZ = 0;
+                    
+                    // Velocity mapping with lower bounds to avoid every hit sailing past the screen automatically
+                    state.hitVX = Math.cos(angle) * power * 0.9;
+                    state.hitVY = Math.sin(angle) * power * 0.9;
+                    state.hitVZ = power * 0.85;
+
+                    playSound('crack');
+                    announce("CRACK!", "Deep fly ball!");
+
+                    // Tell defensive fielders to run towards estimated landing spot
+                    const flightTime = (state.hitVZ * 2) / 0.18;
+                    const destX = 180 + state.hitVX * flightTime;
+                    const destY = swingZoneY + state.hitVY * flightTime;
+
+                    state.fielders.forEach(f => {
+                        f.tx = Math.max(30, Math.min(330, f.x + (destX - f.x) * 0.75));
+                        f.ty = Math.max(50, Math.min(180, f.y + (destY - f.y) * 0.75));
+                    });
+
+                } else {
+                    // Strike
+                    state.strikes++;
+                    playSound('strike');
+                    announce("STRIKE!", "SWUNG AND MISSED");
+                    checkStrikesOuts();
+                }
+            }
+        }
+
+        function checkStrikesOuts() {
+            if (state.strikes >= 3) {
+                // Game Over - 3 Strikes and You are OUT!
+                state.active = false;
+                playSound('out');
+                announce("OUT!", "3 STRIKES!");
+                
+                // Determine if they made the leaderboard (Check if score qualifies)
+                const lowestScore = leaderboard.length >= 5 ? leaderboard[4].hr : -1;
+                if (state.hrs > lowestScore) {
+                    // Trigger High Score Entry Screen
+                    document.getElementById('new-hr-count').innerText = state.hrs;
+                    document.getElementById('initials-modal').classList.remove('hidden');
+                    document.getElementById('initials-modal').classList.add('flex');
+                } else {
+                    // Regular Game Over Screen
+                    showGameOverScreen();
+                }
+            } else {
+                queueNextPitch(); // Only triggers if the game isn't over!
+            }
+            updateUI();
+        }
+
+        function showGameOverScreen() {
+            document.getElementById('gameover-modal').classList.remove('hidden');
+            document.getElementById('gameover-modal').classList.add('flex');
+            document.getElementById('final-runs').innerText = state.runs;
+            document.getElementById('final-hrs').innerText = state.hrs;
+            document.getElementById('final-hits').innerText = state.hits;
+        }
+
+        function advanceRunners(count) {
+            let runsScored = 0;
+            for (let i = 0; i < count; i++) {
+                const homeRunScored = state.runners[2];
+                state.runners[2] = state.runners[1];
+                state.runners[1] = state.runners[0];
+                state.runners[0] = (i === 0);
+
+                if (homeRunScored) {
+                    runsScored++;
+                }
+            }
+            if (runsScored > 0) {
+                state.runs += runsScored;
+                playSound('cheer');
+                announce("RUN SCORED!", `Home plate crossed! +${runsScored}`);
+            }
+            updateUI();
+            
+            if (state.active) {
+                queueNextPitch();
+            }
+        }
+
+        function restartGame() {
+            state.active = true;
+            state.runs = 0;
+            state.hits = 0;
+            state.hrs = 0;
+            state.strikes = 0;
+            state.runners = [false, false, false];
+            state.pitchActive = false;
+            state.ballHitActive = false;
+            state.isBatSwinging = false;
+            state.pitchDelayActive = false;
+            
+            // Reset Fielders
+            state.fielders[0] = { x: 90, y: 110, tx: 90, ty: 110 };
+            state.fielders[1] = { x: 180, y: 80, tx: 180, ty: 80 };
+            state.fielders[2] = { x: 270, y: 110, tx: 270, ty: 110 };
+
+            document.getElementById('gameover-modal').classList.add('hidden');
+            document.getElementById('gameover-modal').classList.remove('flex');
+            document.getElementById('initials-modal').classList.add('hidden');
+            document.getElementById('initials-modal').classList.remove('flex');
+            
+            updateUI();
+            announce("PLAY BALL!", "Ready for Pitch!");
+            queueNextPitch();
+        }
+
+        // Main Draw Loop
+        function draw() {
+            ctx.clearRect(0, 0, size, size);
+
+            // 1. Draw Green Field Turf
+            ctx.fillStyle = '#065f46';
+            ctx.fillRect(0, 0, size, size);
+
+            // Draw Outfield Arc chalk
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(180, 340, 290, Math.PI, 0, false);
+            ctx.stroke();
+
+            // Draw Base diamond line paths
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(180, 335); // Home
+            ctx.lineTo(250, 260); // 1st Base
+            ctx.lineTo(180, 190); // 2nd Base
+            ctx.lineTo(110, 260); // 3rd Base
+            ctx.closePath();
+            ctx.stroke();
+
+            // Outfield Wall (Y = 40)
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, size, 40);
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(0, 36, size, 4);
+
+            // 2. Draw Pitcher Character
+            ctx.fillStyle = '#94a3b8';
+            ctx.beginPath();
+            ctx.arc(180, 140, 6, 0, Math.PI * 2); // Pitcher head
+            ctx.fill();
+            ctx.fillRect(177, 146, 6, 12); // body
+
+            // Check if ball is currently inside the safe swing zone (for Visual Cue)
+            const ballInHittingZone = state.pitchActive && (Math.abs(state.ballY - swingZoneY) < swingZoneH);
+
+            // 3. Draw Hitting Zone Ring (Glows Green when you can swing and hit!)
+            ctx.beginPath();
+            ctx.arc(180, swingZoneY, 15, 0, Math.PI * 2);
+            ctx.fillStyle = ballInHittingZone ? 'rgba(34, 197, 94, 0.45)' : 'rgba(251, 191, 36, 0.22)';
+            ctx.strokeStyle = ballInHittingZone ? '#22c55e' : '#fbbf24';
+            ctx.lineWidth = ballInHittingZone ? 3 : 2;
+            ctx.fill();
+            ctx.stroke();
+
+            // Home Plate Pentagon
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(180, 330);
+            ctx.lineTo(190, 340);
+            ctx.lineTo(190, 348);
+            ctx.lineTo(170, 348);
+            ctx.lineTo(170, 340);
+            ctx.closePath();
+            ctx.fill();
+
+            // 4. Draw Batter Stance Character
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(146, 335, 6, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillRect(142, 341, 8, 12);
+
+            // Animated Bat Angle
+            if (state.isBatSwinging) {
+                state.batSwingFrame++;
+                state.batAngle = (-Math.PI/4) + (state.batSwingFrame * 0.3);
+                if (state.batSwingFrame > 10) {
+                    state.isBatSwinging = false;
+                    state.batAngle = -Math.PI / 4;
+                }
+            }
+            ctx.strokeStyle = '#d97706';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(146, 345);
+            ctx.lineTo(146 + Math.cos(state.batAngle) * 22, 345 + Math.sin(state.batAngle) * 22);
+            ctx.stroke();
+            ctx.lineCap = 'butt'; // reset
+
+            // 5. Draw Fielders (3 defensive dots)
+            state.fielders.forEach((f, idx) => {
+                // Move towards target smoothly
+                f.x += (f.tx - f.x) * 0.08;
+                f.y += (f.ty - f.y) * 0.08;
+
+                ctx.fillStyle = '#3b82f6'; // Blue shirts
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+
+            // 6. Handle active Pitch
+            if (state.pitchActive) {
+                state.pitchProgress += state.pitchSpeed;
+                
+                // Allow ball to go slightly past the base (up to 1.15 progress) for extra timing comfort
+                if (state.pitchProgress >= 1.15) {
+                    state.pitchProgress = 1.15;
+                }
+
+                // Pitch trajectory
+                const startX = 180;
+                const startY = 152;
+                state.ballX = startX;
+                state.ballY = startY + (swingZoneY - startY) * state.pitchProgress;
+
+                if (state.pitchType === 'curve') {
+                    // Simple curving arc
+                    state.ballX += Math.sin(state.pitchProgress * Math.PI) * 20;
+                }
+
+                // Render Ball shadow & Ball
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.beginPath();
+                ctx.arc(state.ballX, state.ballY + 6, 3, 0, Math.PI*2);
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(state.ballX, state.ballY, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Auto Strike/Ball resolution if no swing
+                if (state.pitchProgress >= 1.15 && !state.isSwingChecked) {
+                    state.isSwingChecked = true;
+                    state.pitchActive = false;
+                    state.strikes++;
+                    playSound('strike');
+                    announce("STRIKE!", "LOOKING");
+                    checkStrikesOuts();
+                }
+            }
+
+            // 7. Handle Ball Hit Fly
+            if (state.ballHitActive) {
+                const gravity = 0.18;
+                state.hitX += state.hitVX;
+                state.hitY += state.hitVY;
+                state.hitZ += state.hitVZ;
+                state.hitVZ -= gravity;
+
+                // Apply realistic air drag/friction to make hits land inside the park
+                if (state.hitZ > 0) {
+                    state.hitVX *= 0.982;
+                    state.hitVY *= 0.982;
+                }
+
+                // Ground landing limit
+                if (state.hitZ <= 0) {
+                    state.hitZ = 0;
+                    state.hitVX *= 0.65;
+                    state.hitVY *= 0.65;
+                }
+
+                // Check Outfield Wall boundary - Only hits that maintain enough velocity/distance get over the fence!
+                if (state.hitY <= 40 && state.hitZ > 0) {
+                    state.ballHitActive = false;
+                    playSound('cheer');
+                    announce("HOME RUN!!!", "Clear out of the park!");
+                    state.hits++;
+                    state.hrs++; // Increment active game session's Home Runs
+                    advanceRunners(4);
+                } else {
+                    // Check Fielders catch
+                    let isCaught = false;
+                    state.fielders.forEach(f => {
+                        const dx = state.hitX - f.x;
+                        const dy = state.hitY - f.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+
+                        // If ball shadow is close and ball is low enough to catch
+                        if (dist < 11 && state.hitZ < 25 && state.ballHitActive) {
+                            isCaught = true;
+                        }
+                    });
+
+                    if (isCaught) {
+                        state.ballHitActive = false;
+                        state.strikes++; // Getting caught counts as a Strike/Out to keep game fast
+                        playSound('out');
+                        announce("OUT!", "Caught on fly!");
+                        checkStrikesOuts();
+                    } else if (Math.abs(state.hitVX) < 0.15 && Math.abs(state.hitVY) < 0.15 && state.hitZ === 0) {
+                        // Ball came to stop: Base hit! Let's decide depth (Single, Double, Triple)
+                        state.ballHitActive = false;
+                        state.hits++;
+                        
+                        let hitBases = 1;
+                        let hitTitle = "SINGLE!";
+                        
+                        // Decide hit type depending on where the ball landed in outfield
+                        if (state.hitY < 120) {
+                            hitBases = 3;
+                            hitTitle = "TRIPLE!";
+                        } else if (state.hitY < 210) {
+                            hitBases = 2;
+                            hitTitle = "DOUBLE!";
+                        }
+                        
+                        announce("SAFE!", hitTitle);
+                        advanceRunners(hitBases);
+                    }
+                }
+
+                // Draw Hit Ball shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                ctx.beginPath();
+                ctx.arc(state.hitX, state.hitY, Math.max(1.5, 4 - state.hitZ * 0.05), 0, Math.PI*2);
+                ctx.fill();
+
+                // Draw Hit Ball
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(state.hitX, state.hitY - state.hitZ, 4.5 + state.hitZ * 0.05, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // Handle auto-focusing on arcade high score entry
+        function setupInitialsInputs() {
+            const in1 = document.getElementById('initial-1');
+            const in2 = document.getElementById('initial-2');
+            const in3 = document.getElementById('initial-3');
+
+            const autoAdvance = (current, next) => {
+                current.addEventListener('input', () => {
+                    current.value = current.value.toUpperCase();
+                    if (current.value.length >= 1 && next) {
+                        next.focus();
+                        next.select();
+                    }
+                });
+            };
+
+            autoAdvance(in1, in2);
+            autoAdvance(in2, in3);
+
+            // Handle backspace support
+            in2.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && in2.value === '') {
+                    in1.focus();
+                }
+            });
+            in3.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && in3.value === '') {
+                    in2.focus();
+                }
+            });
+
+            document.getElementById('btn-save-score').addEventListener('click', () => {
+                const name = (in1.value + in2.value + in3.value).toUpperCase() || "AAA";
+                
+                // Save score
+                leaderboard.push({ name: name, hr: state.hrs });
+                leaderboard.sort((a, b) => b.hr - a.hr);
+                
+                // Keep only top 5 scores
+                leaderboard = leaderboard.slice(0, 5);
+                
+                // Hide Initials Modal and open final scoreboard
+                document.getElementById('initials-modal').classList.add('hidden');
+                document.getElementById('initials-modal').classList.remove('flex');
+                
+                updateUI();
+                showGameOverScreen();
+            });
+        }
+
+        // Initialize events
+        function init() {
+            document.getElementById('btn-swing').addEventListener('click', (e) => {
+                e.preventDefault();
+                executeSwing();
+            });
+
+            canvas.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                executeSwing();
+            });
+
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                executeSwing();
+            }, { passive: false });
+
+            window.addEventListener('keydown', (e) => {
+                if (e.code === "Space" || e.keyCode === 32) {
+                    e.preventDefault();
+                    executeSwing();
+                }
+            });
+
+            document.getElementById('btn-restart').addEventListener('click', restartGame);
+            document.getElementById('btn-modal-restart').addEventListener('click', restartGame);
+
+            // Sound Control toggle
+            const soundBtn = document.getElementById('btn-toggle-sound');
+            soundBtn.addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                if (soundEnabled) {
+                    soundBtn.innerHTML = '<i id="sound-icon" class="fa-solid fa-volume-high"></i> SOUNDS: ENABLED';
+                    playSound('whistle');
+                } else {
+                    soundBtn.innerHTML = '<i id="sound-icon" class="fa-solid fa-volume-xmark text-slate-400"></i> SOUNDS: DISABLED';
+                }
+            });
+
+            setupInitialsInputs();
+            updateUI();
+            draw();
+            
+            // Queue up the first pitch of the game
+            queueNextPitch();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
