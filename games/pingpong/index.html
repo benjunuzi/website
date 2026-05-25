@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>Retro Pong Odyssey</title>
     <!-- Tailwind CSS for sleek modern UI -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,6 +18,7 @@
             overflow-x: hidden;
             /* Prevent bouncing/scrolling pull-down effects on mobile */
             overscroll-behavior-y: contain;
+            touch-action: manipulation;
         }
         .orbitron {
             font-family: 'Orbitron', sans-serif;
@@ -54,15 +55,6 @@
             user-select: none;
             -webkit-user-select: none;
         }
-        /* Shake animations for visual juice */
-        @keyframes shake {
-            0%, 100% { transform: translate(0, 0); }
-            10%, 30%, 50%, 70%, 90% { transform: translate(-4px, 2px); }
-            20%, 40%, 60%, 80% { transform: translate(4px, -2px); }
-        }
-        .shake-effect {
-            animation: shake 0.2s cubic-bezier(.36,.07,.19,.97) both;
-        }
     </style>
 </head>
 <body class="min-h-screen text-slate-100 flex flex-col items-center justify-between p-3 md:p-4 selection:bg-purple-600 selection:text-white">
@@ -82,7 +74,7 @@
         </div>
         
         <div class="flex items-center gap-1.5 md:gap-2">
-            <!-- Mobile Toggle Settings Button (Visible only on screens < lg) -->
+            <!-- Mobile Toggle Settings Button -->
             <button id="mobileSettingsBtn" class="lg:hidden w-9 h-9 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-violet-500 hover:bg-violet-950/40 text-slate-300 transition-all flex items-center justify-center shadow-md cursor-pointer" title="Adjust Game Settings">
                 <i class="fa-solid fa-sliders text-sm"></i>
             </button>
@@ -100,11 +92,21 @@
     <!-- MAIN GAME WORKSPACE -->
     <main class="w-full max-w-5xl flex-1 flex flex-col lg:flex-row gap-4 md:gap-6 items-stretch justify-center relative">
         
-        <!-- SIDE SETTINGS PANEL (Desktop default layout) -->
-        <aside id="sideSettings" class="hidden lg:flex w-full lg:w-80 flex-col gap-4 z-10 transition-all">
+        <!-- RESPONSIBLE DUAL-LAYOUT SETTINGS SIDEBAR / DRAWER -->
+        <aside id="sideSettings" class="fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-10 hidden lg:flex flex-col w-full lg:w-80 h-full lg:h-auto overflow-y-auto lg:overflow-visible bg-[#0a0b10]/95 lg:bg-transparent p-6 lg:p-0 gap-4 transition-all duration-300">
+            <!-- Mobile Drawer Close Header (Hidden on Desktop) -->
+            <div class="flex justify-between items-center lg:hidden border-b border-slate-800 pb-3 mb-1">
+                <h3 class="text-base font-bold orbitron text-violet-400 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-sm"></i> Configurations
+                </h3>
+                <button id="closeSettingsBtn" class="w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+
             <!-- Game Setup Card -->
             <div class="glass-panel p-5 rounded-3xl border border-slate-800/80 flex flex-col gap-4 shadow-xl">
-                <h2 class="text-lg font-bold orbitron tracking-wide text-violet-400 border-b border-slate-800/60 pb-2 flex items-center gap-2">
+                <h2 class="hidden lg:flex text-lg font-bold orbitron tracking-wide text-violet-400 border-b border-slate-800/60 pb-2 items-center gap-2">
                     <i class="fa-solid fa-sliders text-sm"></i> Game Settings
                 </h2>
 
@@ -180,6 +182,11 @@
                     <span id="ballSpeedDisplay" class="text-base font-black orbitron text-fuchsia-400 mt-1">Normal</span>
                 </div>
             </div>
+
+            <!-- Mobile Drawer Apply Button -->
+            <button id="applySettingsBtn" class="lg:hidden w-full py-3.5 rounded-xl bg-violet-600 text-white font-bold text-sm tracking-wider uppercase mt-2">
+                Apply &amp; Return
+            </button>
         </aside>
 
         <!-- CENTER GAME CANVAS WRAPPER -->
@@ -202,7 +209,7 @@
 
             <!-- Master Canvas Container with CSS Scaling (16:9 Aspect Ratio) -->
             <div id="canvasContainer" class="relative w-full overflow-hidden rounded-2xl md:rounded-3xl border-2 border-slate-800/80 bg-[#07080d] flex justify-center items-center shadow-2xl neon-border transition-all duration-300">
-                <canvas id="gameCanvas" class="w-full h-auto block aspect-[16/9] max-h-[72vh]"></canvas>
+                <canvas id="gameCanvas" class="w-full h-auto block aspect-[16/9] max-h-[60vh] md:max-h-[72vh]"></canvas>
 
                 <!-- Interactive Start/Game Overlay Panel -->
                 <div id="gameOverlay" class="absolute inset-0 bg-slate-950/85 flex flex-col items-center justify-center text-center p-4 md:p-6 transition-all duration-300 z-20">
@@ -347,27 +354,6 @@
         </div>
     </div>
 
-    <!-- MOBILE SETTINGS DRAWER OVERLAY -->
-    <div id="mobileSettingsModal" class="fixed inset-0 bg-slate-950/90 flex items-center justify-center p-4 z-40 hidden transition-all">
-        <div class="glass-panel max-w-sm w-full rounded-3xl p-5 border border-slate-800 flex flex-col gap-4 shadow-2xl relative max-h-[85vh] overflow-y-auto">
-            <button id="closeMobileSettingsBtn" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-violet-500 flex items-center justify-center transition cursor-pointer">
-                <i class="fa-solid fa-times"></i>
-            </button>
-            <h3 class="text-lg font-bold orbitron text-violet-400 flex items-center gap-2 pb-2 border-b border-slate-800">
-                <i class="fa-solid fa-sliders text-sm"></i> Mobile Settings
-            </h3>
-            
-            <!-- We will append settings controls in JavaScript or mirror them cleanly -->
-            <div id="mobileSettingsContainer" class="flex flex-col gap-4">
-                <!-- Appended dynamic clone of settings to preserve states across both layouts -->
-            </div>
-            
-            <button id="applyMobileSettingsBtn" class="w-full py-3 rounded-xl bg-violet-600 text-white font-bold text-sm tracking-wider uppercase mt-2">
-                Apply &amp; Close
-            </button>
-        </div>
-    </div>
-
     <!-- GAME ENGINE CODE -->
     <script>
         // ==========================================
@@ -380,14 +366,18 @@
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
         }
+
+        // Global gestures to unlock Audio Context on mobile devices immediately
+        window.addEventListener('click', initAudio, { once: true });
+        window.addEventListener('touchstart', initAudio, { once: true });
 
         function playSynthSound(frequency, type, duration, volume) {
             if (isMuted) return;
             initAudio();
-            if (!audioCtx || audioCtx.state === 'suspended') {
-                audioCtx?.resume();
-            }
             if (!audioCtx) return;
 
             try {
@@ -462,7 +452,6 @@
                 ball: '#ffffff',
                 ballGlow: 'rgba(255, 255, 255, 0.8)',
                 decorations: (ctx) => {
-                    // grid decor on cyber theme
                     ctx.strokeStyle = 'rgba(99, 102, 241, 0.04)';
                     ctx.lineWidth = 1;
                     const gridSize = 40;
@@ -489,7 +478,6 @@
                 ball: '#f43f5e',
                 ballGlow: 'rgba(244, 63, 94, 0.8)',
                 decorations: (ctx) => {
-                    // Neon horizon gridlines
                     ctx.strokeStyle = 'rgba(236, 72, 153, 0.06)';
                     ctx.lineWidth = 2;
                     for (let y = HEIGHT / 2; y < HEIGHT; y += 15 + (y - HEIGHT/2)/4) {
@@ -529,7 +517,6 @@
                 ball: '#fbbf24', // Amber
                 ballGlow: 'rgba(251, 191, 36, 0.8)',
                 decorations: (ctx) => {
-                    // Draw warning light strips at border edge
                     ctx.fillStyle = 'rgba(239, 68, 68, 0.05)';
                     ctx.fillRect(0, 0, WIDTH, 10);
                     ctx.fillRect(0, HEIGHT - 10, WIDTH, 10);
@@ -540,8 +527,8 @@
         // State Machine
         const state = {
             currentTheme: 'cyber',
-            mode: 'single', // 'single' or 'double'
-            difficulty: 'medium', // 'easy', 'medium', 'hard', 'impossible'
+            mode: 'single', 
+            difficulty: 'medium', 
             targetScore: 11,
             powerupsEnabled: true,
             shakeEnabled: true,
@@ -557,32 +544,30 @@
             p1: { x: 30, y: HEIGHT / 2 - 50, w: 16, h: 100, targetH: 100, speed: 10, targetY: HEIGHT / 2 - 50, powerTimer: 0 },
             p2: { x: WIDTH - 46, y: HEIGHT / 2 - 50, w: 16, h: 100, targetH: 100, speed: 10, targetY: HEIGHT / 2 - 50, powerTimer: 0 },
             
-            // Multiple Ball structures support
             balls: [
                 { x: WIDTH/2, y: HEIGHT/2, vx: 5, vy: 3, radius: 9, speed: 7, trail: [], baseSpeed: 7, color: '#ffffff', glow: 'rgba(255, 255, 255, 0.8)', label: 'main' }
             ],
             
             particles: [],
             
-            // Powerup Spawner state
-            activePowerUp: null, // { x, y, radius, type, timer }
-            powerUpSpawnTimer: 180 // frames to next spawn trial
+            activePowerUp: null, 
+            powerUpSpawnTimer: 180 
         };
 
         const PowerUpTypes = {
             BIG_PADDLE: {
-                color: '#10b981', // emerald
+                color: '#10b981',
                 icon: '▲',
                 label: 'BIG PADDLE',
                 apply: (paddle) => {
                     paddle.targetH = 150;
-                    paddle.powerTimer = 420; // ~7 seconds
+                    paddle.powerTimer = 420; 
                     Sounds.powerUpCollected();
                     createImpactParticles(paddle.x + paddle.w/2, paddle.y + paddle.h/2, '#10b981');
                 }
             },
             FIREBALL: {
-                color: '#f59e0b', // amber
+                color: '#f59e0b',
                 icon: '★',
                 label: 'FIREBALL',
                 apply: (paddle, ball) => {
@@ -596,7 +581,7 @@
                 }
             },
             SLOW_MOTION: {
-                color: '#6366f1', // indigo
+                color: '#6366f1',
                 icon: '▼',
                 label: 'SLOW MOTION',
                 apply: (paddle, ball) => {
@@ -608,7 +593,7 @@
                 }
             },
             MULTI_BALL: {
-                color: '#f43f5e', // rose
+                color: '#f43f5e',
                 icon: '◆',
                 label: 'MULTI-BALL',
                 apply: () => {
@@ -637,7 +622,6 @@
         const keys = {};
         window.addEventListener('keydown', e => {
             keys[e.key] = true;
-            // Prevent scrolling on Arrow keys / space
             if (['ArrowUp', 'ArrowDown', ' ', 'w', 's'].includes(e.key.toLowerCase())) {
                 e.preventDefault();
             }
@@ -646,20 +630,44 @@
             keys[e.key] = false;
         });
 
-        // Universal Touch/Mouse coordinate helper
+        // Safe Drawing Polyfill for Older Mobile Viewports
+        function drawRoundedRect(ctx, x, y, width, height, radius) {
+            if (ctx.roundRect) {
+                ctx.beginPath();
+                ctx.roundRect(x, y, width, height, radius);
+                ctx.fill();
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + width - radius, y);
+                ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                ctx.lineTo(x + width, y + height - radius);
+                ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                ctx.lineTo(x + radius, y + height);
+                ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                ctx.lineTo(x, y + radius);
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // ==========================================
+        // ROBUST COORDINATE TRACKING ENGINE
+        // ==========================================
         function handleInteraction(clientX, clientY) {
             const rect = canvas.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+
             const scaleY = HEIGHT / rect.height;
             const scaleX = WIDTH / rect.width;
             
             const relativeX = (clientX - rect.left) * scaleX;
             const relativeY = (clientY - rect.top) * scaleY;
 
-            // Player 1 tracks left hand vertical relative coordinate
             if (state.mode === 'single') {
                 state.p1.targetY = relativeY - state.p1.h / 2;
             } else {
-                // Splits screen into interactive zones
                 if (relativeX < WIDTH / 2) {
                     state.p1.targetY = relativeY - state.p1.h / 2;
                 } else {
@@ -668,15 +676,30 @@
             }
         }
 
-        // Mouse Tracker Integration
-        container.addEventListener('mousemove', e => {
+        // Mouse Tracker Event Listener
+        let isMouseDown = false;
+        container.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            initAudio();
             handleInteraction(e.clientX, e.clientY);
         });
 
-        // Touch Tracking support for Mobile Devices (Supports multi-touch)
+        window.addEventListener('mousemove', (e) => {
+            if (isMouseDown || state.mode === 'single') {
+                handleInteraction(e.clientX, e.clientY);
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        // Touch Tracking support with window boundaries protection (Drift Safe)
+        let isTouching = false;
+        
         function processTouch(e) {
             if (e.touches.length > 0) {
-                e.preventDefault(); // blocks browser scroll/zoom
+                e.preventDefault(); // Lock down zoom/scrolling actions
                 for (let i = 0; i < e.touches.length; i++) {
                     const t = e.touches[i];
                     handleInteraction(t.clientX, t.clientY);
@@ -684,9 +707,25 @@
             }
         }
 
-        container.addEventListener('touchstart', processTouch, { passive: false });
-        container.addEventListener('touchmove', processTouch, { passive: false });
-        container.addEventListener('touchend', processTouch, { passive: false });
+        container.addEventListener('touchstart', (e) => {
+            isTouching = true;
+            initAudio();
+            processTouch(e);
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (isTouching) {
+                processTouch(e);
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => {
+            if (e.touches.length === 0) {
+                isTouching = false;
+            } else {
+                processTouch(e);
+            }
+        }, { passive: false });
 
         // Initialize / Reset Ball to Center with randomized launch vectors
         function resetBall(b, direction = 1) {
@@ -694,13 +733,11 @@
             b.y = HEIGHT / 2;
             b.speed = b.baseSpeed;
             
-            // Random launch angle constraints so it doesn't shoot perfectly vertical or straight horizontal
             const angle = (Math.random() * (Math.PI / 4) - Math.PI / 8) * direction; 
             b.vx = Math.cos(angle) * b.speed * direction;
             b.vy = Math.sin(angle) * b.speed;
             b.trail = [];
             
-            // reset visual styles
             b.color = THEMES[state.currentTheme].ball;
             b.glow = THEMES[state.currentTheme].ballGlow;
         }
@@ -710,11 +747,9 @@
             state.p1Score = 0;
             state.p2Score = 0;
             
-            // Clear powerups
             state.activePowerUp = null;
             state.powerUpSpawnTimer = 300;
 
-            // Reset Paddles position
             state.p1.y = HEIGHT / 2 - state.p1.h / 2;
             state.p1.targetY = state.p1.y;
             state.p1.h = 100;
@@ -727,7 +762,6 @@
             state.p2.targetH = 100;
             state.p2.powerTimer = 0;
 
-            // Clean active elements
             state.balls = [
                 { x: WIDTH/2, y: HEIGHT/2, vx: 6, vy: 4, radius: 10, speed: 7, trail: [], baseSpeed: 7, color: '#ffffff', glow: 'rgba(255,255,255,0.8)', label: 'main' }
             ];
@@ -748,7 +782,6 @@
             document.getElementById('player2Name').textContent = isSingle ? `AI (${diffLabel})` : "Player 2";
             document.getElementById('player1Name').textContent = "Player 1";
             
-            // Update online indicator glow color scheme
             const t = THEMES[state.currentTheme];
             document.getElementById('player1Status').style.backgroundColor = t.paddle1;
             document.getElementById('player2Status').style.backgroundColor = t.paddle2;
@@ -791,13 +824,10 @@
             Sounds.powerUpSpawn();
         }
 
-        // ==========================================
         // SMART AI MOVEMENT PREDICTION / TRACKING
-        // ==========================================
         function runAI(p, targetBall) {
             if (!targetBall) return;
             
-            // AI Performance configs based on selected difficulty settings
             let errorMargin = 30;
             let trackingSpeed = 5;
 
@@ -815,17 +845,14 @@
                     trackingSpeed = 8.5;
                     break;
                 case 'impossible':
-                    errorMargin = 0; // Absolute perfect aiming tracking
+                    errorMargin = 0; 
                     trackingSpeed = 16;
                     break;
             }
 
-            // Estimate intersection target
             let targetY = targetBall.y;
             
-            // Only move if ball is coming towards right half to make AI humanlike, except on hard/impossible
             if (state.difficulty !== 'impossible' && targetBall.vx < 0 && Math.abs(targetBall.x - p.x) > WIDTH / 2) {
-                // Idle or drift back to center
                 targetY = HEIGHT / 2;
             }
 
@@ -849,35 +876,30 @@
         let fpsTimer = 0;
 
         function update(dt) {
-            // Apply screenshake decay
             if (state.screenshake > 0) {
                 state.screenshake -= 1;
             }
 
-            // --- Power Up Spawn Timer Logic ---
             if (state.powerupsEnabled && !state.activePowerUp) {
                 state.powerUpSpawnTimer--;
                 if (state.powerUpSpawnTimer <= 0) {
                     spawnPowerUp();
-                    state.powerUpSpawnTimer = 400 + Math.random() * 400; // randomized frames back to next spawner
+                    state.powerUpSpawnTimer = 400 + Math.random() * 400; 
                 }
             }
 
-            // --- Paddle Height Lerp (Power up transition animation) ---
             [state.p1, state.p2].forEach(p => {
-                // Smooth height transition
                 p.h += (p.targetH - p.h) * 0.1;
 
                 if (p.powerTimer > 0) {
                     p.powerTimer--;
                     if (p.powerTimer <= 0) {
-                        p.targetH = 100; // revert
+                        p.targetH = 100; 
                     }
                 }
             });
 
-            // --- Keyboard Controls ---
-            // Left Paddle (Player 1)
+            // Keyboard Controls
             if (keys['w'] || keys['W']) {
                 state.p1.targetY = Math.max(10, state.p1.y - state.p1.speed);
             }
@@ -885,7 +907,6 @@
                 state.p1.targetY = Math.min(HEIGHT - state.p1.h - 10, state.p1.y + state.p1.speed);
             }
 
-            // Right Paddle (Player 2 - only if Local 2P mode)
             if (state.mode === 'double') {
                 if (keys['ArrowUp']) {
                     state.p2.targetY = Math.max(10, state.p2.y - state.p2.speed);
@@ -894,35 +915,29 @@
                     state.p2.targetY = Math.min(HEIGHT - state.p2.h - 10, state.p2.y + state.p2.speed);
                 }
             } else {
-                // Find ball closest/moving to the AI right side to track
                 let closestBall = state.balls[0];
                 state.balls.forEach(b => {
-                    if (b.vx > 0) closestBall = b; // priority to moving towards AI
+                    if (b.vx > 0) closestBall = b; 
                 });
                 runAI(state.p2, closestBall);
             }
 
-            // Smoothly ease both paddles to target positions for touch/mouse stability
             state.p1.y += (state.p1.targetY - state.p1.y) * 0.35;
             state.p2.y += (state.p2.targetY - state.p2.y) * 0.35;
 
-            // Strict bounds clamping
             state.p1.y = Math.max(10, Math.min(HEIGHT - state.p1.h - 10, state.p1.y));
             state.p2.y = Math.max(10, Math.min(HEIGHT - state.p2.h - 10, state.p2.y));
 
-            // --- Ball Physics Engine & Multi-Balls support ---
+            // Ball simulation
             for (let i = state.balls.length - 1; i >= 0; i--) {
                 const b = state.balls[i];
                 
-                // Record position to trail
                 b.trail.push({ x: b.x, y: b.y });
                 if (b.trail.length > 10) b.trail.shift();
 
-                // Apply velocity vector
                 b.x += b.vx;
                 b.y += b.vy;
 
-                // Wall Collision (Top / Bottom)
                 if (b.y - b.radius <= 10) {
                     b.y = 10 + b.radius;
                     b.vy = -b.vy;
@@ -935,50 +950,39 @@
                     createImpactParticles(b.x, b.y, THEMES[state.currentTheme].wall);
                 }
 
-                // Check collision with Power-Up inside the field
                 if (state.activePowerUp) {
                     const dist = Math.hypot(b.x - state.activePowerUp.x, b.y - state.activePowerUp.y);
                     if (dist < b.radius + state.activePowerUp.radius) {
-                        // Activate Power Up
                         const powerType = PowerUpTypes[state.activePowerUp.type];
-                        
-                        // Decide which paddle hit the ball last to assign power up advantage
                         const lastPaddleHit = (b.vx > 0) ? state.p1 : state.p2;
                         powerType.apply(lastPaddleHit, b);
-                        
-                        // Delete powerup
                         state.activePowerUp = null;
-                        state.powerUpSpawnTimer = 400 + Math.random() * 400; // Reset timer for next spawn check
+                        state.powerUpSpawnTimer = 400 + Math.random() * 400; 
                     }
                 }
 
-                // --- Paddle Collision Checks ---
-                // Left Paddle (P1)
+                // Left Paddle
                 if (b.x - b.radius <= state.p1.x + state.p1.w && b.x + b.radius >= state.p1.x) {
                     if (b.y >= state.p1.y && b.y <= state.p1.y + state.p1.h) {
-                        // Collide! Calculate bounce relative position
                         let relativeIntersectY = (state.p1.y + (state.p1.h / 2)) - b.y;
                         let normalizedIntersectY = relativeIntersectY / (state.p1.h / 2);
-                        let bounceAngle = normalizedIntersectY * (Math.PI / 3); // Max bounce angle 60 deg
+                        let bounceAngle = normalizedIntersectY * (Math.PI / 3);
 
-                        // Increment speed to keep pace dynamic
-                        b.speed = Math.min(b.speed + 0.55, 24); // Cap max physical speed
+                        b.speed = Math.min(b.speed + 0.55, 24);
 
-                        // Apply spin translation from moving paddle
                         const paddleMovement = state.p1.targetY - state.p1.y;
                         b.vx = Math.cos(bounceAngle) * b.speed;
                         b.vy = -Math.sin(bounceAngle) * b.speed + (paddleMovement * 0.15);
-                        b.x = state.p1.x + state.p1.w + b.radius; // Push out of boundary to prevent overlap stickiness
+                        b.x = state.p1.x + state.p1.w + b.radius; 
 
                         Sounds.paddleHit();
                         createImpactParticles(b.x, b.y, THEMES[state.currentTheme].paddle1);
                     }
                 }
 
-                // Right Paddle (P2 / AI)
+                // Right Paddle
                 if (b.x + b.radius >= state.p2.x && b.x - b.radius <= state.p2.x + state.p2.w) {
                     if (b.y >= state.p2.y && b.y <= state.p2.y + state.p2.h) {
-                        // Collide!
                         let relativeIntersectY = (state.p2.y + (state.p2.h / 2)) - b.y;
                         let normalizedIntersectY = relativeIntersectY / (state.p2.h / 2);
                         let bounceAngle = normalizedIntersectY * (Math.PI / 3);
@@ -988,28 +992,26 @@
                         const paddleMovement = state.p2.targetY - state.p2.y;
                         b.vx = -Math.cos(bounceAngle) * b.speed;
                         b.vy = -Math.sin(bounceAngle) * b.speed + (paddleMovement * 0.15);
-                        b.x = state.p2.x - b.radius; // Push out
+                        b.x = state.p2.x - b.radius; 
 
                         Sounds.paddleHit();
                         createImpactParticles(b.x, b.y, THEMES[state.currentTheme].paddle2);
                     }
                 }
 
-                // --- Out of bounds / Score calculation ---
+                // Boundary checks
                 if (b.x - b.radius < 0) {
-                    // P2 Scores!
                     state.p2Score++;
                     if (state.shakeEnabled) state.screenshake = 12;
                     Sounds.scoreOpponent();
                     createImpactParticles(0, b.y, THEMES[state.currentTheme].paddle2);
                     
                     if (state.balls.length > 1) {
-                        state.balls.splice(i, 1); // just remove this shadow ball
+                        state.balls.splice(i, 1); 
                     } else {
-                        checkMatchOver() ? endMatch() : resetBall(b, 1); // Right launches next
+                        checkMatchOver() ? endMatch() : resetBall(b, 1); 
                     }
                 } else if (b.x + b.radius > WIDTH) {
-                    // P1 Scores!
                     state.p1Score++;
                     if (state.shakeEnabled) state.screenshake = 12;
                     Sounds.score();
@@ -1018,12 +1020,12 @@
                     if (state.balls.length > 1) {
                         state.balls.splice(i, 1);
                     } else {
-                        checkMatchOver() ? endMatch() : resetBall(b, -1); // Left launches next
+                        checkMatchOver() ? endMatch() : resetBall(b, -1); 
                     }
                 }
             }
 
-            // --- Particle Lifespan simulation ---
+            // Particles
             for (let i = state.particles.length - 1; i >= 0; i--) {
                 const p = state.particles[i];
                 p.x += p.vx;
@@ -1034,7 +1036,7 @@
                 }
             }
 
-            // Update Dynamic Max Speed text display
+            // Velocity state
             let highestBallSpeed = Math.max(...state.balls.map(b => b.speed));
             const speedDisplay = document.getElementById('ballSpeedDisplay');
             if (highestBallSpeed < 9) {
@@ -1048,20 +1050,16 @@
                 speedDisplay.className = "text-base font-black orbitron text-rose-500 mt-1 animate-pulse";
             }
 
-            // Update Powerups visual states inside HUD overlay
             updatePowerUpUI();
         }
 
-        // Active State Check
         function checkMatchOver() {
             return (state.p1Score >= state.targetScore || state.p2Score >= state.targetScore);
         }
 
-        // Handle game match end sequence
         function endMatch() {
             state.active = false;
             
-            // Present Overlay Menu with match results
             const overlay = document.getElementById('gameOverlay');
             const title = document.getElementById('overlayTitle');
             const subtext = document.getElementById('overlaySubtext');
@@ -1093,7 +1091,6 @@
         function draw() {
             const t = THEMES[state.currentTheme];
 
-            // Clear & translate for screen shake displacement
             ctx.save();
             if (state.screenshake > 0) {
                 const shakeX = (Math.random() - 0.5) * state.screenshake;
@@ -1101,21 +1098,17 @@
                 ctx.translate(shakeX, shakeY);
             }
 
-            // Draw field background fill
             ctx.fillStyle = t.bg;
             ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-            // Execute custom themed overlay decoration patterns if present
             if (t.decorations) {
                 t.decorations(ctx);
             }
 
-            // Draw Game Play Court borders/walls
             ctx.fillStyle = t.wall;
-            ctx.fillRect(0, 0, WIDTH, 10); // top
-            ctx.fillRect(0, HEIGHT - 10, WIDTH, 10); // bottom
+            ctx.fillRect(0, 0, WIDTH, 10); 
+            ctx.fillRect(0, HEIGHT - 10, WIDTH, 10); 
 
-            // Draw Court center net/line divisor
             ctx.strokeStyle = t.net;
             ctx.lineWidth = 4;
             ctx.setLineDash([12, 12]);
@@ -1123,9 +1116,8 @@
             ctx.moveTo(WIDTH / 2, 10);
             ctx.lineTo(WIDTH / 2, HEIGHT - 10);
             ctx.stroke();
-            ctx.setLineDash([]); // clear dash state
+            ctx.setLineDash([]); 
 
-            // Draw HUD Scores inside game field
             ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
             ctx.font = '900 120px "Orbitron", sans-serif';
             ctx.textAlign = 'right';
@@ -1133,13 +1125,12 @@
             ctx.textAlign = 'left';
             ctx.fillText(state.p2Score, WIDTH / 2 + 60, HEIGHT / 2 + 40);
 
-            // Draw Power-Up item if spawned
+            // Power-Up Spawns
             if (state.activePowerUp) {
                 const item = state.activePowerUp;
                 item.pulse += 0.05;
                 const radiusPulse = item.radius + Math.sin(item.pulse) * 3;
 
-                // Outer glow pulse
                 ctx.fillStyle = item.color;
                 ctx.shadowColor = item.color;
                 ctx.shadowBlur = 15;
@@ -1147,16 +1138,14 @@
                 ctx.beginPath();
                 ctx.arc(item.x, item.y, radiusPulse, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.shadowBlur = 0; // reset
+                ctx.shadowBlur = 0; 
 
-                // Inner core ring
                 ctx.strokeStyle = '#ffffff';
                 ctx.lineWidth = 2.5;
                 ctx.beginPath();
                 ctx.arc(item.x, item.y, radiusPulse - 5, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Draw central icon character
                 ctx.fillStyle = '#ffffff';
                 ctx.font = 'bold 15px "Orbitron", sans-serif';
                 ctx.textAlign = 'center';
@@ -1164,26 +1153,20 @@
                 ctx.fillText(PowerUpTypes[item.type].icon, item.x, item.y + 1);
             }
 
-            // Draw Paddles with glowing design tokens
-            // Player 1
+            // Draw Paddles safely (Compat protected)
             ctx.fillStyle = t.paddle1;
             ctx.shadowColor = t.paddle1;
             ctx.shadowBlur = state.p1.powerTimer > 0 ? 18 : 6;
-            ctx.beginPath();
-            ctx.roundRect(state.p1.x, state.p1.y, state.p1.w, state.p1.h, 6);
-            ctx.fill();
+            drawRoundedRect(ctx, state.p1.x, state.p1.y, state.p1.w, state.p1.h, 6);
 
-            // Player 2
             ctx.fillStyle = t.paddle2;
             ctx.shadowColor = t.paddle2;
             ctx.shadowBlur = state.p2.powerTimer > 0 ? 18 : 6;
-            ctx.beginPath();
-            ctx.roundRect(state.p2.x, state.p2.y, state.p2.w, state.p2.h, 6);
-            ctx.fill();
+            drawRoundedRect(ctx, state.p2.x, state.p2.y, state.p2.w, state.p2.h, 6);
             
-            ctx.shadowBlur = 0; // reset shadows
+            ctx.shadowBlur = 0; 
 
-            // Draw Active Balls Trails
+            // Ball Trails
             state.balls.forEach(b => {
                 b.trail.forEach((pos, idx) => {
                     const ratio = idx / b.trail.length;
@@ -1193,19 +1176,18 @@
                     ctx.arc(pos.x, pos.y, b.radius * ratio, 0, Math.PI * 2);
                     ctx.fill();
                 });
-                ctx.globalAlpha = 1.0; // restore
+                ctx.globalAlpha = 1.0; 
 
-                // Draw Ball Center Object
                 ctx.fillStyle = b.color;
                 ctx.shadowColor = b.glow;
                 ctx.shadowBlur = 12;
                 ctx.beginPath();
                 ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.shadowBlur = 0; // reset
+                ctx.shadowBlur = 0; 
             });
 
-            // Draw Burst Particles
+            // Particles
             state.particles.forEach(p => {
                 ctx.fillStyle = p.color;
                 ctx.globalAlpha = p.alpha;
@@ -1218,9 +1200,6 @@
             ctx.restore();
         }
 
-        // ==========================================
-        // DYNAMIC RENDERING INTERFACES
-        // ==========================================
         function updatePowerUpUI() {
             const container = document.getElementById('powerupStatusContainer');
             container.innerHTML = '';
@@ -1244,13 +1223,12 @@
             }
         }
 
-        // Main animation frameloop clock
+        // Clock looping
         function loop(timestamp) {
             if (!lastTime) lastTime = timestamp;
             const dt = timestamp - lastTime;
             lastTime = timestamp;
 
-            // Frame calculation
             frameCount++;
             fpsTimer += dt;
             if (fpsTimer >= 1000) {
@@ -1260,165 +1238,123 @@
                 fpsTimer = 0;
             }
 
-            // Physics tick
             if (state.active && !state.paused) {
                 update(dt);
             }
 
-            // Drawing scene
             draw();
-
             requestAnimationFrame(loop);
         }
 
-        // Simple helper to detect mobile/tablet screens for debug indicators
         function updateDeviceDisplay() {
             const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            const label = isTouch ? "Touch Panel" : "Mouse & Keys";
-            document.getElementById('deviceTypeDisplay').innerText = label;
+            document.getElementById('deviceTypeDisplay').innerText = isTouch ? "Touch Panel" : "Mouse & Keys";
         }
 
         // ==========================================
-        // APP TRIGGERS & LISTENERS BINDINGS
+        // SINGLE-SOURCE SETTINGS INITIALIZER
         // ==========================================
-        window.addEventListener('load', () => {
-            // Setup mobile responsive layout mirrors
-            buildMobileSettingsClone();
-            updateDeviceDisplay();
-            // Initiate drawing loops on window ready
-            requestAnimationFrame(loop);
-        });
-
-        // Dynamic Setup Clone for mobile drawers
-        function buildMobileSettingsClone() {
-            const desktopSettings = document.querySelector('#sideSettings > div');
-            const mobileContainer = document.getElementById('mobileSettingsContainer');
-            if (desktopSettings && mobileContainer) {
-                // Clone settings cards to place inside mobile overlay beautifully
-                mobileContainer.innerHTML = desktopSettings.innerHTML;
-                
-                // Bind replicated events on mobile inputs
-                bindSettingsEvents(mobileContainer, true);
-            }
-            bindSettingsEvents(document.getElementById('sideSettings'), false);
-        }
-
-        // Synchronize Settings between Desktop Panel & Mobile Settings Drawer
-        function bindSettingsEvents(scope, isMobileScope) {
-            const getEl = (selector) => scope.querySelector(selector);
+        function bindSettingsEvents() {
+            const scope = document.getElementById('sideSettings');
             
-            const btnSingle = getEl('#modeSingle');
-            const btnDouble = getEl('#modeDouble');
-            const diffSection = getEl('#difficultySection');
-            const selectTheme = getEl('#themeSelect');
-            const togglePowerups = getEl('#powerUpsToggle');
-            const toggleShake = getEl('#shakeToggle');
+            const btnSingle = scope.querySelector('#modeSingle');
+            const btnDouble = scope.querySelector('#modeDouble');
+            const diffSection = scope.querySelector('#difficultySection');
+            const selectTheme = scope.querySelector('#themeSelect');
+            const togglePowerups = scope.querySelector('#powerUpsToggle');
+            const toggleShake = scope.querySelector('#shakeToggle');
+            const targetDisplay = scope.querySelector('#targetScoreDisplay');
 
-            // Game Mode Controls Sync
-            btnSingle?.addEventListener('click', () => {
+            // Game Mode Buttons
+            btnSingle.addEventListener('click', () => {
                 state.mode = 'single';
-                syncAllSettingsUIs('mode', 'single');
+                updateModeUI();
                 Sounds.wallHit();
             });
-            btnDouble?.addEventListener('click', () => {
+            btnDouble.addEventListener('click', () => {
                 state.mode = 'double';
-                syncAllSettingsUIs('mode', 'double');
+                updateModeUI();
                 Sounds.wallHit();
             });
 
-            // Difficulty Button Clicks
+            // Difficulty Settings
             scope.querySelectorAll('.diff-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const diff = e.target.getAttribute('data-diff');
-                    state.difficulty = diff;
-                    syncAllSettingsUIs('difficulty', diff);
+                    state.difficulty = e.target.getAttribute('data-diff');
+                    updateDifficultyUI();
                     Sounds.wallHit();
                 });
             });
 
-            // Theme Dropdowns
-            selectTheme?.addEventListener('change', (e) => {
+            // Theme Setting
+            selectTheme.addEventListener('change', (e) => {
                 state.currentTheme = e.target.value;
-                syncAllSettingsUIs('theme', e.target.value);
+                state.balls.forEach(b => {
+                    b.color = THEMES[state.currentTheme].ball;
+                    b.glow = THEMES[state.currentTheme].ballGlow;
+                });
+                updatePlayerUINames();
                 Sounds.wallHit();
             });
 
-            // Custom Switch togglers
-            togglePowerups?.addEventListener('change', (e) => {
+            // Toggle Switches
+            togglePowerups.addEventListener('change', (e) => {
                 state.powerupsEnabled = e.target.checked;
-                syncAllSettingsUIs('powerups', e.target.checked);
                 Sounds.wallHit();
             });
-            toggleShake?.addEventListener('change', (e) => {
+
+            toggleShake.addEventListener('change', (e) => {
                 state.shakeEnabled = e.target.checked;
-                syncAllSettingsUIs('shake', e.target.checked);
                 Sounds.wallHit();
+            });
+
+            // Target Scores
+            scope.querySelector('#targetDown').addEventListener('click', () => {
+                if (state.targetScore > 3) {
+                    state.targetScore--;
+                    targetDisplay.innerText = state.targetScore;
+                    Sounds.wallHit();
+                }
+            });
+            scope.querySelector('#targetUp').addEventListener('click', () => {
+                if (state.targetScore < 99) {
+                    state.targetScore++;
+                    targetDisplay.innerText = state.targetScore;
+                    Sounds.wallHit();
+                }
             });
         }
 
-        // Utility to keep both the sidebar and the mobile drawer inputs in perfect harmony
-        function syncAllSettingsUIs(property, value) {
-            const targets = [document.getElementById('sideSettings'), document.getElementById('mobileSettingsContainer')];
-            
-            targets.forEach(scope => {
-                if (!scope) return;
-                const getEl = (selector) => scope.querySelector(selector);
+        function updateModeUI() {
+            const scope = document.getElementById('sideSettings');
+            const btnSingle = scope.querySelector('#modeSingle');
+            const btnDouble = scope.querySelector('#modeDouble');
+            const diffSection = scope.querySelector('#difficultySection');
 
-                if (property === 'mode') {
-                    const btnSingle = getEl('#modeSingle');
-                    const btnDouble = getEl('#modeDouble');
-                    const diffSection = getEl('#difficultySection');
-                    
-                    if (value === 'single') {
-                        if (btnSingle) btnSingle.className = "py-2.5 px-3 rounded-xl border border-violet-500/30 bg-violet-950/20 text-violet-300 font-bold transition flex flex-col items-center justify-center text-center cursor-pointer";
-                        if (btnDouble) btnDouble.className = "py-2.5 px-3 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 font-bold hover:bg-slate-800 hover:border-slate-700 transition flex flex-col items-center justify-center text-center cursor-pointer";
-                        if (diffSection) {
-                            diffSection.style.opacity = '1';
-                            diffSection.style.pointerEvents = 'auto';
-                        }
-                    } else {
-                        if (btnDouble) btnDouble.className = "py-2.5 px-3 rounded-xl border border-violet-500/30 bg-violet-950/20 text-violet-300 font-bold transition flex flex-col items-center justify-center text-center cursor-pointer";
-                        if (btnSingle) btnSingle.className = "py-2.5 px-3 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 font-bold hover:bg-slate-800 hover:border-slate-700 transition flex flex-col items-center justify-center text-center cursor-pointer";
-                        if (diffSection) {
-                            diffSection.style.opacity = '0.4';
-                            diffSection.style.pointerEvents = 'none';
-                        }
-                    }
-                }
+            if (state.mode === 'single') {
+                btnSingle.className = "py-2.5 px-3 rounded-xl border border-violet-500/30 bg-violet-950/20 text-violet-300 font-bold transition flex flex-col items-center justify-center text-center cursor-pointer";
+                btnDouble.className = "py-2.5 px-3 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 font-bold hover:bg-slate-800 hover:border-slate-700 transition flex flex-col items-center justify-center text-center cursor-pointer";
+                diffSection.style.opacity = '1';
+                diffSection.style.pointerEvents = 'auto';
+            } else {
+                btnDouble.className = "py-2.5 px-3 rounded-xl border border-violet-500/30 bg-violet-950/20 text-violet-300 font-bold transition flex flex-col items-center justify-center text-center cursor-pointer";
+                btnSingle.className = "py-2.5 px-3 rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 font-bold hover:bg-slate-800 hover:border-slate-700 transition flex flex-col items-center justify-center text-center cursor-pointer";
+                diffSection.style.opacity = '0.4';
+                diffSection.style.pointerEvents = 'none';
+            }
+            updatePlayerUINames();
+        }
 
-                if (property === 'difficulty') {
-                    scope.querySelectorAll('.diff-btn').forEach(btn => {
-                        const diff = btn.getAttribute('data-diff');
-                        if (diff === value) {
-                            btn.className = "diff-btn py-1.5 text-xs font-bold rounded-lg bg-violet-600 text-white shadow-lg shadow-violet-600/20 transition cursor-pointer";
-                        } else {
-                            btn.className = "diff-btn py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition cursor-pointer";
-                        }
-                    });
-                }
-
-                if (property === 'theme') {
-                    const selectTheme = getEl('#themeSelect');
-                    if (selectTheme) selectTheme.value = value;
-                    
-                    // Immediate ball updates
-                    state.balls.forEach(b => {
-                        b.color = THEMES[value].ball;
-                        b.glow = THEMES[value].ballGlow;
-                    });
-                }
-
-                if (property === 'powerups') {
-                    const togglePowerups = getEl('#powerUpsToggle');
-                    if (togglePowerups) togglePowerups.checked = value;
-                }
-
-                if (property === 'shake') {
-                    const toggleShake = getEl('#shakeToggle');
-                    if (toggleShake) toggleShake.checked = value;
+        function updateDifficultyUI() {
+            const scope = document.getElementById('sideSettings');
+            scope.querySelectorAll('.diff-btn').forEach(btn => {
+                const diff = btn.getAttribute('data-diff');
+                if (diff === state.difficulty) {
+                    btn.className = "diff-btn py-1.5 text-xs font-bold rounded-lg bg-violet-600 text-white shadow-lg shadow-violet-600/20 transition cursor-pointer";
+                } else {
+                    btn.className = "diff-btn py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition cursor-pointer";
                 }
             });
-
             updatePlayerUINames();
         }
 
@@ -1426,31 +1362,11 @@
         document.getElementById('startGameBtn').addEventListener('click', () => {
             initAudio();
             initializeMatch();
-            
-            // Start State
             state.active = true;
             Sounds.gameStart();
 
-            // Hide overlay panel
             const overlay = document.getElementById('gameOverlay');
             overlay.classList.add('opacity-0', 'pointer-events-none');
-        });
-
-        // Target scores controllers
-        const targetDisplay = document.getElementById('targetScoreDisplay');
-        document.getElementById('targetDown').addEventListener('click', () => {
-            if (state.targetScore > 3) {
-                state.targetScore--;
-                targetDisplay.innerText = state.targetScore;
-                Sounds.wallHit();
-            }
-        });
-        document.getElementById('targetUp').addEventListener('click', () => {
-            if (state.targetScore < 99) {
-                state.targetScore++;
-                targetDisplay.innerText = state.targetScore;
-                Sounds.wallHit();
-            }
         });
 
         // Audio Mute trigger
@@ -1476,26 +1392,36 @@
             infoModal.classList.add('hidden');
         });
 
-        // Mobile Settings Drawer handlers
-        const mobileSettingsModal = document.getElementById('mobileSettingsModal');
-        document.getElementById('mobileSettingsBtn').addEventListener('click', () => {
-            mobileSettingsModal.classList.remove('hidden');
+        // Responsive Sidebar Drawer Mobile Toggle Ticks
+        const sideSettings = document.getElementById('sideSettings');
+        const mobileSettingsBtn = document.getElementById('mobileSettingsBtn');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const applySettingsBtn = document.getElementById('applySettingsBtn');
+
+        mobileSettingsBtn.addEventListener('click', () => {
+            sideSettings.classList.remove('hidden');
+            sideSettings.classList.add('flex');
         });
-        document.getElementById('closeMobileSettingsBtn').addEventListener('click', () => {
-            mobileSettingsModal.classList.add('hidden');
-        });
-        document.getElementById('applyMobileSettingsBtn').addEventListener('click', () => {
-            mobileSettingsModal.classList.add('hidden');
-        });
+
+        function hideMobileSettings() {
+            sideSettings.classList.add('hidden');
+            sideSettings.classList.remove('flex');
+        }
+
+        closeSettingsBtn.addEventListener('click', hideMobileSettings);
+        applySettingsBtn.addEventListener('click', hideMobileSettings);
 
         // Global Modal closing hooks
         window.addEventListener('click', (e) => {
             if (e.target === infoModal) {
                 infoModal.classList.add('hidden');
             }
-            if (e.target === mobileSettingsModal) {
-                mobileSettingsModal.classList.add('hidden');
-            }
+        });
+
+        window.addEventListener('load', () => {
+            bindSettingsEvents();
+            updateDeviceDisplay();
+            requestAnimationFrame(loop);
         });
     </script>
 </body>
