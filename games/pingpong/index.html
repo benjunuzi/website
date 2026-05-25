@@ -540,6 +540,13 @@
             screenshake: 0,
             fps: 60,
             
+            // Countdown Mechanics State
+            countdownActive: false,
+            countdownTimer: 0, // milliseconds remaining
+            countdownDirection: 1, // which side to launch towards
+            countdownLastBeep: 0, // track current countdown second
+            goTextTimer: 0, // show "GO!" text overlay timer
+            
             // Objects
             p1: { x: 30, y: HEIGHT / 2 - 50, w: 16, h: 100, targetH: 100, speed: 10, targetY: HEIGHT / 2 - 50, powerTimer: 0 },
             p2: { x: WIDTH - 46, y: HEIGHT / 2 - 50, w: 16, h: 100, targetH: 100, speed: 10, targetY: HEIGHT / 2 - 50, powerTimer: 0 },
@@ -727,19 +734,23 @@
             }
         }, { passive: false });
 
-        // Initialize / Reset Ball to Center with randomized launch vectors
+        // Initialize / Reset Ball to Center with 1,2,3 Go Countdown Mechanics
         function resetBall(b, direction = 1) {
             b.x = WIDTH / 2;
             b.y = HEIGHT / 2;
             b.speed = b.baseSpeed;
-            
-            const angle = (Math.random() * (Math.PI / 4) - Math.PI / 8) * direction; 
-            b.vx = Math.cos(angle) * b.speed * direction;
-            b.vy = Math.sin(angle) * b.speed;
+            b.vx = 0;
+            b.vy = 0;
             b.trail = [];
             
             b.color = THEMES[state.currentTheme].ball;
             b.glow = THEMES[state.currentTheme].ballGlow;
+
+            // Trigger CountDown Stage
+            state.countdownActive = true;
+            state.countdownTimer = 3000; // 3 seconds (3, 2, 1)
+            state.countdownDirection = direction;
+            state.countdownLastBeep = 4; // Start above 3 to register 3 trigger
         }
 
         // Setup match variables
@@ -763,13 +774,14 @@
             state.p2.powerTimer = 0;
 
             state.balls = [
-                { x: WIDTH/2, y: HEIGHT/2, vx: 6, vy: 4, radius: 10, speed: 7, trail: [], baseSpeed: 7, color: '#ffffff', glow: 'rgba(255,255,255,0.8)', label: 'main' }
+                { x: WIDTH/2, y: HEIGHT/2, vx: 0, vy: 0, radius: 10, speed: 7, trail: [], baseSpeed: 7, color: '#ffffff', glow: 'rgba(255,255,255,0.8)', label: 'main' }
             ];
             resetBall(state.balls[0], Math.random() > 0.5 ? 1 : -1);
 
             state.particles = [];
             state.screenshake = 0;
             state.paused = false;
+            state.goTextTimer = 0;
 
             updatePlayerUINames();
         }
@@ -880,7 +892,8 @@
                 state.screenshake -= 1;
             }
 
-            if (state.powerupsEnabled && !state.activePowerUp) {
+            // --- Power Up Spawn Timer Logic ---
+            if (state.powerupsEnabled && !state.activePowerUp && !state.countdownActive) {
                 state.powerUpSpawnTimer--;
                 if (state.powerUpSpawnTimer <= 0) {
                     spawnPowerUp();
@@ -888,6 +901,7 @@
                 }
             }
 
+            // --- Paddle Height Lerping ---
             [state.p1, state.p2].forEach(p => {
                 p.h += (p.targetH - p.h) * 0.1;
 
@@ -899,7 +913,7 @@
                 }
             });
 
-            // Keyboard Controls
+            // --- Keyboard Controls ---
             if (keys['w'] || keys['W']) {
                 state.p1.targetY = Math.max(10, state.p1.y - state.p1.speed);
             }
@@ -928,104 +942,158 @@
             state.p1.y = Math.max(10, Math.min(HEIGHT - state.p1.h - 10, state.p1.y));
             state.p2.y = Math.max(10, Math.min(HEIGHT - state.p2.h - 10, state.p2.y));
 
-            // Ball simulation
-            for (let i = state.balls.length - 1; i >= 0; i--) {
-                const b = state.balls[i];
-                
-                b.trail.push({ x: b.x, y: b.y });
-                if (b.trail.length > 10) b.trail.shift();
+            // --- Countdown Logic ---
+            if (state.countdownActive) {
+                state.countdownTimer -= dt;
 
-                b.x += b.vx;
-                b.y += b.vy;
+                // Lock balls stationary in center during countdown
+                state.balls.forEach(b => {
+                    b.x = WIDTH / 2;
+                    b.y = HEIGHT / 2;
+                    b.vx = 0;
+                    b.vy = 0;
+                });
 
-                if (b.y - b.radius <= 10) {
-                    b.y = 10 + b.radius;
-                    b.vy = -b.vy;
-                    Sounds.wallHit();
-                    createImpactParticles(b.x, b.y, THEMES[state.currentTheme].wall);
-                } else if (b.y + b.radius >= HEIGHT - 10) {
-                    b.y = HEIGHT - 10 - b.radius;
-                    b.vy = -b.vy;
-                    Sounds.wallHit();
-                    createImpactParticles(b.x, b.y, THEMES[state.currentTheme].wall);
+                // Check beep milestones (3, 2, 1)
+                const currentSec = Math.ceil(state.countdownTimer / 1000);
+                if (currentSec !== state.countdownLastBeep && currentSec >= 1 && currentSec <= 3) {
+                    playSynthSound(380, 'sine', 0.15, 0.3); // Mid pitch retro beep
+                    state.countdownLastBeep = currentSec;
+
+                    // Erupt some light particles in center on each second tick
+                    createImpactParticles(WIDTH / 2, HEIGHT / 2, THEMES[state.currentTheme].net);
                 }
 
-                if (state.activePowerUp) {
-                    const dist = Math.hypot(b.x - state.activePowerUp.x, b.y - state.activePowerUp.y);
-                    if (dist < b.radius + state.activePowerUp.radius) {
-                        const powerType = PowerUpTypes[state.activePowerUp.type];
-                        const lastPaddleHit = (b.vx > 0) ? state.p1 : state.p2;
-                        powerType.apply(lastPaddleHit, b);
-                        state.activePowerUp = null;
-                        state.powerUpSpawnTimer = 400 + Math.random() * 400; 
-                    }
-                }
-
-                // Left Paddle
-                if (b.x - b.radius <= state.p1.x + state.p1.w && b.x + b.radius >= state.p1.x) {
-                    if (b.y >= state.p1.y && b.y <= state.p1.y + state.p1.h) {
-                        let relativeIntersectY = (state.p1.y + (state.p1.h / 2)) - b.y;
-                        let normalizedIntersectY = relativeIntersectY / (state.p1.h / 2);
-                        let bounceAngle = normalizedIntersectY * (Math.PI / 3);
-
-                        b.speed = Math.min(b.speed + 0.55, 24);
-
-                        const paddleMovement = state.p1.targetY - state.p1.y;
-                        b.vx = Math.cos(bounceAngle) * b.speed;
-                        b.vy = -Math.sin(bounceAngle) * b.speed + (paddleMovement * 0.15);
-                        b.x = state.p1.x + state.p1.w + b.radius; 
-
-                        Sounds.paddleHit();
-                        createImpactParticles(b.x, b.y, THEMES[state.currentTheme].paddle1);
-                    }
-                }
-
-                // Right Paddle
-                if (b.x + b.radius >= state.p2.x && b.x - b.radius <= state.p2.x + state.p2.w) {
-                    if (b.y >= state.p2.y && b.y <= state.p2.y + state.p2.h) {
-                        let relativeIntersectY = (state.p2.y + (state.p2.h / 2)) - b.y;
-                        let normalizedIntersectY = relativeIntersectY / (state.p2.h / 2);
-                        let bounceAngle = normalizedIntersectY * (Math.PI / 3);
-
-                        b.speed = Math.min(b.speed + 0.55, 24);
-
-                        const paddleMovement = state.p2.targetY - state.p2.y;
-                        b.vx = -Math.cos(bounceAngle) * b.speed;
-                        b.vy = -Math.sin(bounceAngle) * b.speed + (paddleMovement * 0.15);
-                        b.x = state.p2.x - b.radius; 
-
-                        Sounds.paddleHit();
-                        createImpactParticles(b.x, b.y, THEMES[state.currentTheme].paddle2);
-                    }
-                }
-
-                // Boundary checks
-                if (b.x - b.radius < 0) {
-                    state.p2Score++;
-                    if (state.shakeEnabled) state.screenshake = 12;
-                    Sounds.scoreOpponent();
-                    createImpactParticles(0, b.y, THEMES[state.currentTheme].paddle2);
+                // Launch Ball condition met
+                if (state.countdownTimer <= 0) {
+                    state.countdownActive = false;
+                    state.goTextTimer = 800; // Display "GO!" for 800ms
                     
-                    if (state.balls.length > 1) {
-                        state.balls.splice(i, 1); 
-                    } else {
-                        checkMatchOver() ? endMatch() : resetBall(b, 1); 
-                    }
-                } else if (b.x + b.radius > WIDTH) {
-                    state.p1Score++;
-                    if (state.shakeEnabled) state.screenshake = 12;
-                    Sounds.score();
-                    createImpactParticles(WIDTH, b.y, THEMES[state.currentTheme].paddle1);
+                    // High-pitch punchy throwback sound
+                    playSynthSound(760, 'square', 0.25, 0.3);
 
-                    if (state.balls.length > 1) {
-                        state.balls.splice(i, 1);
-                    } else {
-                        checkMatchOver() ? endMatch() : resetBall(b, -1); 
+                    // Actually launch / throw the ball
+                    const b = state.balls[0];
+                    b.speed = b.baseSpeed;
+                    const angle = (Math.random() * (Math.PI / 4) - Math.PI / 8) * state.countdownDirection; 
+                    b.vx = Math.cos(angle) * b.speed * state.countdownDirection;
+                    b.vy = Math.sin(angle) * b.speed;
+
+                    // Errupt energetic particles at throw launch
+                    createImpactParticles(WIDTH / 2, HEIGHT / 2, THEMES[state.currentTheme].ball);
+                    if (state.shakeEnabled) state.screenshake = 5;
+                }
+            }
+
+            // Decrease dynamic "GO!" text overlay timer
+            if (state.goTextTimer > 0) {
+                state.goTextTimer -= dt;
+            }
+
+            // --- Active Ball Simulation ---
+            if (!state.countdownActive) {
+                for (let i = state.balls.length - 1; i >= 0; i--) {
+                    const b = state.balls[i];
+                    
+                    b.trail.push({ x: b.x, y: b.y });
+                    if (b.trail.length > 10) b.trail.shift();
+
+                    b.x += b.vx;
+                    b.y += b.vy;
+
+                    // Top/Bottom boundaries
+                    if (b.y - b.radius <= 10) {
+                        b.y = 10 + b.radius;
+                        b.vy = -b.vy;
+                        Sounds.wallHit();
+                        createImpactParticles(b.x, b.y, THEMES[state.currentTheme].wall);
+                    } else if (b.y + b.radius >= HEIGHT - 10) {
+                        b.y = HEIGHT - 10 - b.radius;
+                        b.vy = -b.vy;
+                        Sounds.wallHit();
+                        createImpactParticles(b.x, b.y, THEMES[state.currentTheme].wall);
+                    }
+
+                    // Power-Up Collisions
+                    if (state.activePowerUp) {
+                        const dist = Math.hypot(b.x - state.activePowerUp.x, b.y - state.activePowerUp.y);
+                        if (dist < b.radius + state.activePowerUp.radius) {
+                            const powerType = PowerUpTypes[state.activePowerUp.type];
+                            const lastPaddleHit = (b.vx > 0) ? state.p1 : state.p2;
+                            powerType.apply(lastPaddleHit, b);
+                            state.activePowerUp = null;
+                            state.powerUpSpawnTimer = 400 + Math.random() * 400; 
+                        }
+                    }
+
+                    // Left Paddle Collisions (P1)
+                    if (b.x - b.radius <= state.p1.x + state.p1.w && b.x + b.radius >= state.p1.x) {
+                        if (b.y >= state.p1.y && b.y <= state.p1.y + state.p1.h) {
+                            let relativeIntersectY = (state.p1.y + (state.p1.h / 2)) - b.y;
+                            let normalizedIntersectY = relativeIntersectY / (state.p1.h / 2);
+                            let bounceAngle = normalizedIntersectY * (Math.PI / 3);
+
+                            b.speed = Math.min(b.speed + 0.55, 24);
+
+                            const paddleMovement = state.p1.targetY - state.p1.y;
+                            b.vx = Math.cos(bounceAngle) * b.speed;
+                            b.vy = -Math.sin(bounceAngle) * b.speed + (paddleMovement * 0.15);
+                            b.x = state.p1.x + state.p1.w + b.radius; 
+
+                            Sounds.paddleHit();
+                            createImpactParticles(b.x, b.y, THEMES[state.currentTheme].paddle1);
+                        }
+                    }
+
+                    // Right Paddle Collisions (P2 / AI)
+                    if (b.x + b.radius >= state.p2.x && b.x - b.radius <= state.p2.x + state.p2.w) {
+                        if (b.y >= state.p2.y && b.y <= state.p2.y + state.p2.h) {
+                            let relativeIntersectY = (state.p2.y + (state.p2.h / 2)) - b.y;
+                            let normalizedIntersectY = relativeIntersectY / (state.p2.h / 2);
+                            let bounceAngle = normalizedIntersectY * (Math.PI / 3);
+
+                            b.speed = Math.min(b.speed + 0.55, 24);
+
+                            const paddleMovement = state.p2.targetY - state.p2.y;
+                            b.vx = -Math.cos(bounceAngle) * b.speed;
+                            b.vy = -Math.sin(bounceAngle) * b.speed + (paddleMovement * 0.15);
+                            b.x = state.p2.x - b.radius; 
+
+                            Sounds.paddleHit();
+                            createImpactParticles(b.x, b.y, THEMES[state.currentTheme].paddle2);
+                        }
+                    }
+
+                    // Boundary Point misses
+                    if (b.x - b.radius < 0) {
+                        // Player 2 scores!
+                        state.p2Score++;
+                        if (state.shakeEnabled) state.screenshake = 12;
+                        Sounds.scoreOpponent();
+                        createImpactParticles(0, b.y, THEMES[state.currentTheme].paddle2);
+                        
+                        if (state.balls.length > 1) {
+                            state.balls.splice(i, 1); 
+                        } else {
+                            checkMatchOver() ? endMatch() : resetBall(b, 1); // Throw towards P2 next
+                        }
+                    } else if (b.x + b.radius > WIDTH) {
+                        // Player 1 scores!
+                        state.p1Score++;
+                        if (state.shakeEnabled) state.screenshake = 12;
+                        Sounds.score();
+                        createImpactParticles(WIDTH, b.y, THEMES[state.currentTheme].paddle1);
+
+                        if (state.balls.length > 1) {
+                            state.balls.splice(i, 1);
+                        } else {
+                            checkMatchOver() ? endMatch() : resetBall(b, -1); // Throw towards P1 next
+                        }
                     }
                 }
             }
 
-            // Particles
+            // --- Particle Lifespan updates ---
             for (let i = state.particles.length - 1; i >= 0; i--) {
                 const p = state.particles[i];
                 p.x += p.vx;
@@ -1036,7 +1104,7 @@
                 }
             }
 
-            // Velocity state
+            // --- Velocity status ---
             let highestBallSpeed = Math.max(...state.balls.map(b => b.speed));
             const speedDisplay = document.getElementById('ballSpeedDisplay');
             if (highestBallSpeed < 9) {
@@ -1196,6 +1264,48 @@
                 ctx.fill();
             });
             ctx.globalAlpha = 1.0;
+
+            // --- Draw Countdown Numbers Overlay ---
+            if (state.countdownActive) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.font = '900 130px "Orbitron", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = THEMES[state.currentTheme].paddle1;
+                ctx.shadowBlur = 35;
+
+                const secondsRemaining = Math.ceil(state.countdownTimer / 1000);
+                if (secondsRemaining >= 1 && secondsRemaining <= 3) {
+                    // Create dynamic retro pulsing heartbeat scale factor
+                    const fraction = (state.countdownTimer % 1000) / 1000; // 1 -> 0
+                    const pulse = 1 + fraction * 0.25;
+                    ctx.translate(WIDTH / 2, HEIGHT / 2);
+                    ctx.scale(pulse, pulse);
+                    ctx.fillText(secondsRemaining, 0, 0);
+                }
+                ctx.restore();
+            }
+
+            // --- Draw "GO!" Throw Overlay ---
+            if (state.goTextTimer > 0) {
+                ctx.save();
+                // Graceful fadeout opacity
+                const alpha = Math.min(1, state.goTextTimer / 250);
+                ctx.fillStyle = `rgba(251, 191, 36, ${alpha})`; // Bright Gold Yellow
+                ctx.font = '900 150px "Orbitron", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(251, 191, 36, 0.9)';
+                ctx.shadowBlur = 45;
+
+                ctx.translate(WIDTH / 2, HEIGHT / 2);
+                // Throw zoom scale-out effect
+                const scale = 1.0 + (1.0 - state.goTextTimer / 800) * 0.4;
+                ctx.scale(scale, scale);
+                ctx.fillText("GO!", 0, 0);
+                ctx.restore();
+            }
 
             ctx.restore();
         }
