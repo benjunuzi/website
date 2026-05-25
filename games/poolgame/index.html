@@ -928,11 +928,18 @@
                     movementActive = true;
                 }
 
-                // Table Pocket detection check
+                // Table Pocket detection check & gravitational pull
                 POCKETS.forEach(p => {
                     const dx = ball.x - p.x;
                     const dy = ball.y - p.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    // Pull effect near pockets (Suction Gravity)
+                    if (dist < POCKET_RADIUS * 1.6 && !ball.isSinking) {
+                        ball.vx += (p.x - ball.x) * 0.06;
+                        ball.vy += (p.y - ball.y) * 0.06;
+                    }
+
                     // Standard trigger rule is less than pocket radius
                     if (dist < POCKET_RADIUS * 1.05 && !ball.isSinking) {
                         ball.isSinking = true;
@@ -944,24 +951,43 @@
                 // Boundary bounce resolution (Cushions)
                 // Offset checks considering radius padding
                 if (!ball.isSinking) {
-                    if (ball.x < C_LEFT + ball.radius) {
-                        ball.x = C_LEFT + ball.radius;
-                        ball.vx *= -0.85;
-                        playCushionSound(Math.abs(ball.vx));
-                    } else if (ball.x > C_RIGHT - ball.radius) {
-                        ball.x = C_RIGHT - ball.radius;
-                        ball.vx *= -0.85;
-                        playCushionSound(Math.abs(ball.vx));
-                    }
+                    // Check if ball is near any pocket to bypass regular table cushions
+                    let nearPocket = false;
+                    POCKETS.forEach(p => {
+                        const dx = ball.x - p.x;
+                        const dy = ball.y - p.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < POCKET_RADIUS * 1.6) {
+                            nearPocket = true;
+                        }
+                    });
 
-                    if (ball.y < C_TOP + ball.radius) {
-                        ball.y = C_TOP + ball.radius;
-                        ball.vy *= -0.85;
-                        playCushionSound(Math.abs(ball.vy));
-                    } else if (ball.y > C_BOTTOM - ball.radius) {
-                        ball.y = C_BOTTOM - ball.radius;
-                        ball.vy *= -0.85;
-                        playCushionSound(Math.abs(ball.vy));
+                    if (!nearPocket) {
+                        if (ball.x < C_LEFT + ball.radius) {
+                            ball.x = C_LEFT + ball.radius;
+                            ball.vx *= -0.85;
+                            playCushionSound(Math.abs(ball.vx));
+                        } else if (ball.x > C_RIGHT - ball.radius) {
+                            ball.x = C_RIGHT - ball.radius;
+                            ball.vx *= -0.85;
+                            playCushionSound(Math.abs(ball.vx));
+                        }
+
+                        if (ball.y < C_TOP + ball.radius) {
+                            ball.y = C_TOP + ball.radius;
+                            ball.vy *= -0.85;
+                            playCushionSound(Math.abs(ball.vy));
+                        } else if (ball.y > C_BOTTOM - ball.radius) {
+                            ball.y = C_BOTTOM - ball.radius;
+                            ball.vy *= -0.85;
+                            playCushionSound(Math.abs(ball.vy));
+                        }
+                    } else {
+                        // Hard outer table rail limits so balls never fly off screen entirely
+                        if (ball.x < 12) { ball.x = 12; ball.vx *= -0.5; }
+                        if (ball.x > V_WIDTH - 12) { ball.x = V_WIDTH - 12; ball.vx *= -0.5; }
+                        if (ball.y < 12) { ball.y = 12; ball.vy *= -0.5; }
+                        if (ball.y > V_HEIGHT - 12) { ball.y = V_HEIGHT - 12; ball.vy *= -0.5; }
                     }
                 }
             });
@@ -1098,6 +1124,7 @@
             }
         }
 
+        // Evaluate state when all balls have ground to a halt
         function evaluateTurnEnd() {
             // First hit foul check: Did cue hit expected type first?
             const currentType = playerTypes[currentPlayer];
