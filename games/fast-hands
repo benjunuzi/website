@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Labs - Test Your Reflexes</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            50: '#f6f6f9',
+                            100: '#ececf3',
+                            200: '#d5d5e3',
+                            300: '#b1b1ca',
+                            400: '#8484aa',
+                            500: '#64648e',
+                            600: '#4e4e73',
+                            700: '#40405d',
+                            800: '#1e1e2f',
+                            900: '#12121a',
+                            950: '#0b0b10',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.15; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(1.1); }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 8s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-dark-950 text-dark-50 min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+
+    <!-- Background decorative glows -->
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none animate-pulse-slow"></div>
+    <div class="absolute bottom-10 right-1/4 w-[400px] h-[400px] bg-emerald-500/10 rounded-full blur-[150px] pointer-events-none animate-pulse-slow" style="animation-delay: -3s;"></div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Header Navigation -->
+    <header class="relative z-10 border-b border-dark-800/60 bg-dark-900/40 backdrop-blur-md px-6 py-4">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('dashboard')">
+                <div class="p-2 bg-indigo-600/20 rounded-xl border border-indigo-500/30 text-indigo-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">REACTION LABS</h1>
+                    <p class="text-[10px] text-dark-400 font-medium tracking-wider uppercase">Neuro-Reflex Training Station</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <!-- Leaderboard Quick Link -->
+                <button onclick="switchTab('leaderboard')" class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-dark-800 bg-dark-900/60 hover:bg-dark-800 text-amber-400 hover:text-amber-300 transition duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    <span>Leaderboards</span>
+                </button>
+
+                <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-2 rounded-xl border border-dark-800 bg-dark-900/60 hover:bg-dark-800 text-dark-300 hover:text-dark-100 transition duration-200" title="Toggle Sound FX">
+                    <!-- Volume High Icon -->
+                    <svg id="sound-on-icon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75V5.25L7.75 9.5H4.5v5h3.25L12 18.75z" />
+                    </svg>
+                    <!-- Volume Mute Icon (Hidden by default) -->
+                    <svg id="sound-off-icon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                    </svg>
+                </button>
+                <button onclick="resetAllHighscores()" class="px-3 py-2 text-xs font-semibold rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/20 text-rose-400 transition duration-200">
+                    Reset local
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8 relative z-10 flex flex-col justify-center">
+
+        <!-- DASHBOARD TAB -->
+        <section id="tab-dashboard" class="space-y-8 animate-fade-in">
+            <div class="text-center max-w-2xl mx-auto space-y-3">
+                <span class="px-3 py-1 text-xs font-semibold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full">TRAIN YOUR COGNITION</span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">How sharp are your reflexes?</h2>
+                <p class="text-dark-400 text-sm sm:text-base">Challenge yourself across multiple reflex vectors. Input delays are neutralized for ultra-precise high fidelity measurements.</p>
+            </div>
+
+            <!-- Stats Overview Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                <!-- Stat 1 -->
+                <div class="bg-dark-900/40 border border-dark-800/80 rounded-2xl p-5 flex items-center gap-4 hover:border-indigo-500/30 transition duration-300">
+                    <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0y" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs text-dark-400 uppercase font-semibold tracking-wider">Classic Reaction</p>
+                        <h3 class="text-2xl font-bold mt-0.5 text-white" id="stat-classic-best">-- ms</h3>
+                        <p class="text-[10px] text-dark-400 mt-1">Goal: Lower is better</p>
+                    </div>
+                </div>
+                <!-- Stat 2 -->
+                <div class="bg-dark-900/40 border border-dark-800/80 rounded-2xl p-5 flex items-center gap-4 hover:border-emerald-500/30 transition duration-300">
+                    <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs text-dark-400 uppercase font-semibold tracking-wider">Aim Trainer Avg</p>
+                        <h3 class="text-2xl font-bold mt-0.5 text-white" id="stat-aim-best">-- ms</h3>
+                        <p class="text-[10px] text-dark-400 mt-1">Goal: Fast clicking</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Modes Selection -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto mt-6">
+                <!-- Mode 1 Card: Classic Click -->
+                <div onclick="switchTab('classic')" class="group cursor-pointer relative bg-gradient-to-b from-dark-900 to-dark-950 hover:from-indigo-950/20 hover:to-dark-950 border border-dark-800 hover:border-indigo-500/50 rounded-3xl p-6 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(99,102,241,0.15)] flex flex-col justify-between h-[320px]">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold group-hover:text-indigo-300 transition">Classic Reaction</h3>
+                        <p class="text-dark-400 text-xs sm:text-sm leading-relaxed">
+                            The definitive metric of physical reflexes. React as soon as the backdrop switches color. Tracks latency in milliseconds.
+                        </p>
+                    </div>
+                    <div class="flex items-center justify-between pt-4 border-t border-dark-800/60">
+                        <span class="text-xs text-indigo-400 font-bold group-hover:translate-x-1 transition duration-200 flex items-center gap-1.5">
+                            Launch Reactor
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                        </span>
+                        <span class="text-[10px] text-dark-500 font-mono">STATION-A</span>
+                    </div>
+                </div>
+
+                <!-- Mode 2 Card: Aim Trainer -->
+                <div onclick="switchTab('aim')" class="group cursor-pointer relative bg-gradient-to-b from-dark-900 to-dark-950 hover:from-emerald-950/20 hover:to-dark-950 border border-dark-800 hover:border-emerald-500/50 rounded-3xl p-6 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-[0_10px_30px_-10px_rgba(16,185,129,0.15)] flex flex-col justify-between h-[320px]">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 22a10 10 0 100-20 10 10 0 000 20z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12M6 12h12" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold group-hover:text-emerald-300 transition">Aim Training Arena</h3>
+                        <p class="text-dark-400 text-xs sm:text-sm leading-relaxed">
+                            Click randomized spatial targets as quickly as possible. Measures precision and rapid hand-eye coordination sequences.
+                        </p>
+                    </div>
+                    <div class="flex items-center justify-between pt-4 border-t border-dark-800/60">
+                        <span class="text-xs text-emerald-400 font-bold group-hover:translate-x-1 transition duration-200 flex items-center gap-1.5">
+                            Launch Aim Training
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                        </span>
+                        <span class="text-[10px] text-dark-500 font-mono">STATION-B</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- CLASSIC REACTION TAB -->
+        <section id="tab-classic" class="hidden animate-fade-in max-w-4xl mx-auto w-full space-y-4">
+            <!-- Back Navigation & Header Info -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <button onclick="switchTab('dashboard')" class="flex items-center gap-2 text-sm text-dark-400 hover:text-white transition duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    Return to Hub
+                </button>
+                <div class="text-right sm:text-right w-full sm:w-auto">
+                    <span class="text-xs text-dark-400">Personal Record: </span>
+                    <span id="classic-best-badge" class="font-bold text-sm text-indigo-400 font-mono">-- ms</span>
+                </div>
+            </div>
+
+            <!-- Reaction Trigger Screen -->
+            <div id="classic-trigger-box" 
+                 onpointerdown="handleClassicTrigger(event)" 
+                 class="relative w-full h-[380px] sm:h-[450px] rounded-3xl border border-dark-800/80 bg-dark-900/60 flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden transition-all duration-300 shadow-2xl">
+                
+                <!-- Inner Decorative Scanline/Pattern -->
+                <div class="absolute inset-0 bg-[radial-gradient(#1e1e2f_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none"></div>
+                
+                <div class="text-center space-y-4 z-10 px-6">
+                    <!-- Icon / Graphics state representation -->
+                    <div id="classic-icon-container" class="mx-auto w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    
+                    <h3 id="classic-main-text" class="text-3xl font-extrabold tracking-tight">Tap/Click to start</h3>
+                    <p id="classic-sub-text" class="text-sm text-dark-400 max-w-sm mx-auto">Once started, wait patiently for the panel to turn dynamic green, then tap as quickly as humanly possible.</p>
+                    
+                    <!-- Submit Score Mini Panel -->
+                    <div id="classic-submit-area" class="hidden mt-4 bg-dark-950/80 p-3 rounded-2xl border border-dark-800 flex flex-col sm:flex-row items-center gap-2 max-w-md mx-auto" onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()">
+                        <input type="text" id="classic-nickname" maxlength="12" placeholder="Your Nickname" class="w-full sm:w-auto flex-grow bg-dark-900 border border-dark-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium">
+                        <button onclick="submitScoreToLeaderboard('classic')" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition duration-200">
+                            Post to Leaderboard
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Custom visual timer overlay -->
+                <div id="classic-timer-progress" class="absolute bottom-0 left-0 h-1.5 bg-white/20 w-0 transition-all duration-[300ms] ease-out"></div>
+            </div>
+
+            <!-- Previous Attempts / Guidelines -->
+            <div class="flex justify-between items-center text-xs text-dark-400 p-2">
+                <span>Prevent accidental false triggers or you will forfeit the turn.</span>
+                <span id="classic-recent-avg">Recent Average (Last 5): <strong class="font-bold text-dark-200 font-mono">-- ms</strong></span>
+            </div>
+        </section>
+
+
+        <!-- AIM TRAINER TAB -->
+        <section id="tab-aim" class="hidden animate-fade-in max-w-4xl mx-auto w-full space-y-4">
+            <div class="flex justify-between items-center">
+                <button onclick="switchTab('dashboard')" class="flex items-center gap-2 text-sm text-dark-400 hover:text-white transition duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    Return to Hub
+                </button>
+                <div class="flex gap-4">
+                    <div class="text-right">
+                        <span class="text-xs text-dark-400">Score Tracker: </span>
+                        <span id="aim-counter" class="font-bold text-sm text-emerald-400 font-mono">0 / 15</span>
+                    </div>
+                    <div class="text-right border-l border-dark-800 pl-4">
+                        <span class="text-xs text-dark-400">Best Avg: </span>
+                        <span id="aim-best-badge" class="font-bold text-sm text-emerald-400 font-mono">-- ms</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Target board field -->
+            <div id="aim-arena" class="relative w-full h-[400px] sm:h-[480px] rounded-3xl border border-dark-800 bg-dark-900/40 overflow-hidden shadow-2xl">
+                <!-- Grid background -->
+                <div class="absolute inset-0 bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:24px_24px] opacity-60"></div>
+                
+                <!-- Start Overlay -->
+                <div id="aim-start-overlay" class="absolute inset-0 z-20 bg-dark-950/90 backdrop-blur-sm flex flex-col justify-center items-center text-center p-6 space-y-4">
+                    <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 22a10 10 0 100-20 10 10 0 000 20z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12M6 12h12" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-extrabold">Spatial Hand-Eye Coordination</h3>
+                    <p class="text-sm text-dark-400 max-w-sm">Tap the targets that appear dynamically on the battlefield as quickly as possible. Clear 15 targets.</p>
+                    <button onclick="startAimGame()" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-dark-950 font-bold rounded-xl shadow-lg shadow-emerald-600/25 transform active:scale-95 transition">
+                        Commence Training
+                    </button>
+                </div>
+
+                <!-- Game Results Overlay (Hidden initially) -->
+                <div id="aim-results-overlay" class="absolute inset-0 z-20 bg-dark-950/95 flex flex-col justify-center items-center text-center p-6 space-y-4 hidden">
+                    <h3 class="text-3xl font-extrabold text-white">Reflex Analysis Complete</h3>
+                    <div class="grid grid-cols-2 gap-4 max-w-sm w-full bg-dark-900/80 p-5 rounded-2xl border border-dark-800">
+                        <div>
+                            <p class="text-xs text-dark-400">Average Click Time</p>
+                            <p id="aim-results-avg" class="text-2xl font-black text-emerald-400 mt-1">-- ms</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-dark-400">Total Completion</p>
+                            <p id="aim-results-time" class="text-2xl font-black text-white mt-1">-- s</p>
+                        </div>
+                    </div>
+
+                    <!-- Post Score Area -->
+                    <div id="aim-submit-area" class="bg-dark-900 p-4 rounded-2xl border border-dark-800 flex flex-col sm:flex-row items-center gap-2 max-w-md w-full mx-auto" onclick="event.stopPropagation()" onpointerdown="event.stopPropagation()">
+                        <input type="text" id="aim-nickname" maxlength="12" placeholder="Your Nickname" class="w-full sm:w-auto flex-grow bg-dark-950 border border-dark-850 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-medium">
+                        <button onclick="submitScoreToLeaderboard('aim')" class="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-dark-950 font-extrabold text-xs rounded-xl transition duration-200">
+                            Post to Leaderboard
+                        </button>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button onclick="startAimGame()" class="px-5 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 font-semibold border border-emerald-500/30 rounded-xl transition">
+                            Train Again
+                        </button>
+                        <button onclick="switchTab('dashboard')" class="px-5 py-2.5 bg-dark-800 hover:bg-dark-700 text-white font-semibold rounded-xl transition">
+                            Return to Hub
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Spatial Dynamic Target Element -->
+                <button id="aim-target" 
+                        onpointerdown="handleTargetHit(event)" 
+                        class="absolute hidden items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-emerald-500 hover:bg-emerald-400 border-[3px] border-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.5)] cursor-pointer focus:outline-none select-none transition-transform duration-75 active:scale-90 z-10"
+                        style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                    <span class="w-3 h-3 bg-white rounded-full"></span>
+                </button>
+            </div>
+            
+            <p class="text-center text-xs text-dark-500">Note: Dynamic sizing makes target tapping challenging on smaller responsive mobile screens.</p>
+        </section>
+
+
+        <!-- LEADERBOARDS TAB -->
+        <section id="tab-leaderboard" class="hidden animate-fade-in max-w-4xl mx-auto w-full space-y-6">
+            <div class="flex justify-between items-center">
+                <button onclick="switchTab('dashboard')" class="flex items-center gap-2 text-sm text-dark-400 hover:text-white transition duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    Return to Hub
+                </button>
+                <div class="flex items-center gap-2">
+                    <span id="db-status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span id="db-status-text" class="text-xs font-semibold text-dark-400">Offline Standby</span>
+                </div>
+            </div>
+
+            <div class="text-center space-y-2">
+                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    Reflex Hall of Fame
+                </h2>
+                <p class="text-xs text-dark-400 max-w-md mx-auto">The best scores achieved in reaction tests. Lower response latency values signify superior nervous system speed.</p>
+            </div>
+
+            <!-- Leaderboard Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Classic Reaction Leaderboard -->
+                <div class="bg-dark-900/60 border border-dark-800 rounded-2xl overflow-hidden shadow-xl">
+                    <div class="bg-indigo-950/30 border-b border-dark-800 p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            </div>
+                            <h3 class="font-bold text-indigo-300">Classic Reaction (ms)</h3>
+                        </div>
+                        <span class="text-[10px] bg-indigo-500/15 text-indigo-400 px-2 py-0.5 rounded-full font-bold">Lower is Better</span>
+                    </div>
+                    <div class="p-4">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="text-xs text-dark-400 border-b border-dark-800/80 pb-2">
+                                    <th class="py-2 w-16">Rank</th>
+                                    <th class="py-2">Pilot Name</th>
+                                    <th class="py-2 text-right">Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-classic-rows">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Aim Trainer Leaderboard -->
+                <div class="bg-dark-900/60 border border-dark-800 rounded-2xl overflow-hidden shadow-xl">
+                    <div class="bg-emerald-950/30 border-b border-dark-800 p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            </div>
+                            <h3 class="font-bold text-emerald-300">Aim Precision (ms)</h3>
+                        </div>
+                        <span class="text-[10px] bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Lower is Better</span>
+                    </div>
+                    <div class="p-4">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="text-xs text-dark-400 border-b border-dark-800/80 pb-2">
+                                    <th class="py-2 w-16">Rank</th>
+                                    <th class="py-2">Pilot Name</th>
+                                    <th class="py-2 text-right">Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-aim-rows">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Area -->
+    <footer class="border-t border-dark-800/60 bg-dark-950/80 backdrop-blur-md py-6 px-6 text-center text-xs text-dark-500 tracking-wide relative z-10">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p>&copy; 2026 Reaction Labs. Cloud-enabled competitive neural diagnostics.</p>
+            <div class="flex gap-4">
+                <a href="https://humanbenchmark.com" target="_blank" rel="noopener noreferrer" class="hover:text-dark-300 transition">Benchmark reference</a>
+                <span>&bull;</span>
+                <span>Optimized database pipeline</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Setup configuration & initialization
+        let db = null;
+        let auth = null;
+        let useCloud = false;
+        let currentUser = null;
+        let appId = 'default-reaction-labs';
+
+        if (typeof __app_id !== 'undefined' && __app_id) {
+            appId = __app_id;
+        }
+
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+            try {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                useCloud = true;
+            } catch (e) {
+                console.warn("Could not parse cloud config, standing by on Local Storage Mode:", e);
+            }
+        }
+
+        // Expose critical cloud variables globally for simple page logic access
+        window.db = db;
+        window.auth = auth;
+        window.useCloud = useCloud;
+        window.appId = appId;
+        window.currentUser = null;
+
+        // Initialize Firestore with proper Rule 3 (Auth first, then queries)
+        async function runInitialization() {
+            if (useCloud) {
+                const statusDot = document.getElementById('db-status-dot');
+                const statusText = document.getElementById('db-status-text');
+
+                statusText.innerText = "Connecting...";
+
+                try {
+                    // Rule 3: Always authenticate BEFORE starting any Firestore queries
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Cloud Authentication failed. Reverting to Local Storage standby.", error);
+                    setupLocalFallback();
+                    return;
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        window.currentUser = user;
+                        statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+                        statusText.innerText = "Cloud Sync Active";
+                        setupCloudListeners();
+                    } else {
+                        setupLocalFallback();
+                    }
+                });
+            } else {
+                setupLocalFallback();
+            }
+        }
+
+        // Set up Cloud Listeners (Rule 2: Fetch all, filter/sort in memory to avoid index errors)
+        function setupCloudListeners() {
+            const publicDataCollection = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
+            
+            onSnapshot(publicDataCollection, (snapshot) => {
+                const list = [];
+                snapshot.forEach(doc => {
+                    list.push(doc.data());
+                });
+                renderTables(list);
+            }, (error) => {
+                console.error("Cloud subscription read failed, using Local Backup:", error);
+                setupLocalFallback();
+            });
+        }
+
+        function setupLocalFallback() {
+            const statusDot = document.getElementById('db-status-dot');
+            const statusText = document.getElementById('db-status-text');
+            statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
+            statusText.innerText = "Offline Standby Mode";
+
+            // Local Highscore and Bot Highscore mock generator to keep the competitive experience fun
+            const localScores = JSON.parse(localStorage.getItem('reaction_labs_leaderboard_local') || "[]");
+            if (localScores.length === 0) {
+                const mockData = [
+                    { name: "ReflexBot_X", score: 142, mode: "classic" },
+                    { name: "AlphaNerve", score: 168, mode: "classic" },
+                    { name: "CyberGrip", score: 185, mode: "classic" },
+                    { name: "NeuralPulse", score: 198, mode: "classic" },
+                    { name: "PetaClick", score: 215, mode: "classic" },
+                    { name: "ReflexBot_X", score: 180, mode: "aim" },
+                    { name: "AlphaNerve", score: 210, mode: "aim" },
+                    { name: "CyberGrip", score: 235, mode: "aim" },
+                    { name: "NeuralPulse", score: 250, mode: "aim" },
+                    { name: "PetaClick", score: 280, mode: "aim" },
+                ];
+                localStorage.setItem('reaction_labs_leaderboard_local', JSON.stringify(mockData));
+                renderTables(mockData);
+            } else {
+                renderTables(localScores);
+            }
+        }
+
+        // Unified rendering mechanism
+        function renderTables(rawList) {
+            // Filter and sort Classic (lower is better)
+            const classicList = rawList
+                .filter(item => item.mode === 'classic')
+                .sort((a, b) => a.score - b.score)
+                .slice(0, 10);
+
+            // Filter and sort Aim (lower is better)
+            const aimList = rawList
+                .filter(item => item.mode === 'aim')
+                .sort((a, b) => a.score - b.score)
+                .slice(0, 10);
+
+            populateTableRows('leaderboard-classic-rows', classicList);
+            populateTableRows('leaderboard-aim-rows', aimList);
+        }
+
+        function populateTableRows(tbodyId, dataList) {
+            const tbody = document.getElementById(tbodyId);
+            tbody.innerHTML = '';
+
+            if (dataList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-xs text-dark-500">No telemetry recorded yet. Be the first to place!</td></tr>`;
+                return;
+            }
+
+            dataList.forEach((entry, idx) => {
+                const rank = idx + 1;
+                let rankBadge = '';
+                
+                if (rank === 1) {
+                    rankBadge = `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold font-mono">🥇</span>`;
+                } else if (rank === 2) {
+                    rankBadge = `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-400/20 text-slate-300 text-xs font-bold font-mono">🥈</span>`;
+                } else if (rank === 3) {
+                    rankBadge = `<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-700/20 text-amber-600 text-xs font-bold font-mono">🥉</span>`;
+                } else {
+                    rankBadge = `<span class="text-xs font-bold text-dark-500 font-mono pl-1.5">${rank}</span>`;
+                }
+
+                const safeName = entry.name.replace(/[^a-zA-Z0-9 ]/g, "").substring(0, 12);
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-dark-800/40 hover:bg-dark-900/30 transition duration-150";
+                tr.innerHTML = `
+                    <td class="py-2.5 font-medium">${rankBadge}</td>
+                    <td class="py-2.5 font-semibold text-dark-100">${safeName}</td>
+                    <td class="py-2.5 text-right font-bold text-indigo-400 font-mono">${entry.score} ms</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Global registration of score posting handler
+        window.postTelemetry = async function(mode, nickName, numericScore) {
+            if (useCloud && window.currentUser) {
+                try {
+                    // Rule 1: strict paths: /artifacts/{appId}/public/data/{collectionName}
+                    const publicDataCollection = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
+                    await addDoc(publicDataCollection, {
+                        name: nickName,
+                        score: Number(numericScore),
+                        mode: mode,
+                        userId: window.currentUser.uid,
+                        timestamp: Date.now()
+                    });
+                    return true;
+                } catch (err) {
+                    console.error("Could not write document directly:", err);
+                    return false;
+                }
+            } else {
+                // Offline fallback storage writing
+                const localScores = JSON.parse(localStorage.getItem('reaction_labs_leaderboard_local') || "[]");
+                localScores.push({
+                    name: nickName,
+                    score: Number(numericScore),
+                    mode: mode,
+                    userId: "local-user",
+                    timestamp: Date.now()
+                });
+                localStorage.setItem('reaction_labs_leaderboard_local', JSON.stringify(localScores));
+                renderTables(localScores);
+                return true;
+            }
+        };
+
+        // Complete initialization
+        runInitialization();
+    </script>
+
+    <!-- Audio & Reflex Mechanics Javascript logic -->
+    <script>
+        // High Quality synthesized browser sounds (Web Audio API)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let audioEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioEnabled) return;
+            initAudio();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'beep') {
+                // High-pitched success indicator
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(880, now); // A5 note
+                gainNode.gain.setValueAtTime(0.08, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'chime') {
+                // Happy double chime on win
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(659.25, now); // E5
+                osc.frequency.setValueAtTime(987.77, now + 0.08); // B5
+                gainNode.gain.setValueAtTime(0.1, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.45);
+            } else if (type === 'hit') {
+                // Target hit impact sound
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.08);
+                gainNode.gain.setValueAtTime(0.12, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'buzzer') {
+                // Low failed state buzzer
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(130, now);
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'tick') {
+                // Light subtle click
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                gainNode.gain.setValueAtTime(0.05, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+                osc.start(now);
+                osc.stop(now + 0.03);
+            }
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            const soundOnIcon = document.getElementById('sound-on-icon');
+            const soundOffIcon = document.getElementById('sound-off-icon');
+            if (audioEnabled) {
+                soundOnIcon.classList.remove('hidden');
+                soundOffIcon.classList.add('hidden');
+            } else {
+                soundOnIcon.classList.add('hidden');
+                soundOffIcon.classList.remove('hidden');
+            }
+        }
+
+        // Custom Safe Toast Messages
+        function showToast(message, type = 'success') {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400';
+            
+            toast.className = `flex items-center gap-2 border px-4 py-3 rounded-2xl shadow-lg backdrop-blur-md text-xs font-semibold select-none pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300 ${bgClass}`;
+            toast.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>${message}</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Pop Animation
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+            
+            // Auto Remove
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 4000);
+        }
+
+        /* ================= GAME STATE VARIABLES ================= */
+        const state = {
+            classic: {
+                phase: 'idle', // 'idle', 'waiting', 'ready', 'result', 'fail'
+                startTime: 0,
+                timerId: null,
+                scores: [],
+                lastScoreValue: 0
+            },
+            aim: {
+                totalHitsNeeded: 15,
+                hits: 0,
+                targetStartTime: 0,
+                individualTimes: [],
+                gameStartTime: 0,
+                lastScoreValue: 0
+            }
+        };
+
+
+        /* ================= TAB MANAGEMENT ================= */
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('section[id^="tab-"]').forEach(sec => sec.classList.add('hidden'));
+            // Display targeted tab
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            // Reset game states when navigating back
+            if (tabId === 'dashboard') {
+                resetClassicGame();
+                resetAimArena();
+                renderHighscores();
+            } else if (tabId === 'classic') {
+                resetClassicGame();
+            } else if (tabId === 'aim') {
+                resetAimArena();
+            }
+        }
+
+
+        /* ================= HIGH SCORE PERSISTENCE ================= */
+        function saveScore(key, score) {
+            localStorage.setItem(`reaction_labs_${key}`, score);
+        }
+
+        function loadScore(key) {
+            return localStorage.getItem(`reaction_labs_${key}`);
+        }
+
+        function resetAllHighscores() {
+            localStorage.removeItem('reaction_labs_classic');
+            localStorage.removeItem('reaction_labs_aim');
+            renderHighscores();
+            playSound('buzzer');
+            showToast("Cleared your local personal highscores!");
+        }
+
+        function renderHighscores() {
+            // Load and render
+            const classicVal = loadScore('classic');
+            const aimVal = loadScore('aim');
+
+            // Dashboard
+            document.getElementById('stat-classic-best').innerText = classicVal ? `${classicVal} ms` : '-- ms';
+            document.getElementById('stat-aim-best').innerText = aimVal ? `${aimVal} ms` : '-- ms';
+
+            // Mini badges inside labs
+            document.getElementById('classic-best-badge').innerText = classicVal ? `${classicVal} ms` : '-- ms';
+            document.getElementById('aim-best-badge').innerText = aimVal ? `${aimVal} ms` : '-- ms';
+        }
+
+
+        /* ================= SUBMIT LEADERBOARD Telemetry ================= */
+        async function submitScoreToLeaderboard(mode) {
+            const inputId = `${mode}-nickname`;
+            const areaId = `${mode}-submit-area`;
+            const nameInput = document.getElementById(inputId);
+            const submitArea = document.getElementById(areaId);
+
+            const nickName = nameInput.value.replace(/[^a-zA-Z0-9 ]/g, "").trim();
+            if (!nickName) {
+                playSound('buzzer');
+                showToast("Please enter a clean, valid nickname first!", "error");
+                return;
+            }
+
+            const currentScore = mode === 'classic' ? state.classic.lastScoreValue : state.aim.lastScoreValue;
+            if (currentScore <= 0) return;
+
+            // Submit score to helper
+            const status = await window.postTelemetry(mode, nickName, currentScore);
+            
+            if (status) {
+                playSound('chime');
+                showToast(`Your score of ${currentScore}ms has been uploaded!`);
+                submitArea.classList.add('hidden');
+                // Auto transition to Leaderboard
+                setTimeout(() => {
+                    switchTab('leaderboard');
+                }, 800);
+            } else {
+                playSound('buzzer');
+                showToast("An error occurred during submission.", "error");
+            }
+        }
+
+
+        /* ================= CLASSIC REACTION MECHANICS ================= */
+        const triggerBox = document.getElementById('classic-trigger-box');
+        const mainText = document.getElementById('classic-main-text');
+        const subText = document.getElementById('classic-sub-text');
+        const iconContainer = document.getElementById('classic-icon-container');
+        const progressBar = document.getElementById('classic-timer-progress');
+        const classicSubmitArea = document.getElementById('classic-submit-area');
+
+        function resetClassicGame() {
+            clearTimeout(state.classic.timerId);
+            state.classic.phase = 'idle';
+            triggerBox.className = "relative w-full h-[380px] sm:h-[450px] rounded-3xl border border-dark-800 bg-dark-900/40 hover:bg-dark-900/60 flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden transition-all duration-300 shadow-2xl";
+            iconContainer.className = "mx-auto w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2 transition";
+            iconContainer.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>`;
+            mainText.innerText = "Tap/Click to start";
+            subText.innerText = "Once started, wait patiently for the panel to turn dynamic green, then tap as quickly as humanly possible.";
+            progressBar.style.width = '0%';
+            classicSubmitArea.classList.add('hidden');
+        }
+
+        function handleClassicTrigger(e) {
+            e.preventDefault();
+            const phase = state.classic.phase;
+
+            if (phase === 'idle') {
+                state.classic.phase = 'waiting';
+                triggerBox.className = "relative w-full h-[380px] sm:h-[450px] rounded-3xl border border-rose-500/30 bg-rose-500/10 flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden transition-all duration-300 shadow-2xl";
+                iconContainer.className = "mx-auto w-16 h-16 rounded-full bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-2 animate-pulse";
+                iconContainer.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>`;
+                mainText.innerText = "Wait for Green...";
+                subText.innerText = "Keep your finger balanced and ready over the screen!";
+                playSound('tick');
+
+                const randomDelay = Math.random() * 3000 + 1500;
+                progressBar.style.width = '100%';
+                progressBar.style.transitionDuration = `${randomDelay}ms`;
+
+                state.classic.timerId = setTimeout(() => {
+                    state.classic.phase = 'ready';
+                    state.classic.startTime = performance.now();
+                    triggerBox.className = "relative w-full h-[380px] sm:h-[450px] rounded-3xl border border-emerald-500/30 bg-emerald-500 flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden transition-all duration-75 shadow-[0_0_40px_rgba(16,185,129,0.3)]";
+                    iconContainer.className = "mx-auto w-16 h-16 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-white mb-2";
+                    iconContainer.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>`;
+                    mainText.innerText = "TAP NOW!";
+                    mainText.classList.add('text-dark-950');
+                    subText.innerText = "GO GO GO!";
+                    subText.classList.add('text-dark-900');
+                    playSound('beep');
+                }, randomDelay);
+
+            } else if (phase === 'waiting') {
+                clearTimeout(state.classic.timerId);
+                state.classic.phase = 'fail';
+                playSound('buzzer');
+                triggerBox.className = "relative w-full h-[380px] sm:h-[450px] rounded-3xl border border-red-500/30 bg-dark-900/90 flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden transition-all duration-300 shadow-2xl";
+                iconContainer.className = "mx-auto w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-2";
+                iconContainer.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>`;
+                mainText.innerText = "Too early!";
+                subText.innerText = "You clicked before the panel turned green. Tap to restart.";
+                progressBar.style.width = '0%';
+
+            } else if (phase === 'ready') {
+                const endTime = performance.now();
+                const reactionTime = Math.round(endTime - state.classic.startTime);
+                state.classic.phase = 'result';
+                state.classic.lastScoreValue = reactionTime;
+                
+                playSound('chime');
+
+                const currentRecord = loadScore('classic');
+                if (!currentRecord || reactionTime < parseInt(currentRecord)) {
+                    saveScore('classic', reactionTime);
+                }
+
+                state.classic.scores.push(reactionTime);
+                if (state.classic.scores.length > 5) state.classic.scores.shift();
+                
+                const avg = Math.round(state.classic.scores.reduce((a, b) => a + b, 0) / state.classic.scores.length);
+                document.getElementById('classic-recent-avg').innerHTML = `Recent Average (Last ${state.classic.scores.length}): <strong class="font-bold text-indigo-400 font-mono">${avg} ms</strong>`;
+
+                triggerBox.className = "relative w-full h-[380px] sm:h-[450px] rounded-3xl border border-indigo-500/30 bg-dark-900/80 flex flex-col items-center justify-center cursor-pointer select-none overflow-hidden transition-all duration-300 shadow-2xl";
+                iconContainer.className = "mx-auto w-16 h-16 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2";
+                iconContainer.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>`;
+                mainText.innerText = `${reactionTime} ms`;
+                mainText.classList.remove('text-dark-950');
+                subText.innerText = "Amazing speed! Tap outside the form to restart the test.";
+                subText.classList.remove('text-dark-900');
+                
+                // Show submission panel
+                classicSubmitArea.classList.remove('hidden');
+                
+                renderHighscores();
+
+            } else if (phase === 'result' || phase === 'fail') {
+                resetClassicGame();
+            }
+        }
+
+
+        /* ================= AIM TRAINING SYSTEM ================= */
+        const aimArena = document.getElementById('aim-arena');
+        const aimTarget = document.getElementById('aim-target');
+        const aimStartOverlay = document.getElementById('aim-start-overlay');
+        const aimResultsOverlay = document.getElementById('aim-results-overlay');
+        const aimCounter = document.getElementById('aim-counter');
+        const aimSubmitArea = document.getElementById('aim-submit-area');
+
+        function resetAimArena() {
+            aimStartOverlay.classList.remove('hidden');
+            aimResultsOverlay.classList.add('hidden');
+            aimTarget.classList.add('hidden');
+            state.aim.hits = 0;
+            state.aim.individualTimes = [];
+            aimCounter.innerText = `0 / ${state.aim.totalHitsNeeded}`;
+            aimSubmitArea.classList.add('hidden');
+        }
+
+        function startAimGame() {
+            initAudio();
+            aimStartOverlay.classList.add('hidden');
+            aimResultsOverlay.classList.add('hidden');
+            state.aim.hits = 0;
+            state.aim.individualTimes = [];
+            state.aim.gameStartTime = performance.now();
+            aimCounter.innerText = `0 / ${state.aim.totalHitsNeeded}`;
+            spawnTarget();
+        }
+
+        function spawnTarget() {
+            const arenaWidth = aimArena.clientWidth;
+            const arenaHeight = aimArena.clientHeight;
+
+            const padding = 50; 
+            const randomX = Math.random() * (arenaWidth - padding * 2) + padding;
+            const randomY = Math.random() * (arenaHeight - padding * 2) + padding;
+
+            aimTarget.style.left = `${randomX}px`;
+            aimTarget.style.top = `${randomY}px`;
+            aimTarget.style.transform = 'translate(-50%, -50%) scale(0.6)';
+            
+            aimTarget.classList.remove('hidden');
+            aimTarget.classList.add('flex');
+            
+            setTimeout(() => {
+                aimTarget.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 10);
+
+            state.aim.targetStartTime = performance.now();
+        }
+
+        function handleTargetHit(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const hitTime = performance.now();
+            const reaction = hitTime - state.aim.targetStartTime;
+            state.aim.individualTimes.push(reaction);
+
+            state.aim.hits++;
+            aimCounter.innerText = `${state.aim.hits} / ${state.aim.totalHitsNeeded}`;
+
+            playSound('hit');
+
+            if (state.aim.hits >= state.aim.totalHitsNeeded) {
+                endAimGame();
+            } else {
+                spawnTarget();
+            }
+        }
+
+        function endAimGame() {
+            aimTarget.classList.add('hidden');
+            const totalElapsed = (performance.now() - state.aim.gameStartTime) / 1000;
+            const avgTime = Math.round(state.aim.individualTimes.reduce((a, b) => a + b, 0) / state.aim.individualTimes.length);
+            state.aim.lastScoreValue = avgTime;
+
+            const currentRecord = loadScore('aim');
+            if (!currentRecord || avgTime < parseInt(currentRecord)) {
+                saveScore('aim', avgTime);
+            }
+
+            document.getElementById('aim-results-avg').innerText = `${avgTime} ms`;
+            document.getElementById('aim-results-time').innerText = `${totalElapsed.toFixed(2)}s`;
+            
+            aimResultsOverlay.classList.remove('hidden');
+            aimSubmitArea.classList.remove('hidden');
+            
+            playSound('chime');
+            renderHighscores();
+        }
+
+        window.onload = function() {
+            renderHighscores();
+        };
+    </script>
+</body>
+</html>
