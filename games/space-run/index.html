@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Velocity - Synthwave Arcade</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #0b0518;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Custom neon glowing effects */
+        .neon-text-pink {
+            text-shadow: 0 0 5px #ff007f, 0 0 15px #ff007f, 0 0 30px #ff007f;
+        }
+        .neon-text-cyan {
+            text-shadow: 0 0 5px #00f0ff, 0 0 15px #00f0ff, 0 0 30px #00f0ff;
+        }
+        .neon-border-pink {
+            box-shadow: 0 0 10px #ff007f, inset 0 0 10px #ff007f;
+            border-color: #ff007f;
+        }
+        .neon-border-cyan {
+            box-shadow: 0 0 10px #00f0ff, inset 0 0 10px #00f0ff;
+            border-color: #00f0ff;
+        }
+        /* Hide scrollbars */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="relative min-h-screen text-white flex flex-col items-center justify-center p-0 m-0">
+
+    <!-- Back grid decoration background -->
+    <div class="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(11,5,24,0.95),rgba(25,10,48,0.95))] z-0"></div>
+
+    <!-- UI Overlay Shell -->
+    <div class="relative z-10 w-full max-w-4xl h-[100vh] md:h-[85vh] max-h-[800px] flex flex-col justify-between bg-black/40 md:border-2 border-purple-900/50 md:rounded-2xl shadow-2xl overflow-hidden backdrop-blur-sm">
+        
+        <!-- Header HUD -->
+        <header class="flex justify-between items-center px-6 py-4 bg-gradient-to-b from-purple-950/80 to-transparent">
+            <div class="flex items-center space-x-4">
+                <span class="orbitron text-2xl font-black italic tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400">NEON VELOCITY</span>
+                <div id="zone-badge" class="hidden md:inline-block orbitron text-xs font-bold bg-pink-500/20 text-pink-400 border border-pink-500/30 px-3 py-1 rounded-full uppercase tracking-widest animate-pulse">
+                    Zone 1: Grid Runner
+                </div>
+            </div>
+            <div class="flex items-center space-x-6">
+                <div class="text-right">
+                    <div class="text-xs text-pink-400 uppercase tracking-wider">Score</div>
+                    <div id="score-display" class="orbitron text-2xl font-bold text-white neon-text-pink">000000</div>
+                </div>
+                <div class="text-right border-l border-purple-800/40 pl-6">
+                    <div class="text-xs text-cyan-400 uppercase tracking-wider">Best</div>
+                    <div id="highscore-display" class="orbitron text-2xl font-bold text-cyan-300 neon-text-cyan">000000</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Game Canvas Viewport -->
+        <div class="relative flex-grow w-full bg-slate-950/20 overflow-hidden">
+            <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+            <!-- Loading / Start Modal Screen -->
+            <div id="start-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black/85 backdrop-blur-md p-6 text-center transition-all duration-300">
+                <!-- Retro Grid/Sun Graphic -->
+                <div class="relative mb-6">
+                    <div class="w-32 h-32 rounded-full bg-gradient-to-t from-pink-500 via-purple-600 to-transparent flex items-center justify-center relative overflow-hidden animate-pulse">
+                        <div class="absolute w-full h-1 bg-black/40 bottom-4"></div>
+                        <div class="absolute w-full h-1 bg-black/40 bottom-8"></div>
+                        <div class="absolute w-full h-1 bg-black/40 bottom-12"></div>
+                        <div class="absolute w-full h-1 bg-black/40 bottom-16"></div>
+                    </div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <svg class="w-16 h-16 text-cyan-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <h1 class="orbitron text-4xl md:text-5xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-400 to-cyan-400 mb-2">NEON VELOCITY</h1>
+                <p class="text-purple-300 text-lg md:text-xl max-w-md mx-auto mb-8 font-light tracking-wide">Accelerate through the grid. Adapt to dynamic difficulty shifts. Synthesize retro sound loops.</p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 w-full max-w-lg justify-center mb-6">
+                    <button id="start-btn" class="orbitron px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-lg rounded-xl tracking-wider transition-all transform hover:scale-105 active:scale-95 neon-border-pink">
+                        BOOT RUNNER
+                    </button>
+                    <button id="view-leaderboard-btn" class="orbitron px-6 py-4 bg-slate-900 border border-cyan-500/30 rounded-xl text-cyan-300 font-bold tracking-wider hover:bg-slate-800 transition transform hover:scale-105 active:scale-95">
+                        LEADERBOARD
+                    </button>
+                    <button id="audio-toggle-btn" class="px-6 py-4 bg-slate-900 border border-purple-800 rounded-xl text-purple-300 font-medium tracking-wide flex items-center justify-center gap-2 hover:bg-slate-800 transition">
+                        <svg id="music-icon" class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                        </svg>
+                        <span>Synth Engine: ON</span>
+                    </button>
+                </div>
+
+                <!-- Controls Helper -->
+                <div class="grid grid-cols-2 gap-8 text-left max-w-sm border-t border-purple-900/50 pt-6">
+                    <div>
+                        <div class="text-pink-400 text-xs font-semibold uppercase tracking-widest mb-2">Desktop Keyboard</div>
+                        <ul class="text-slate-400 text-sm space-y-1">
+                            <li><b class="text-white">UP Arrow / Space</b> — Jump / Dbl Jump</li>
+                            <li><b class="text-white">DOWN Arrow / S</b> — Slide</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="text-cyan-400 text-xs font-semibold uppercase tracking-widest mb-2">Mobile Touch</div>
+                        <ul class="text-slate-400 text-sm space-y-1">
+                            <li><b class="text-white">Tap Left Screen</b> — Jump</li>
+                            <li><b class="text-white">Tap Right Screen</b> — Slide</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Overlay Board -->
+            <div id="leaderboard-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black/95 backdrop-blur-md p-6 text-center transition-all duration-300 hidden z-30">
+                <h2 class="orbitron text-4xl font-extrabold text-cyan-400 neon-text-cyan mb-2 tracking-widest">GLOBAL LEADERS</h2>
+                <p class="text-slate-400 mb-6 text-sm">Top score records synchronized from the mainframe network.</p>
+
+                <!-- Leaders Table -->
+                <div class="w-full max-w-md bg-purple-950/20 border border-purple-900 rounded-xl overflow-hidden mb-6">
+                    <div class="grid grid-cols-3 bg-purple-950/50 py-2 px-4 text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-purple-900">
+                        <span>Rank</span>
+                        <span>Pilot ID</span>
+                        <span class="text-right">High Score</span>
+                    </div>
+                    <div id="leaderboard-rows" class="divide-y divide-purple-950/60 max-h-[240px] overflow-y-auto">
+                        <!-- Simulated Rows Loading state -->
+                        <div class="py-4 text-slate-500 animate-pulse text-sm">Connecting to Matrix...</div>
+                    </div>
+                </div>
+
+                <button id="close-leaderboard-btn" class="orbitron px-8 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-sm rounded-xl tracking-widest transition transform hover:scale-105 active:scale-95">
+                    RETURN TO CORE
+                </button>
+            </div>
+
+            <!-- Game Over / Restart Screen -->
+            <div id="gameover-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md p-6 text-center transition-all duration-300 hidden z-20">
+                <h2 class="orbitron text-5xl font-extrabold text-pink-600 neon-text-pink mb-2 animate-pulse">CONNECTION LOST</h2>
+                <p class="text-slate-400 mb-6 max-w-xs">Your cycle de-synchronized from the master synth matrix grid.</p>
+
+                <!-- Score Presentation -->
+                <div class="bg-purple-950/30 border border-purple-800/60 rounded-xl px-8 py-4 mb-6 w-full max-w-xs">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-slate-400">Final Score:</span>
+                        <span id="final-score" class="orbitron text-2xl font-bold text-pink-400">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Matrix High:</span>
+                        <span id="final-highscore" class="orbitron text-2xl font-bold text-cyan-400">0</span>
+                    </div>
+                </div>
+
+                <!-- Submit Highscore Box -->
+                <div id="submit-score-section" class="w-full max-w-xs bg-slate-950/60 border border-pink-500/30 rounded-xl p-4 mb-6 hidden">
+                    <div class="text-xs font-semibold uppercase tracking-widest text-pink-400 mb-2">New High Score Record!</div>
+                    <div class="flex gap-2">
+                        <input id="pilot-name-input" type="text" placeholder="PILOT ID" maxlength="8" class="bg-slate-900 border border-purple-800 rounded-lg py-2 px-3 text-center orbitron text-sm text-cyan-300 uppercase tracking-widest focus:outline-none focus:border-cyan-400 w-full">
+                        <button id="submit-score-btn" class="orbitron bg-cyan-500 text-black font-bold px-4 rounded-lg text-xs tracking-widest hover:bg-cyan-400 active:scale-95 transition">
+                            SYNC
+                        </button>
+                    </div>
+                    <div id="submit-status" class="text-[10px] text-slate-500 mt-2 italic">Safe, alphanumeric inputs only</div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-center">
+                    <button id="retry-btn" class="orbitron px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-bold text-lg rounded-xl tracking-wider transition-all transform hover:scale-105 active:scale-95 neon-border-cyan">
+                        RE-INITIALIZE RUN
+                    </button>
+                    <button id="gameover-leaderboard-btn" class="px-6 py-4 bg-slate-900 border border-purple-950 rounded-xl text-cyan-300 font-bold tracking-wide hover:bg-slate-800 transition">
+                        View Leaders
+                    </button>
+                </div>
+            </div>
+
+            <!-- In-game Notification Box -->
+            <div id="powerup-alert" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-cyan-950/90 border-2 border-cyan-400 text-cyan-200 orbitron px-6 py-2 rounded-full text-sm font-bold tracking-widest uppercase shadow-lg hidden transition-all duration-300">
+                CYBER SHIELD ACTIVE!
+            </div>
+
+            <!-- Zone Change Notification Overlay -->
+            <div id="zone-alert" class="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none opacity-0 transition-all duration-500 scale-90 z-20">
+                <div class="orbitron text-xs text-yellow-300 tracking-[0.3em] uppercase mb-1">Warning: Hazard Shift Detected</div>
+                <h3 id="zone-alert-title" class="orbitron text-4xl md:text-5xl font-black text-white uppercase tracking-widest drop-shadow-[0_0_15px_rgba(255,0,127,1)]">ZONE 2: HYPER DRIVE</h3>
+                <div class="w-32 h-1 bg-gradient-to-r from-transparent via-pink-500 to-transparent mx-auto mt-2"></div>
+            </div>
+        </div>
+
+        <!-- Touch Controls Interface (Visible on Touch Devices) -->
+        <footer class="md:hidden grid grid-cols-2 gap-2 p-3 bg-slate-950 border-t border-purple-950">
+            <button id="touch-jump-btn" class="bg-gradient-to-r from-pink-900/60 to-purple-900/60 border border-pink-500/30 rounded-xl py-6 flex flex-col items-center justify-center active:bg-pink-700/40 select-none">
+                <svg class="w-8 h-8 text-pink-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 11l7-7 7 7M5 19l7-7 7 7"></path>
+                </svg>
+                <span class="orbitron text-xs font-bold tracking-widest text-pink-300">JUMP</span>
+            </button>
+            <button id="touch-slide-btn" class="bg-gradient-to-r from-purple-900/60 to-cyan-900/60 border border-cyan-500/30 rounded-xl py-6 flex flex-col items-center justify-center active:bg-cyan-700/40 select-none">
+                <svg class="w-8 h-8 text-cyan-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13l-7 7-7-7m14-8l-7 7-7-7"></path>
+                </svg>
+                <span class="orbitron text-xs font-bold tracking-widest text-cyan-300">SLIDE</span>
+            </button>
+        </footer>
+
+        <!-- Desktop Footer Info -->
+        <footer class="hidden md:flex justify-between items-center px-6 py-3 bg-slate-950 border-t border-purple-950 text-slate-500 text-xs">
+            <div>Matrix Core: v3.1.0 (Leaderboard Integration)</div>
+            <div class="flex items-center gap-4">
+                <span>[SPACE / UP] Jump</span>
+                <span>[DOWN] Slide</span>
+            </div>
+            <div>Procedural Synth Engine Active</div>
+        </footer>
+    </div>
+
+    <!-- Web Audio & Synth Logic, Game Simulation Physics -->
+    <script type="module">
+        // Import Firebase Core and Auth
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // SYNTHWAVE PROCEDURAL SOUND SYNTHESIZER
+        // ==========================================
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+                this.sequencerTimer = null;
+                this.tempo = 110; // BPM (Will scale dynamically!)
+                this.beatIndex = 0;
+                this.synthVolume = 0.15;
+            }
+
+            init() {
+                if (this.ctx) return;
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioCtx();
+                
+                // Master Limiter to prevent clipping
+                this.masterLimiter = this.ctx.createDynamicsCompressor();
+                this.masterLimiter.threshold.setValueAtTime(-12, this.ctx.currentTime);
+                this.masterLimiter.knee.setValueAtTime(8, this.ctx.currentTime);
+                this.masterLimiter.ratio.setValueAtTime(12, this.ctx.currentTime);
+                this.masterLimiter.attack.setValueAtTime(0.003, this.ctx.currentTime);
+                this.masterLimiter.release.setValueAtTime(0.1, this.ctx.currentTime);
+                
+                this.masterVolume = this.ctx.createGain();
+                this.masterVolume.gain.setValueAtTime(this.synthVolume, this.ctx.currentTime);
+
+                this.masterVolume.connect(this.masterLimiter);
+                this.masterLimiter.connect(this.ctx.destination);
+
+                this.startSequencer();
+            }
+
+            setVolume(enabled) {
+                this.enabled = enabled;
+                if (!this.ctx) return;
+                this.masterVolume.gain.setValueAtTime(enabled ? this.synthVolume : 0, this.ctx.currentTime);
+            }
+
+            playJump() {
+                if (!this.ctx || !this.enabled) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.18);
+                
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+
+                osc.connect(gain);
+                gain.connect(this.masterLimiter);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
+            }
+
+            playSlide() {
+                if (!this.ctx || !this.enabled) return;
+                const osc = this.ctx.createOscillator();
+                const filter = this.ctx.createBiquadFilter();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(250, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(80, this.ctx.currentTime + 0.25);
+
+                filter.type = 'lowpass';
+                filter.Q.setValueAtTime(10, this.ctx.currentTime);
+                filter.frequency.setValueAtTime(600, this.ctx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.25);
+
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.28);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterLimiter);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playCollect() {
+                if (!this.ctx || !this.enabled) return;
+                const now = this.ctx.currentTime;
+                
+                // Arpeggio sound
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+                    
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.04);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.04 + 0.15);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.masterLimiter);
+                    
+                    osc.start(now + idx * 0.04);
+                    osc.stop(now + idx * 0.04 + 0.2);
+                });
+            }
+
+            playPowerup() {
+                if (!this.ctx || !this.enabled) return;
+                const now = this.ctx.currentTime;
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc1.type = 'sawtooth';
+                osc1.frequency.setValueAtTime(300, now);
+                osc1.frequency.exponentialRampToValueAtTime(900, now + 0.4);
+
+                osc2.type = 'square';
+                osc2.frequency.setValueAtTime(305, now);
+                osc2.frequency.exponentialRampToValueAtTime(910, now + 0.4);
+
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.masterLimiter);
+
+                osc1.start();
+                osc2.start();
+                osc1.stop(now + 0.5);
+                osc2.stop(now + 0.5);
+            }
+
+            playExplosion() {
+                if (!this.ctx || !this.enabled) return;
+                const now = this.ctx.currentTime;
+                
+                // Heavy synth decay
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.linearRampToValueAtTime(30, now + 0.6);
+
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(300, now);
+                filter.frequency.exponentialRampToValueAtTime(40, now + 0.6);
+
+                gain.gain.setValueAtTime(0.6, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.masterLimiter);
+
+                osc.start();
+                osc.stop(now + 0.7);
+            }
+
+            // Synthwave procedural background sequence loops
+            startSequencer() {
+                const bassline = [
+                    55.00, 55.00, 55.00, 55.00, // A1
+                    65.41, 65.41, 65.41, 65.41, // C2
+                    73.42, 73.42, 73.42, 73.42, // D2
+                    48.99, 48.99, 48.99, 48.99  // G1
+                ];
+
+                const scheduler = () => {
+                    // Re-calculate note interval dynamically to support variable BPM/tempo changes
+                    const interval = (60 / this.tempo) / 4; // 16th notes
+                    while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
+                        this.playSynthBeat(this.beatIndex, this.nextNoteTime, bassline);
+                        this.nextNoteTime += interval;
+                        this.beatIndex = (this.beatIndex + 1) % 16;
+                    }
+                    this.sequencerTimer = setTimeout(scheduler, 25);
+                };
+
+                this.nextNoteTime = this.ctx.currentTime;
+                scheduler();
+            }
+
+            playSynthBeat(index, time, bassline) {
+                if (!this.enabled) return;
+
+                // 1. Synth Bass Wave
+                const bassFreq = bassline[index];
+                const oscBass = this.ctx.createOscillator();
+                const gainBass = this.ctx.createGain();
+                
+                oscBass.type = 'sawtooth';
+                oscBass.frequency.setValueAtTime(bassFreq, time);
+                
+                gainBass.gain.setValueAtTime(0.08, time);
+                gainBass.gain.exponentialRampToValueAtTime(0.001, time + 0.2);
+
+                oscBass.connect(gainBass);
+                gainBass.connect(this.masterLimiter);
+                oscBass.start(time);
+                oscBass.stop(time + 0.2);
+
+                // 2. Neon Kick Drum (Beat 0, 4, 8, 12)
+                if (index % 4 === 0) {
+                    const oscKick = this.ctx.createOscillator();
+                    const gainKick = this.ctx.createGain();
+                    
+                    oscKick.frequency.setValueAtTime(150, time);
+                    oscKick.frequency.exponentialRampToValueAtTime(0.01, time + 0.12);
+                    
+                    gainKick.gain.setValueAtTime(0.4, time);
+                    gainKick.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+                    
+                    oscKick.connect(gainKick);
+                    gainKick.connect(this.masterLimiter);
+                    oscKick.start(time);
+                    oscKick.stop(time + 0.15);
+                }
+
+                // 3. Cyber Snare Drum (Beat 4, 12)
+                if (index === 4 || index === 12) {
+                    const oscSnare = this.ctx.createOscillator();
+                    const gainSnare = this.ctx.createGain();
+                    
+                    oscSnare.type = 'triangle';
+                    oscSnare.frequency.setValueAtTime(180, time);
+                    
+                    gainSnare.gain.setValueAtTime(0.25, time);
+                    gainSnare.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+                    
+                    oscSnare.connect(gainSnare);
+                    gainSnare.connect(this.masterLimiter);
+                    oscSnare.start(time);
+                    oscSnare.stop(time + 0.15);
+                }
+            }
+
+            stop() {
+                if (this.sequencerTimer) clearTimeout(this.sequencerTimer);
+            }
+        }
+
+        const synth = new SoundEngine();
+
+        // ==========================================
+        // GAME LOGIC & RENDERING
+        // ==========================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Scoreboard & UI elements
+        const scoreDisplay = document.getElementById('score-display');
+        const highscoreDisplay = document.getElementById('highscore-display');
+        const finalScore = document.getElementById('final-score');
+        const finalHighScore = document.getElementById('final-highscore');
+        const zoneBadge = document.getElementById('zone-badge');
+        const zoneAlert = document.getElementById('zone-alert');
+        const zoneAlertTitle = document.getElementById('zone-alert-title');
+
+        // Panels/Screens
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('gameover-screen');
+        const powerupAlert = document.getElementById('powerup-alert');
+        const leaderboardScreen = document.getElementById('leaderboard-screen');
+        const leaderboardRows = document.getElementById('leaderboard-rows');
+        const submitScoreSection = document.getElementById('submit-score-section');
+        const pilotNameInput = document.getElementById('pilot-name-input');
+        const submitScoreBtn = document.getElementById('submit-score-btn');
+        const submitStatus = document.getElementById('submit-status');
+
+        // Persistent State
+        let highScore = localStorage.getItem('neon_high_score') || 0;
+        highscoreDisplay.textContent = String(highScore).padStart(6, '0');
+
+        // Setup Game Globals
+        let state = {
+            running: false,
+            score: 0,
+            speed: 6.5,
+            maxSpeed: 9.0, // Will progressively lift as user enters higher zones
+            distance: 0,
+            roadY: 0,
+            gridOffset: 0,
+            currentZone: 1,
+            // Procedural Zone Profiles
+            zones: {
+                1: { name: "Zone 1: Grid Runner", limit: 500, tempo: 110, maxSpeed: 9.0, skyGradStart: '#04010a', skyGradEnd: '#ff0055', themeColor: '#ff007f' },
+                2: { name: "Zone 2: Hyper Drive", limit: 1200, tempo: 120, maxSpeed: 11.5, skyGradStart: '#020015', skyGradEnd: '#00f0ff', themeColor: '#00f0ff' },
+                3: { name: "Zone 3: Matrix Shift", limit: 2500, tempo: 132, maxSpeed: 13.8, skyGradStart: '#05000f', skyGradEnd: '#a000ff', themeColor: '#a000ff' },
+                4: { name: "Zone 4: Singularity", limit: 999999, tempo: 145, maxSpeed: 16.5, skyGradStart: '#000000', skyGradEnd: '#ffffff', themeColor: '#ffffff' }
+            }
+        };
+
+        // Custom responsive sizes
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            state.roadY = canvas.height * 0.75;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // ==========================================
+        // FIREBASE MULTIPLAYER LEADERBOARD CONFIG
+        // ==========================================
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'neon-velocity';
+
+        // Check environment setup for Firebase
+        const isFirebaseConfigured = typeof __firebase_config !== 'undefined';
+
+        async function initFirebase() {
+            if (!isFirebaseConfigured) {
+                console.warn("Firebase not configured in environment. Running on local leaderboard mock mode.");
+                return;
+            }
+            try {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Auth Before Queries
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                    // Pre-fetch global leaderboard
+                    loadLeaderboard();
+                });
+            } catch (err) {
+                console.error("Firebase Auth or Firestore setup failed:", err);
+            }
+        }
+
+        // Fetch & render leaderboard entries safely (No complex compound query as per Rule 2)
+        async function loadLeaderboard() {
+            leaderboardRows.innerHTML = '<div class="py-4 text-cyan-300 animate-pulse text-sm">SYNCING MASTER MATRIX...</div>';
+            
+            let scoresList = [];
+
+            if (db && currentUser) {
+                try {
+                    // Rule 1 & Rule 2: Simple query to retrieve all, then sort & limit in client JS memory
+                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+                    const snapshot = await getDocs(colRef);
+                    snapshot.forEach((doc) => {
+                        scoresList.push(doc.data());
+                    });
+                } catch (err) {
+                    console.error("Failed to query Firestore scores:", err);
+                }
+            }
+
+            // Fallback to local machine rankings if offline or database empty
+            if (scoresList.length === 0) {
+                const localSaved = localStorage.getItem('neon_leaderboard_data');
+                if (localSaved) {
+                    scoresList = JSON.parse(localSaved);
+                } else {
+                    // Default synthwave bots
+                    scoresList = [
+                        { name: "VECTOR", score: 3200 },
+                        { name: "CYBER_TR1", score: 2450 },
+                        { name: "NEON_VIPER", score: 1800 },
+                        { name: "S_WAVE", score: 1120 },
+                        { name: "KRYPTON", score: 600 }
+                    ];
+                }
+            }
+
+            // Sort scores descending in memory (Avoids index creation errors!)
+            scoresList.sort((a, b) => b.score - a.score);
+
+            // Limit top 8
+            const finalScores = scoresList.slice(0, 8);
+
+            // Save to local cache
+            localStorage.setItem('neon_leaderboard_data', JSON.stringify(finalScores));
+
+            // Render Rows
+            leaderboardRows.innerHTML = '';
+            if (finalScores.length === 0) {
+                leaderboardRows.innerHTML = '<div class="py-4 text-slate-500 text-sm">No scores submitted yet. Be the first!</div>';
+                return;
+            }
+
+            finalScores.forEach((entry, idx) => {
+                const isUser = entry.userId === (currentUser?.uid || 'local');
+                const row = document.createElement('div');
+                row.className = `grid grid-cols-3 py-3 px-4 text-sm font-semibold tracking-wider ${isUser ? 'bg-cyan-500/10 text-cyan-300 border-l-2 border-cyan-400' : 'text-slate-200'}`;
+                
+                let rankLabel = `#${idx + 1}`;
+                if (idx === 0) rankLabel = "🏆 #1";
+                else if (idx === 1) rankLabel = "🥈 #2";
+                else if (idx === 2) rankLabel = "🥉 #3";
+
+                row.innerHTML = `
+                    <span class="orbitron">${rankLabel}</span>
+                    <span class="uppercase tracking-widest">${entry.name}</span>
+                    <span class="text-right orbitron">${String(entry.score).padStart(6, '0')}</span>
+                `;
+                leaderboardRows.appendChild(row);
+            });
+        }
+
+        // Submit current run score
+        async function submitScore() {
+            const rawName = pilotNameInput.value.trim().toUpperCase();
+            
+            // Clean & Age-Appropriate Sanitization checks
+            const cleanPattern = /^[A-Z0-9_\-]{2,8}$/;
+            if (!cleanPattern.test(rawName)) {
+                submitStatus.textContent = "ID must be 2-8 letters/numbers only.";
+                submitStatus.className = "text-[10px] text-pink-400 mt-2 italic";
+                return;
+            }
+
+            submitScoreBtn.disabled = true;
+            submitStatus.textContent = "Uploading to matrix network...";
+            submitStatus.className = "text-[10px] text-cyan-300 mt-2 italic animate-pulse";
+
+            const newRecord = {
+                name: rawName,
+                score: state.score,
+                userId: currentUser?.uid || 'local',
+                timestamp: Date.now()
+            };
+
+            // Attempt online database sync first
+            let synced = false;
+            if (db && currentUser) {
+                try {
+                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+                    await addDoc(colRef, newRecord);
+                    synced = true;
+                } catch (err) {
+                    console.error("Multiplayer Sync error, saving locally:", err);
+                }
+            }
+
+            // Fallback: merge and store to local cache list
+            const localSaved = localStorage.getItem('neon_leaderboard_data');
+            let list = localSaved ? JSON.parse(localSaved) : [];
+            list.push(newRecord);
+            list.sort((a, b) => b.score - a.score);
+            localStorage.setItem('neon_leaderboard_data', JSON.stringify(list.slice(0, 30)));
+
+            submitStatus.textContent = synced ? "SYNC COMPLETE!" : "RECORDED OFFLINE!";
+            submitStatus.className = "text-[10px] text-green-400 mt-2 italic font-bold";
+
+            // Delay showing leaderboard
+            setTimeout(() => {
+                submitScoreSection.classList.add('hidden');
+                loadLeaderboard();
+                gameOverScreen.classList.add('hidden');
+                leaderboardScreen.classList.remove('hidden');
+            }, 800);
+        }
+
+        // Set UI listener bindings
+        document.getElementById('view-leaderboard-btn').addEventListener('click', () => {
+            loadLeaderboard();
+            startScreen.classList.add('hidden');
+            leaderboardScreen.classList.remove('hidden');
+        });
+
+        document.getElementById('close-leaderboard-btn').addEventListener('click', () => {
+            leaderboardScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
+
+        document.getElementById('gameover-leaderboard-btn').addEventListener('click', () => {
+            loadLeaderboard();
+            gameOverScreen.classList.add('hidden');
+            leaderboardScreen.classList.remove('hidden');
+        });
+
+        submitScoreBtn.addEventListener('click', submitScore);
+
+        // ==========================================
+        // DYNAMIC PARTICLE SYSTEM
+        // ==========================================
+        class Particle {
+            constructor(x, y, color, speedX, speedY, life = 1) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.speedX = speedX;
+                this.speedY = speedY;
+                this.life = life;
+                this.decay = 0.02 + Math.random() * 0.02;
+                this.size = 2 + Math.random() * 4;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.life -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        let particles = [];
+
+        function spawnExplosion(x, y, color) {
+            for (let i = 0; i < 24; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const spd = 2 + Math.random() * 6;
+                particles.push(new Particle(
+                    x, y, color,
+                    Math.cos(angle) * spd,
+                    Math.sin(angle) * spd,
+                    1
+                ));
+            }
+        }
+
+        // ==========================================
+        // ENTITY CLASS MODELS
+        // ==========================================
+        class Runner {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = 80;
+                this.y = 0;
+                this.targetY = 0;
+                this.vy = 0;
+                this.width = 38;
+                this.height = 54;
+                this.gravity = 0.65;
+                this.jumpStrength = -13;
+                this.isJumping = false;
+                this.doubleJumpAvailable = true;
+                this.isSliding = false;
+                this.slideTimer = 0;
+                this.shieldActive = false;
+                this.trailTimer = 0;
+            }
+
+            jump() {
+                if (!this.isJumping) {
+                    this.vy = this.jumpStrength;
+                    this.isJumping = true;
+                    synth.playJump();
+                    this.isSliding = false;
+                    spawnExplosion(this.x + this.width/2, this.y + this.height, '#ff007f');
+                } else if (this.doubleJumpAvailable) {
+                    this.vy = this.jumpStrength * 0.85;
+                    this.doubleJumpAvailable = false;
+                    synth.playJump();
+                    spawnExplosion(this.x + this.width/2, this.y + this.height, '#00f0ff');
+                }
+            }
+
+            slide() {
+                this.isSliding = true;
+                this.slideTimer = 22; // Slide action duration (frames)
+                this.isJumping = false;
+                this.doubleJumpAvailable = true;
+                this.vy = 4; // Push down if in air
+                synth.playSlide();
+            }
+
+            update() {
+                const groundY = state.roadY - (this.isSliding ? 25 : this.height);
+
+                this.vy += this.gravity;
+                this.y += this.vy;
+
+                if (this.y >= groundY) {
+                    this.y = groundY;
+                    this.vy = 0;
+                    this.isJumping = false;
+                    this.doubleJumpAvailable = true;
+                }
+
+                if (this.isSliding) {
+                    this.slideTimer--;
+                    if (this.slideTimer <= 0) {
+                        this.isSliding = false;
+                    }
+                }
+
+                this.trailTimer++;
+                if (this.trailTimer % 4 === 0) {
+                    const zoneColor = state.zones[state.currentZone].themeColor;
+                    const trailColor = this.shieldActive ? '#00f0ff' : zoneColor;
+                    particles.push(new Particle(
+                        this.x,
+                        this.y + (this.isSliding ? 12 : this.height / 2),
+                        trailColor,
+                        -state.speed * 0.5,
+                        (Math.random() - 0.5) * 2,
+                        0.5
+                    ));
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 12;
+                
+                const zoneColor = state.zones[state.currentZone].themeColor;
+                ctx.shadowColor = this.shieldActive ? '#00f0ff' : zoneColor;
+
+                const drawH = this.isSliding ? 25 : this.height;
+                const drawW = this.isSliding ? 48 : this.width;
+
+                ctx.fillStyle = this.shieldActive ? '#00f0ff' : zoneColor;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+
+                ctx.beginPath();
+                if (this.isSliding) {
+                    ctx.moveTo(this.x, this.y + drawH);
+                    ctx.lineTo(this.x + 10, this.y);
+                    ctx.lineTo(this.x + drawW - 10, this.y + 4);
+                    ctx.lineTo(this.x + drawW, this.y + drawH);
+                } else {
+                    ctx.moveTo(this.x, this.y + drawH - 5);
+                    ctx.lineTo(this.x + 12, this.y);
+                    ctx.lineTo(this.x + drawW, this.y + 15);
+                    ctx.lineTo(this.x + drawW - 8, this.y + drawH);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(this.x + drawW - 8, this.y + drawH / 2, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (this.shieldActive) {
+                    ctx.strokeStyle = 'rgba(0, 240, 255, 0.8)';
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = '#00f0ff';
+                    ctx.beginPath();
+                    ctx.arc(this.x + drawW/2, this.y + drawH/2, 35, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            getBounds() {
+                const drawH = this.isSliding ? 25 : this.height;
+                const drawW = this.isSliding ? 48 : this.width;
+                return {
+                    left: this.x,
+                    right: this.x + drawW,
+                    top: this.y,
+                    bottom: this.y + drawH
+                };
+            }
+        }
+
+        class Obstacle {
+            constructor(type) {
+                this.type = type;
+                this.x = canvas.width + 100;
+                this.color = type === 'laser' ? '#00f0ff' : '#ff0055';
+                
+                if (type === 'barricade') {
+                    this.width = 24;
+                    this.height = 36;
+                    this.y = state.roadY - this.height;
+                } else if (type === 'laser') {
+                    this.width = 18;
+                    this.height = 80;
+                    this.y = state.roadY - 110;
+                } else { // 'drone'
+                    this.width = 30;
+                    this.height = 30;
+                    this.y = state.roadY - 95;
+                    this.baseY = this.y;
+                }
+                this.angleOffset = Math.random() * 100;
+            }
+
+            update() {
+                this.x -= state.speed;
+
+                if (this.type === 'drone' && state.currentZone >= 2) {
+                    const bobRange = state.currentZone === 2 ? 15 : 25;
+                    const speedMultiplier = state.currentZone >= 3 ? 0.012 : 0.007;
+                    this.y = this.baseY + Math.sin(Date.now() * speedMultiplier + this.angleOffset) * bobRange;
+                }
+
+                if (this.type === 'laser' && state.currentZone >= 3) {
+                    this.width = 18 + Math.sin(Date.now() * 0.01) * 6;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+
+                if (this.type === 'barricade') {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y + this.height);
+                    ctx.lineTo(this.x + this.width / 2, this.y);
+                    ctx.lineTo(this.x + this.width, this.y + this.height);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                } else if (this.type === 'laser') {
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.strokeRect(this.x, this.y, this.width, this.height);
+                    ctx.fillStyle = 'rgba(0, 240, 255, 0.15)';
+                    ctx.fillRect(this.x - 3, this.y + this.height, this.width + 6, 40);
+                } else {
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.strokeRect(this.x, this.y, this.width, this.height);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(this.x + 8, this.y + 8, this.width - 16, this.height - 16);
+                }
+                ctx.restore();
+            }
+
+            getBounds() {
+                return {
+                    left: this.x,
+                    right: this.x + this.width,
+                    top: this.y,
+                    bottom: this.y + this.height
+                };
+            }
+        }
+
+        class Collectible {
+            constructor() {
+                this.x = canvas.width + 100;
+                const rand = Math.random();
+                if (rand < 0.4) {
+                    this.y = state.roadY - 24;
+                } else if (rand < 0.85) {
+                    this.y = state.roadY - 75;
+                } else {
+                    this.y = state.roadY - 120;
+                }
+                
+                this.width = 16;
+                this.height = 16;
+                this.color = '#ffff00';
+                this.isPowerup = Math.random() < 0.15;
+                if (this.isPowerup) {
+                    this.color = '#00ffff';
+                }
+                this.pulseAngle = 0;
+            }
+
+            update() {
+                this.x -= state.speed;
+                this.pulseAngle += 0.08;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = this.color;
+
+                const hoverOffset = Math.sin(this.pulseAngle) * 4;
+
+                ctx.beginPath();
+                if (this.isPowerup) {
+                    ctx.arc(this.x + 8, this.y + 8 + hoverOffset, 8, 0, Math.PI*2);
+                } else {
+                    ctx.moveTo(this.x + 8, this.y + hoverOffset);
+                    ctx.lineTo(this.x + 16, this.y + 8 + hoverOffset);
+                    ctx.lineTo(this.x + 8, this.y + 16 + hoverOffset);
+                    ctx.lineTo(this.x, this.y + 8 + hoverOffset);
+                    ctx.closePath();
+                }
+                ctx.fill();
+                ctx.restore();
+            }
+
+            getBounds() {
+                return {
+                    left: this.x,
+                    right: this.x + this.width,
+                    top: this.y - 4,
+                    bottom: this.y + this.height + 4
+                };
+            }
+        }
+
+        // Setup Player and Spawns
+        let player = new Runner();
+        let obstacles = [];
+        let collectibles = [];
+        let obstacleSpawnTimer = 0;
+        let collectibleSpawnTimer = 0;
+
+        function checkCollision(b1, b2) {
+            return b1.left < b2.right &&
+                   b1.right > b2.left &&
+                   b1.top < b2.bottom &&
+                   b1.bottom > b2.top;
+        }
+
+        function resetGame() {
+            player.reset();
+            obstacles = [];
+            collectibles = [];
+            particles = [];
+            state.score = 0;
+            state.speed = 6.5;
+            state.distance = 0;
+            state.currentZone = 1;
+            state.maxSpeed = state.zones[1].maxSpeed;
+            synth.tempo = state.zones[1].tempo;
+            scoreDisplay.textContent = '000000';
+            powerupAlert.classList.add('hidden');
+            
+            zoneBadge.textContent = state.zones[1].name;
+            zoneBadge.className = "hidden md:inline-block orbitron text-xs font-bold bg-pink-500/20 text-pink-400 border border-pink-500/30 px-3 py-1 rounded-full uppercase tracking-widest animate-pulse";
+            zoneBadge.classList.remove('hidden');
+
+            // Reset input form
+            pilotNameInput.value = '';
+            submitScoreBtn.disabled = false;
+            submitStatus.textContent = "Safe, alphanumeric inputs only";
+            submitStatus.className = "text-[10px] text-slate-500 mt-2 italic";
+            submitScoreSection.classList.add('hidden');
+        }
+
+        function checkZoneProgression() {
+            let activeZone = 1;
+            if (state.score >= state.zones[3].limit) {
+                activeZone = 4;
+            } else if (state.score >= state.zones[2].limit) {
+                activeZone = 3;
+            } else if (state.score >= state.zones[1].limit) {
+                activeZone = 2;
+            }
+
+            if (activeZone !== state.currentZone) {
+                state.currentZone = activeZone;
+                const zoneData = state.zones[activeZone];
+                
+                state.maxSpeed = zoneData.maxSpeed;
+                synth.tempo = zoneData.tempo;
+                
+                zoneBadge.textContent = zoneData.name;
+                if (activeZone === 2) {
+                    zoneBadge.className = "hidden md:inline-block orbitron text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 px-3 py-1 rounded-full uppercase tracking-widest animate-pulse";
+                } else if (activeZone === 3) {
+                    zoneBadge.className = "hidden md:inline-block orbitron text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 px-3 py-1 rounded-full uppercase tracking-widest animate-pulse";
+                } else if (activeZone === 4) {
+                    zoneBadge.className = "hidden md:inline-block orbitron text-xs font-bold bg-white/20 text-white border border-white/30 px-3 py-1 rounded-full uppercase tracking-widest animate-pulse";
+                }
+
+                zoneAlertTitle.textContent = zoneData.name;
+                zoneAlert.className = "absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none opacity-100 transition-all duration-500 scale-100 z-20";
+                
+                setTimeout(() => {
+                    zoneAlert.className = "absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none opacity-0 transition-all duration-500 scale-90 z-20";
+                }, 3000);
+            }
+        }
+
+        // ==========================================
+        // GRAPHICS AND GRID BACKGROUNDS
+        // ==========================================
+        function drawBackground() {
+            const activeZoneProfile = state.zones[state.currentZone];
+
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, state.roadY);
+            skyGrad.addColorStop(0, activeZoneProfile.skyGradStart);
+            skyGrad.addColorStop(0.5, '#0b0518');
+            skyGrad.addColorStop(0.85, activeZoneProfile.skyGradEnd);
+            skyGrad.addColorStop(1, '#ff8c00');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, canvas.width, state.roadY);
+
+            const sunX = canvas.width / 2;
+            const sunY = state.roadY - 10;
+            const sunRadius = Math.min(canvas.width, canvas.height) * 0.18;
+            
+            ctx.save();
+            const sunGrad = ctx.createLinearGradient(sunX, sunY - sunRadius, sunX, sunY);
+            
+            if (state.currentZone === 1) {
+                sunGrad.addColorStop(0, '#ffff00');
+                sunGrad.addColorStop(0.5, '#ff0055');
+            } else if (state.currentZone === 2) {
+                sunGrad.addColorStop(0, '#00ffff');
+                sunGrad.addColorStop(0.5, '#0055ff');
+            } else if (state.currentZone === 3) {
+                sunGrad.addColorStop(0, '#ff00ff');
+                sunGrad.addColorStop(0.5, '#4b0082');
+            } else {
+                sunGrad.addColorStop(0, '#ffffff');
+                sunGrad.addColorStop(0.5, '#222222');
+            }
+            sunGrad.addColorStop(1, '#0b0518');
+            
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = activeZoneProfile.themeColor;
+            ctx.fillStyle = sunGrad;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunRadius, 0, Math.PI, true);
+            ctx.fill();
+            ctx.restore();
+
+            ctx.fillStyle = '#0b0518';
+            for (let i = sunY - sunRadius; i < sunY; i += 12) {
+                const ratio = (sunY - i) / sunRadius;
+                const thickness = 2 + (1 - ratio) * 4;
+                if (i > sunY - sunRadius) {
+                    ctx.fillRect(sunX - sunRadius - 10, i, sunRadius * 2 + 20, thickness);
+                }
+            }
+
+            ctx.fillStyle = '#0b0518';
+            ctx.beginPath();
+            ctx.moveTo(0, state.roadY);
+            ctx.lineTo(canvas.width * 0.15, state.roadY - 45);
+            ctx.lineTo(canvas.width * 0.28, state.roadY);
+            ctx.lineTo(canvas.width * 0.45, state.roadY - 65);
+            ctx.lineTo(canvas.width * 0.65, state.roadY);
+            ctx.lineTo(canvas.width * 0.85, state.roadY - 35);
+            ctx.lineTo(canvas.width, state.roadY);
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(255, 0, 127, 0.4)';
+            ctx.lineWidth = 1;
+            for (let i = state.roadY; i < canvas.height; i += 15) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+
+            ctx.save();
+            ctx.strokeStyle = activeZoneProfile.themeColor + '59';
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = activeZoneProfile.themeColor;
+            ctx.lineWidth = 2;
+            
+            state.gridOffset = (state.gridOffset + state.speed) % 40;
+
+            const gridLinesCount = 20;
+            for (let i = 0; i <= gridLinesCount; i++) {
+                const ratio = i / gridLinesCount;
+                const startX = canvas.width * ratio;
+                const targetX = (startX - canvas.width / 2) * 2.8 + canvas.width / 2;
+                
+                ctx.beginPath();
+                ctx.moveTo(startX, state.roadY);
+                ctx.lineTo(targetX, canvas.height);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = activeZoneProfile.themeColor + '40';
+            for (let y = state.roadY + state.gridOffset; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            ctx.strokeStyle = activeZoneProfile.themeColor;
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = activeZoneProfile.themeColor;
+            ctx.beginPath();
+            ctx.moveTo(0, state.roadY + 2);
+            ctx.lineTo(canvas.width, state.roadY + 2);
+            ctx.stroke();
+        }
+
+        // ==========================================
+        // FRAME ANIMATION STEPPING
+        // ==========================================
+        function gameLoop() {
+            if (!state.running) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            state.distance += state.speed;
+            state.score = Math.floor(state.distance / 10);
+            scoreDisplay.textContent = String(state.score).padStart(6, '0');
+
+            checkZoneProgression();
+
+            if (state.speed < state.maxSpeed) {
+                state.speed += 0.001;
+            } else if (state.speed > state.maxSpeed) {
+                state.speed -= 0.05;
+            }
+
+            drawBackground();
+
+            obstacleSpawnTimer--;
+            if (obstacleSpawnTimer <= 0) {
+                const types = ['barricade', 'laser', 'drone'];
+                const selectedType = types[Math.floor(Math.random() * types.length)];
+                obstacles.push(new Obstacle(selectedType));
+                
+                const spawnSpeedBoost = state.speed * 2.8;
+                const difficultyBuffer = state.currentZone >= 3 ? 65 : 85;
+                obstacleSpawnTimer = difficultyBuffer + Math.random() * 45 - spawnSpeedBoost;
+            }
+
+            collectibleSpawnTimer--;
+            if (collectibleSpawnTimer <= 0) {
+                collectibles.push(new Collectible());
+                collectibleSpawnTimer = 40 + Math.random() * 60;
+            }
+
+            // Collectibles iteration
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                const c = collectibles[i];
+                c.update();
+                c.draw();
+
+                if (checkCollision(player.getBounds(), c.getBounds())) {
+                    if (c.isPowerup) {
+                        player.shieldActive = true;
+                        synth.playPowerup();
+                        
+                        powerupAlert.textContent = "SHIELD ACTIVATED";
+                        powerupAlert.classList.remove('hidden');
+                        setTimeout(() => {
+                            player.shieldActive = false;
+                            powerupAlert.classList.add('hidden');
+                        }, 5000);
+                    } else {
+                        state.distance += 150; 
+                        synth.playCollect();
+                    }
+                    
+                    spawnExplosion(c.x + 8, c.y + 8, c.color);
+                    collectibles.splice(i, 1);
+                    continue;
+                }
+
+                if (c.x < -50) {
+                    collectibles.splice(i, 1);
+                }
+            }
+
+            // Obstacles iteration
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.update();
+                obs.draw();
+
+                if (checkCollision(player.getBounds(), obs.getBounds())) {
+                    if (player.shieldActive) {
+                        player.shieldActive = false;
+                        powerupAlert.classList.add('hidden');
+                        synth.playExplosion();
+                        spawnExplosion(obs.x + obs.width/2, obs.y + obs.height/2, '#00f0ff');
+                        obstacles.splice(i, 1);
+                        continue;
+                    } else {
+                        gameOver();
+                        return;
+                    }
+                }
+
+                if (obs.x < -50) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            player.update();
+            player.draw();
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ==========================================
+        // USER CONTROLS HANDLERS
+        // ==========================================
+        function handleJumpAction() {
+            if (!state.running) return;
+            player.jump();
+        }
+
+        function handleSlideAction() {
+            if (!state.running) return;
+            player.slide();
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'ArrowUp' || e.code === 'Space') {
+                e.preventDefault();
+                handleJumpAction();
+            }
+            if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+                e.preventDefault();
+                handleSlideAction();
+            }
+        });
+
+        document.getElementById('touch-jump-btn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleJumpAction();
+        });
+        document.getElementById('touch-slide-btn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleSlideAction();
+        });
+
+        // ==========================================
+        // APPLICATION RUNTIME CONTROLS
+        // ==========================================
+        function startNewRun() {
+            synth.init();
+            resetGame();
+            
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            leaderboardScreen.classList.add('hidden');
+            
+            state.running = true;
+            obstacleSpawnTimer = 60;
+            collectibleSpawnTimer = 30;
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            state.running = false;
+            synth.playExplosion();
+
+            if (state.score > highScore) {
+                highScore = state.score;
+                localStorage.setItem('neon_high_score', highScore);
+                highscoreDisplay.textContent = String(highScore).padStart(6, '0');
+            }
+
+            finalScore.textContent = state.score;
+            finalHighScore.textContent = highScore;
+            
+            // Show score submission UI
+            submitScoreSection.classList.remove('hidden');
+
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        // Wire start buttons
+        document.getElementById('start-btn').addEventListener('click', startNewRun);
+        document.getElementById('retry-btn').addEventListener('click', startNewRun);
+        document.getElementById('menu-btn').addEventListener('click', () => {
+            gameOverScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
+
+        // Initialize connection
+        initFirebase();
+    </script>
+</body>
+</html>
