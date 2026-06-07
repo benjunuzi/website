@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Arcade Hub</title>
+    <!-- Tailwind CSS for modern responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for cool retro icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Retro Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        .retro-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+        .ui-font {
+            font-family: 'Rajdhani', sans-serif;
+        }
+        /* Custom glowing retro effects */
+        .neon-border {
+            box-shadow: 0 0 10px #f43f5e, inset 0 0 10px #f43f5e;
+            border: 2px solid #f43f5e;
+        }
+        .neon-border-blue {
+            box-shadow: 0 0 10px #0ea5e9, inset 0 0 10px #0ea5e9;
+            border: 2px solid #0ea5e9;
+        }
+        .neon-border-emerald {
+            box-shadow: 0 0 10px #10b981, inset 0 0 10px #10b981;
+            border: 2px solid #10b981;
+        }
+        .neon-text {
+            text-shadow: 0 0 5px #f43f5e, 0 0 10px #f43f5e;
+        }
+        .neon-text-blue {
+            text-shadow: 0 0 5px #0ea5e9, 0 0 10px #0ea5e9;
+        }
+        .neon-text-emerald {
+            text-shadow: 0 0 5px #10b981, 0 0 10px #10b981;
+        }
+        
+        /* Prevent double-tap zoom delay and unwanted mobile scrolling over game areas */
+        canvas {
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        .no-select {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between ui-font selection:bg-rose-500 selection:text-white overflow-x-hidden no-select">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-rose-500 to-amber-500 rounded-lg flex items-center justify-center shadow-lg shadow-rose-500/20 animate-pulse">
+                    <i class="fa-solid fa-gamepad text-xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-500 to-amber-400 retro-font text-xs sm:text-sm">
+                        ARCADE HUB
+                    </h1>
+                    <p class="text-xs text-slate-400">Adaptive Multi-Device Play</p>
+                </div>
+            </div>
+            
+            <!-- Game Selector Tabs -->
+            <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
+                <button onclick="switchGame('snake')" id="tab-snake" class="flex-1 sm:flex-none px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-rose-400 bg-slate-900 border border-rose-500/30">
+                    <i class="fa-solid fa-worm"></i> Snake
+                </button>
+                <button onclick="switchGame('bricks')" id="tab-bricks" class="flex-1 sm:flex-none px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-cubes"></i> Bricks
+                </button>
+                <button onclick="switchGame('whack')" id="tab-whack" class="flex-1 sm:flex-none px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-hammer"></i> Whack!
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Container -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 py-4 flex flex-col items-center justify-center">
+        
+        <!-- Scoreboard Overlay -->
+        <div class="w-full max-w-lg mb-4 flex justify-between items-center bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-rose-500/10 rounded-lg border border-rose-500/20">
+                    <i class="fa-solid fa-star text-rose-400"></i>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 uppercase tracking-widest">Score</div>
+                    <div id="current-score" class="text-xl sm:text-2xl font-bold retro-font text-rose-500 neon-text">0000</div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-right">
+                <div>
+                    <div class="text-xs text-slate-400 uppercase tracking-widest">High Score</div>
+                    <div id="high-score" class="text-xl sm:text-2xl font-bold retro-font text-sky-400 neon-text-blue">0000</div>
+                </div>
+                <div class="p-2 bg-sky-500/10 rounded-lg border border-sky-500/20">
+                    <i class="fa-solid fa-trophy text-sky-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- THE PLAYING ARENA (Enforces perfect scale across mobile & desktop) -->
+        <div class="relative w-full max-w-lg aspect-square bg-slate-950 rounded-2xl overflow-hidden flex flex-col justify-center items-center neon-border-blue transition-all duration-500 shadow-2xl" id="game-arena" style="touch-action: none;">
+            
+            <!-- 1. Snake Game Screen -->
+            <canvas id="snake-canvas" class="absolute inset-0 w-full h-full hidden bg-slate-950"></canvas>
+
+            <!-- 2. Brick Breaker Game Screen -->
+            <canvas id="bricks-canvas" class="absolute inset-0 w-full h-full hidden bg-slate-950"></canvas>
+
+            <!-- 3. Whack-a-Mole Game Screen -->
+            <div id="whack-container" class="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between hidden bg-slate-950 select-none touch-none">
+                <div class="grid grid-cols-3 gap-3 sm:gap-4 w-full h-full max-h-[380px] my-auto">
+                    <!-- 9 Whack Holes with safe padding for mobile fingers -->
+                    <div class="whack-hole relative bg-slate-900 border-2 border-slate-800 rounded-full flex items-center justify-center overflow-hidden cursor-pointer group aspect-square">
+                        <div class="absolute bottom-[-10px] w-full h-[85%] bg-amber-700/0 rounded-t-full transition-all duration-100 flex flex-col justify-end items-center mole-element translate-y-full">
+                            <span class="text-4xl sm:text-5xl select-none">🦫</span>
+                        </div>
+                        <div class="absolute bottom-0 w-full h-3 sm:h-4 bg-slate-950 border-t border-slate-800 rounded-b-full"></div>
+                    </div>
+                    <div class="whack-hole relative bg-slate-900 border-2 border-slate-800 rounded-full flex items-center justify-center overflow-hidden cursor-pointer group aspect-square">
+                        <div class="absolute bottom-[-10px] w-full h-[85%] bg-amber-700/0 rounded-t-full transition-all duration-100 flex flex-col justify-end items-center mole-element translate-y-full">
+                            <span class="text-4xl sm:text-5xl select-none">🦫</span>
+                        </div>
+                        <div class="absolute bottom-0 w-full h-3 sm:h-4 bg-slate-950 border-t border-slate-800 rounded-b-full"></div>
+                    </div>
+                    <div class="whack-hole relative bg-slate-900 border-2 border-slate-800 rounded-full flex items-center justify-center overflow-hidden cursor-pointer group aspect-square">
+                        <div class="absolute bottom-[-10px] w-full h-[85%] bg-amber-700/0 rounded-t-full transition-all duration-100 flex flex-col justify-end items-center mole-element translate-y-full">
+                            <span class="text-4xl sm:text-5xl select-none">🦫</span>
+                        </div>
+                        <div class="absolute bottom-0 w-full h-3 sm:h-4 bg-slate-950 border-t border-slate-800 rounded-b-full"></div>
+                    </div>
+                    <div class="whack-hole relative bg-slate-900 border-2 border-slate-800 rounded-full flex items-center justify-center overflow-hidden cursor-pointer group aspect-square">
+                        <div class="absolute bottom-[-10px] w-full h-[85%] bg-amber-700/0 rounded-t-full transition-all duration-100 flex flex-col justify-end items-center mole-element translate-y-full">
+                            <span class="text-4xl sm:text-5xl select-none">🦫</span>
+                        </div>
+                        <div class="absolute bottom-0 w-full h-3 sm:h-4 bg-slate-950 border-t border-slate-800 rounded-b-full"></div>
+                    </div>
+                    <div class="whack-hole relative bg-slate-900 border-2 border-slate-800 rounded-full flex items-center justify-center overflow-hidden cursor-pointer group aspect-square">
+                        <div class="absolute bottom-[-10px] w-full h-[85%] bg-amber-700/0 rounded-t-full transition-all duration-100 flex flex-col justify-end items-center mole-element translate-y-full">
+                            <span class="text-4xl sm:text-5xl select-none">🦫</span>
+                        </div>
+                        <div class="absolute bottom-0 w-full h-3 sm:h-4 bg-slate-950 border-t border-slate-800 rounded-b-full"></div>
+                    </div>
+                    <div class="whack-hole relative bg-slate-900 border-2 border-slate-800 rounded-full flex items-center justify-center overflow-hidden cursor-pointer group aspect-square">
+                        <div class="absolute bottom-[-10px] w-full h-[85%] bg-amber-700/0 rounded-t-full transition-all duration-100 flex flex-col justify-end items-center mole-element translate-y-full">
+                            <span class="text-4xl sm:text-5xl select-none">🦫</span>
+                        </div>
+                        <div class="absolute bottom-0 w-full h-3 sm:h-4 bg-slate-950 border-t border-slate-800 rounded-b-full"></div>
+                    </div>
+                    <div class="whack-hole relative bg-slate-900 border-2 border-slate-800 rounded-full flex items-center justify-center overflow-hidden cursor-pointer group aspect-square">
+                        <div class="absolute bottom-[-10px] w-full h-[85%] bg-amber-700/0 rounded-t-full transition-all duration-100 flex flex-col justify-end items-center mole-element translate-y-full">
+                            <span class="text-4xl sm:text-5xl select-none">🦫</span>
+                        </div>
+                        <div class="absolute bottom-0 w-full h-3 sm:h-4 bg-slate-950 border-t border-slate-800 rounded-b-full"></div>
+                    </div>
+                    <div class="whack-hole relative bg-slate-900 border-2 border-slate-800 rounded-full flex items-center justify-center overflow-hidden cursor-pointer group aspect-square">
+                        <div class="absolute bottom-[-10px] w-full h-[85%] bg-amber-700/0 rounded-t-full transition-all duration-100 flex flex-col justify-end items-center mole-element translate-y-full">
+                            <span class="text-4xl sm:text-5xl select-none">🦫</span>
+                        </div>
+                        <div class="absolute bottom-0 w-full h-3 sm:h-4 bg-slate-950 border-t border-slate-800 rounded-b-full"></div>
+                    </div>
+                    <div class="whack-hole relative bg-slate-900 border-2 border-slate-800 rounded-full flex items-center justify-center overflow-hidden cursor-pointer group aspect-square">
+                        <div class="absolute bottom-[-10px] w-full h-[85%] bg-amber-700/0 rounded-t-full transition-all duration-100 flex flex-col justify-end items-center mole-element translate-y-full">
+                            <span class="text-4xl sm:text-5xl select-none">🦫</span>
+                        </div>
+                        <div class="absolute bottom-0 w-full h-3 sm:h-4 bg-slate-950 border-t border-slate-800 rounded-b-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start / Game Over Screens (Shared UI overlay) -->
+            <div id="arena-overlay" class="absolute inset-0 bg-slate-950/95 flex flex-col justify-center items-center text-center p-6 z-20">
+                <div class="animate-bounce mb-3 text-rose-500 text-4xl sm:text-5xl" id="overlay-icon">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+                <h2 id="overlay-title" class="retro-font text-base sm:text-2xl text-slate-100 mb-2">SNAKE GAME</h2>
+                <p id="overlay-desc" class="text-slate-400 text-xs sm:text-sm max-w-xs sm:max-w-sm mb-6">Use Arrow keys or swipe/tap on screen to guide the snake. Eat delicious fruit to grow longer!</p>
+                <button onclick="startGame()" id="start-btn" class="retro-font bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 active:scale-95 text-white px-6 sm:px-8 py-3 rounded-xl border-b-4 border-rose-800 font-bold transition-all shadow-lg shadow-rose-500/30 text-xs sm:text-sm">
+                    START GAME
+                </button>
+            </div>
+
+            <!-- Leaderboard Entry Overlay (Appears on qualifying highscore) -->
+            <div id="leaderboard-entry-overlay" class="absolute inset-0 bg-slate-950/95 flex flex-col justify-center items-center text-center p-6 z-30 hidden">
+                <div class="mb-3 text-amber-400 text-4xl sm:text-5xl animate-pulse">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <h2 class="retro-font text-lg sm:text-xl text-yellow-400 mb-2 neon-text-blue">NEW HIGH SCORE!</h2>
+                <p class="text-slate-300 text-xs sm:text-sm max-w-sm mb-4">You made it onto the Leaderboard! Enter your initials to claim your legend:</p>
+                
+                <div class="flex flex-col items-center gap-4 mb-6">
+                    <input type="text" id="initials-input" maxlength="3" placeholder="AAA" class="bg-slate-900 border-2 border-pink-500 rounded-xl px-4 py-2 text-center text-2xl sm:text-3xl font-extrabold tracking-widest text-pink-400 uppercase w-32 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent retro-font">
+                </div>
+
+                <button onclick="submitHighScore()" class="retro-font bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-95 text-white px-6 sm:px-8 py-3 rounded-xl border-b-4 border-emerald-800 font-bold transition-all shadow-lg shadow-emerald-500/30 text-xs sm:text-sm">
+                    SUBMIT SCORE
+                </button>
+            </div>
+        </div>
+
+        <!-- Custom Touch Controls (for Snake Mobile) -->
+        <div id="touch-controls-snake" class="w-full max-w-lg mt-4 hidden">
+            <div class="grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
+                <div></div>
+                <button onclick="triggerDirection('ArrowUp')" class="h-12 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center justify-center active:scale-95 text-slate-300">
+                    <i class="fa-solid fa-caret-up text-xl"></i>
+                </button>
+                <div></div>
+                <button onclick="triggerDirection('ArrowLeft')" class="h-12 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center justify-center active:scale-95 text-slate-300">
+                    <i class="fa-solid fa-caret-left text-xl"></i>
+                </button>
+                <div class="h-12 flex items-center justify-center text-[10px] retro-font text-slate-600">PAD</div>
+                <button onclick="triggerDirection('ArrowRight')" class="h-12 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center justify-center active:scale-95 text-slate-300">
+                    <i class="fa-solid fa-caret-right text-xl"></i>
+                </button>
+                <div></div>
+                <button onclick="triggerDirection('ArrowDown')" class="h-12 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center justify-center active:scale-95 text-slate-300">
+                    <i class="fa-solid fa-caret-down text-xl"></i>
+                </button>
+                <div></div>
+            </div>
+            <p class="text-center text-slate-500 text-xs mt-2 italic">Tip: You can also swipe directly on the game screen to turn!</p>
+        </div>
+
+        <!-- Touch Controls for Brick Breaker (Generous size) -->
+        <div id="touch-controls-bricks" class="w-full max-w-lg mt-4 hidden flex justify-between gap-4">
+            <button id="btn-left-brick" class="flex-1 h-14 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center justify-center active:scale-95 text-slate-300 select-none">
+                <i class="fa-solid fa-arrow-left text-xl mr-2"></i> Left
+            </button>
+            <button id="btn-right-brick" class="flex-1 h-14 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center justify-center active:scale-95 text-slate-300 select-none">
+                Right <i class="fa-solid fa-arrow-right text-xl ml-2"></i>
+            </button>
+        </div>
+
+        <!-- Dynamic Information Panel & Leaderboard Display -->
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-lg">
+            
+            <!-- Controls Guide Info Box -->
+            <div class="p-4 bg-slate-900/50 border border-slate-800 rounded-2xl flex items-start gap-3">
+                <i class="fa-solid fa-circle-info text-rose-400 mt-0.5 text-lg"></i>
+                <div>
+                    <h4 class="font-bold text-slate-200">How to Play</h4>
+                    <p id="game-instructions" class="text-sm text-slate-400">Use arrow keys (or swipe directly on screen) to move the snake and eat the apples. Do not run into walls or your own tail!</p>
+                </div>
+            </div>
+
+            <!-- Highscore Leaderboard Display -->
+            <div class="p-4 bg-slate-900/70 border border-amber-500/30 rounded-2xl flex flex-col justify-start">
+                <div class="flex items-center gap-2 mb-2 pb-2 border-b border-slate-800">
+                    <i class="fa-solid fa-ranking-star text-amber-400 text-lg"></i>
+                    <h4 class="font-bold text-slate-200 uppercase tracking-widest text-sm">Leaderboard (Top 5)</h4>
+                </div>
+                <div id="leaderboard-list" class="flex flex-col gap-1.5 text-xs retro-font text-slate-400">
+                    <!-- Loaded dynamically via JavaScript -->
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 bg-slate-950/80 py-4 px-4 text-center text-xs text-slate-500">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div>Retro Arcade Hub &copy; 2026. Hand-built with pure CSS and JavaScript.</div>
+            <div class="flex gap-4">
+                <span class="hover:text-slate-400 cursor-help" title="Local Storage persists your leaderboard and scores."><i class="fa-solid fa-database"></i> Session Storage</span>
+                <span class="hover:text-slate-400 cursor-help" title="Optimized for tap, drag, swipe, and key inputs."><i class="fa-solid fa-mobile-screen-button"></i> Fully Adaptive</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Audio FX generator using Web Audio API (No outside assets needed!) -->
+    <script>
+        // Retro Sound Effects generator using Web Audio API
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'eat') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'break') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(150, now + 0.08);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'whack') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(60, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+                    osc.start(now);
+                    osc.stop(now + 0.18);
+                } else if (type === 'paddle') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.06);
+                } else if (type === 'gameover') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(80, now + 0.6);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                    osc.start(now);
+                    osc.stop(now + 0.6);
+                } else if (type === 'victory') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    osc.frequency.setValueAtTime(1046.50, now + 0.3); // C6
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                }
+            } catch (e) {
+                console.log('Audio Context connection deferred.');
+            }
+        }
+    </script>
+
+    <!-- CORE ARCADE LOGIC -->
+    <script>
+        // State variables
+        let activeGame = 'snake'; // 'snake' | 'bricks' | 'whack'
+        let currentScore = 0;
+        let highScores = {
+            snake: 0,
+            bricks: 0,
+            whack: 0
+        };
+
+        // Leaderboards Data Structure (Default retro placeholders)
+        let leaderboards = {
+            snake: [
+                { name: "SNA", score: 120 },
+                { name: "NEO", score: 80 },
+                { name: "BOB", score: 50 },
+                { name: "ACE", score: 30 },
+                { name: "AAA", score: 10 }
+            ],
+            bricks: [
+                { name: "BRK", score: 250 },
+                { name: "REF", score: 180 },
+                { name: "BLA", score: 120 },
+                { name: "POP", score: 80 },
+                { name: "NEW", score: 40 }
+            ],
+            whack: [
+                { name: "HAM", score: 150 },
+                { name: "MOL", score: 105 },
+                { name: "WAC", score: 75 },
+                { name: "ZAP", score: 45 },
+                { name: "POW", score: 15 }
+            ]
+        };
+
+        // DOM elements
+        const currentScoreEl = document.getElementById('current-score');
+        const highScoreEl = document.getElementById('high-score');
+        const arenaOverlay = document.getElementById('arena-overlay');
+        const overlayIcon = document.getElementById('overlay-icon');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
+        const startBtn = document.getElementById('start-btn');
+        const gameArena = document.getElementById('game-arena');
+        const instructionsEl = document.getElementById('game-instructions');
+        const leaderboardList = document.getElementById('leaderboard-list');
+
+        // Leaderboard Entry elements
+        const entryOverlay = document.getElementById('leaderboard-entry-overlay');
+        const initialsInput = document.getElementById('initials-input');
+
+        // Touch Control Panels
+        const snakeControls = document.getElementById('touch-controls-snake');
+        const bricksControls = document.getElementById('touch-controls-bricks');
+
+        // Canvases
+        const snakeCanvas = document.getElementById('snake-canvas');
+        const bricksCanvas = document.getElementById('bricks-canvas');
+        const whackContainer = document.getElementById('whack-container');
+
+        // Game intervals & states
+        let gameLoopInterval = null;
+        let gameActive = false;
+
+        // Reset & setup local storage if present
+        if (localStorage.getItem('hubHighScores')) {
+            highScores = JSON.parse(localStorage.getItem('hubHighScores'));
+        }
+        if (localStorage.getItem('hubLeaderboards')) {
+            leaderboards = JSON.parse(localStorage.getItem('hubLeaderboards'));
+        } else {
+            localStorage.setItem('hubLeaderboards', JSON.stringify(leaderboards));
+        }
+
+        // Switch Game tab function
+        function switchGame(gameKey) {
+            if (gameActive) {
+                stopCurrentGame();
+            }
+
+            activeGame = gameKey;
+
+            // Manage active button styles
+            ['snake', 'bricks', 'whack'].forEach(key => {
+                const btn = document.getElementById(`tab-${key}`);
+                if (key === gameKey) {
+                    btn.className = "flex-1 sm:flex-none px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-rose-400 bg-slate-900 border border-rose-500/30";
+                } else {
+                    btn.className = "flex-1 sm:flex-none px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-slate-400 hover:text-slate-200";
+                }
+            });
+
+            // Hide all arena sections
+            snakeCanvas.classList.add('hidden');
+            bricksCanvas.classList.add('hidden');
+            whackContainer.classList.add('hidden');
+            entryOverlay.classList.add('hidden');
+
+            // Hide all mobile controllers
+            snakeControls.classList.add('hidden');
+            bricksControls.classList.add('hidden');
+
+            // Set specific elements active & update instructions
+            if (gameKey === 'snake') {
+                snakeCanvas.classList.remove('hidden');
+                snakeControls.classList.remove('hidden');
+                gameArena.className = "relative w-full max-w-lg aspect-square bg-slate-950 rounded-2xl overflow-hidden flex flex-col justify-center items-center neon-border-blue transition-all duration-500";
+                
+                overlayIcon.innerHTML = `<i class="fa-solid fa-worm"></i>`;
+                overlayTitle.textContent = "SNAKE GAME";
+                overlayDesc.textContent = "Control the glowing snake to consume cosmic energy spheres! Swipe the screen or use keys/keypad to move.";
+                instructionsEl.textContent = "Use Arrow Keys, swipe on the screen, or use the touch pad below to guide the snake. Avoid the grid borders and your own segment path!";
+            } else if (gameKey === 'bricks') {
+                bricksCanvas.classList.remove('hidden');
+                bricksControls.classList.remove('hidden');
+                gameArena.className = "relative w-full max-w-lg aspect-square bg-slate-950 rounded-2xl overflow-hidden flex flex-col justify-center items-center neon-border-blue transition-all duration-500";
+                
+                overlayIcon.innerHTML = `<i class="fa-solid fa-cubes"></i>`;
+                overlayTitle.textContent = "BRICK BREAKER";
+                overlayDesc.textContent = "Destroy all barriers! Touch/drag your finger directly inside the arena or use Left/Right controls to steer the paddle.";
+                instructionsEl.textContent = "Slide your finger directly across the game board or click the touch buttons to direct the paddle. Demolish all retro blocks!";
+            } else if (gameKey === 'whack') {
+                whackContainer.classList.remove('hidden');
+                gameArena.className = "relative w-full max-w-lg aspect-square bg-slate-950 rounded-2xl overflow-hidden flex flex-col justify-center items-center neon-border-blue transition-all duration-500";
+                
+                overlayIcon.innerHTML = `<i class="fa-solid fa-hammer text-amber-500"></i>`;
+                overlayTitle.textContent = "WHACK-A-MOLE";
+                overlayDesc.textContent = "Tap or click the moles rapidly before they drop down! Game speed steps up as your score increases.";
+                instructionsEl.textContent = "Tap fast! Hit the moles directly as soon as they pop out of the pipes. Perfect for high-speed touch screen play!";
+            }
+
+            // Clean score indicators & refresh leaderboard UI
+            updateScoreDisplays();
+            renderLeaderboard();
+            arenaOverlay.classList.remove('hidden');
+        }
+
+        // Helper to keep scores synced
+        function updateScoreDisplays() {
+            currentScoreEl.textContent = String(currentScore).padStart(4, '0');
+            highScoreEl.textContent = String(highScores[activeGame]).padStart(4, '0');
+        }
+
+        function incrementScore(points) {
+            currentScore += points;
+            if (currentScore > highScores[activeGame]) {
+                highScores[activeGame] = currentScore;
+                localStorage.setItem('hubHighScores', JSON.stringify(highScores));
+            }
+            updateScoreDisplays();
+        }
+
+        // Render current game's leaderboard
+        function renderLeaderboard() {
+            const currentList = leaderboards[activeGame] || [];
+            currentList.sort((a, b) => b.score - a.score);
+            
+            leaderboardList.innerHTML = '';
+            currentList.slice(0, 5).forEach((entry, i) => {
+                const colors = ['text-yellow-400', 'text-slate-300', 'text-amber-600', 'text-slate-400', 'text-slate-500'];
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center py-1 border-b border-slate-900 last:border-0";
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-4 ${colors[i] || 'text-slate-400'} font-bold">#${i + 1}</span>
+                        <span class="font-extrabold uppercase tracking-wider text-slate-200">${entry.name}</span>
+                    </div>
+                    <span class="font-bold text-sky-400">${String(entry.score).padStart(4, '0')}</span>
+                `;
+                leaderboardList.appendChild(item);
+            });
+        }
+
+        // Stop current active game loop/logic cleanly
+        function stopCurrentGame() {
+            gameActive = false;
+            if (gameLoopInterval) {
+                clearInterval(gameLoopInterval);
+                gameLoopInterval = null;
+            }
+            clearTimeout(moleTimeout);
+            clearTimeout(molePopTimeout);
+            const moles = document.querySelectorAll('.mole-element');
+            moles.forEach(m => m.classList.add('translate-y-full'));
+        }
+
+        function endGame() {
+            gameActive = false;
+            if (gameLoopInterval) {
+                clearInterval(gameLoopInterval);
+                gameLoopInterval = null;
+            }
+
+            const currentList = leaderboards[activeGame] || [];
+            const isHighScore = currentList.length < 5 || currentScore > currentList[currentList.length - 1].score;
+
+            if (isHighScore && currentScore > 0) {
+                playSound('victory');
+                initialsInput.value = '';
+                entryOverlay.classList.remove('hidden');
+            } else {
+                playSound('gameover');
+                overlayTitle.textContent = "GAME OVER";
+                overlayDesc.textContent = `Excellent effort! You scored ${currentScore} points in ${activeGame.toUpperCase()}. Think you can beat it?`;
+                startBtn.textContent = "PLAY AGAIN";
+                arenaOverlay.classList.remove('hidden');
+            }
+        }
+
+        // Leaderboard Entry submission
+        function submitHighScore() {
+            let initials = initialsInput.value.trim().toUpperCase();
+            if (!initials) initials = "AAA";
+            
+            const currentList = leaderboards[activeGame] || [];
+            currentList.push({ name: initials, score: currentScore });
+            
+            currentList.sort((a, b) => b.score - a.score);
+            leaderboards[activeGame] = currentList.slice(0, 5);
+            
+            localStorage.setItem('hubLeaderboards', JSON.stringify(leaderboards));
+            
+            renderLeaderboard();
+            entryOverlay.classList.add('hidden');
+
+            overlayTitle.textContent = "SCORE REGISTERED!";
+            overlayDesc.textContent = `Congrats ${initials}! Your score of ${currentScore} is officially listed on the Leaderboard.`;
+            startBtn.textContent = "START NEW GAME";
+            arenaOverlay.classList.remove('hidden');
+        }
+
+        // Entry point triggered from Play / Start Button
+        function startGame() {
+            arenaOverlay.classList.add('hidden');
+            entryOverlay.classList.add('hidden');
+            currentScore = 0;
+            updateScoreDisplays();
+            gameActive = true;
+
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            if (activeGame === 'snake') {
+                initSnakeGame();
+            } else if (activeGame === 'bricks') {
+                initBricksGame();
+            } else if (activeGame === 'whack') {
+                initWhackGame();
+            }
+        }
+
+
+        /* ==========================================================================
+           1. SNAKE GAME ENGINE (Swipe & Keys Adaptive)
+           ========================================================================== */
+        const sCtx = snakeCanvas.getContext('2d');
+        let snake = [];
+        let apple = {x: 0, y: 0};
+        let snakeDir = 'right';
+        let nextSnakeDir = 'right';
+        const gridUnit = 20;
+
+        function initSnakeGame() {
+            const size = 400; 
+            snakeCanvas.width = size;
+            snakeCanvas.height = size;
+
+            snake = [
+                {x: 6 * gridUnit, y: 10 * gridUnit},
+                {x: 5 * gridUnit, y: 10 * gridUnit},
+                {x: 4 * gridUnit, y: 10 * gridUnit}
+            ];
+            snakeDir = 'right';
+            nextSnakeDir = 'right';
+            spawnApple();
+
+            if (gameLoopInterval) clearInterval(gameLoopInterval);
+            gameLoopInterval = setInterval(updateSnake, 110);
+        }
+
+        function spawnApple() {
+            const cols = snakeCanvas.width / gridUnit;
+            const rows = snakeCanvas.height / gridUnit;
+            
+            let onSnake = true;
+            while(onSnake) {
+                apple.x = Math.floor(Math.random() * cols) * gridUnit;
+                apple.y = Math.floor(Math.random() * rows) * gridUnit;
+                onSnake = snake.some(part => part.x === apple.x && part.y === apple.y);
+            }
+        }
+
+        function triggerDirection(key) {
+            if (!gameActive || activeGame !== 'snake') return;
+            if (key === 'ArrowUp' && snakeDir !== 'down') nextSnakeDir = 'up';
+            else if (key === 'ArrowDown' && snakeDir !== 'up') nextSnakeDir = 'down';
+            else if (key === 'ArrowLeft' && snakeDir !== 'right') nextSnakeDir = 'left';
+            else if (key === 'ArrowRight' && snakeDir !== 'left') nextSnakeDir = 'right';
+        }
+
+        // Swipe Gestures Tracking for Mobile Devices
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        snakeCanvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        snakeCanvas.addEventListener('touchend', (e) => {
+            if (!gameActive || activeGame !== 'snake') return;
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            const threshold = 30; // Minimum swipe distance
+
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (Math.abs(diffX) > threshold) {
+                    if (diffX > 0 && snakeDir !== 'left') nextSnakeDir = 'right';
+                    else if (diffX < 0 && snakeDir !== 'right') nextSnakeDir = 'left';
+                }
+            } else {
+                if (Math.abs(diffY) > threshold) {
+                    if (diffY > 0 && snakeDir !== 'up') nextSnakeDir = 'down';
+                    else if (diffY < 0 && snakeDir !== 'down') nextSnakeDir = 'up';
+                }
+            }
+        }, { passive: true });
+
+        function updateSnake() {
+            snakeDir = nextSnakeDir;
+            let headX = snake[0].x;
+            let headY = snake[0].y;
+
+            if (snakeDir === 'up') headY -= gridUnit;
+            else if (snakeDir === 'down') headY += gridUnit;
+            else if (snakeDir === 'left') headX -= gridUnit;
+            else if (snakeDir === 'right') headX += gridUnit;
+
+            if (headX < 0 || headX >= snakeCanvas.width || headY < 0 || headY >= snakeCanvas.height) {
+                endGame();
+                return;
+            }
+
+            for (let i = 0; i < snake.length; i++) {
+                if (snake[i].x === headX && snake[i].y === headY) {
+                    endGame();
+                    return;
+                }
+            }
+
+            const newHead = { x: headX, y: headY };
+            snake.unshift(newHead);
+
+            if (headX === apple.x && headY === apple.y) {
+                incrementScore(10);
+                playSound('eat');
+                spawnApple();
+            } else {
+                snake.pop();
+            }
+
+            drawSnake();
+        }
+
+        function drawSnake() {
+            sCtx.fillStyle = '#020617'; 
+            sCtx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+
+            sCtx.strokeStyle = 'rgba(30, 41, 59, 0.5)';
+            sCtx.lineWidth = 0.5;
+            for (let i = 0; i <= snakeCanvas.width; i += gridUnit) {
+                sCtx.beginPath();
+                sCtx.moveTo(i, 0);
+                sCtx.lineTo(i, snakeCanvas.height);
+                sCtx.stroke();
+                
+                sCtx.beginPath();
+                sCtx.moveTo(0, i);
+                sCtx.lineTo(snakeCanvas.width, i);
+                sCtx.stroke();
+            }
+
+            sCtx.fillStyle = '#ef4444';
+            sCtx.beginPath();
+            sCtx.arc(apple.x + gridUnit/2, apple.y + gridUnit/2, (gridUnit/2) - 1, 0, Math.PI * 2);
+            sCtx.fill();
+
+            snake.forEach((segment, idx) => {
+                const isHead = idx === 0;
+                if (isHead) {
+                    sCtx.fillStyle = '#f43f5e';
+                } else {
+                    sCtx.fillStyle = `hsl(${340 - (idx * 5) % 360}, 90%, 65%)`;
+                }
+
+                sCtx.beginPath();
+                sCtx.roundRect(segment.x + 1, segment.y + 1, gridUnit - 2, gridUnit - 2, isHead ? 6 : 4);
+                sCtx.fill();
+            });
+        }
+
+
+        /* ==========================================================================
+           2. BRICK BREAKER ENGINE (Scaling Drag Corrected)
+           ========================================================================== */
+        const bCtx = bricksCanvas.getContext('2d');
+        let paddleWidth = 70;
+        let paddleHeight = 10;
+        let paddleX = 0;
+        let ballX = 0;
+        let ballY = 0;
+        let ballRadius = 6;
+        let dx = 3;
+        let dy = -3;
+
+        let brickRows = 4;
+        let brickCols = 6;
+        let brickPadding = 6;
+        let brickOffsetTop = 30;
+        let brickOffsetLeft = 10;
+        let bricks = [];
+
+        let rightPressed = false;
+        let leftPressed = false;
+
+        function initBricksGame() {
+            bricksCanvas.width = 400;
+            bricksCanvas.height = 400;
+
+            paddleWidth = 75;
+            paddleX = (bricksCanvas.width - paddleWidth) / 2;
+
+            ballX = bricksCanvas.width / 2;
+            ballY = bricksCanvas.height - 40;
+            
+            dx = 3.5;
+            dy = -4.5;
+
+            bricks = [];
+            for (let c = 0; c < brickCols; c++) {
+                bricks[c] = [];
+                for (let r = 0; r < brickRows; r++) {
+                    bricks[c][r] = { 
+                        x: 0, 
+                        y: 0, 
+                        status: 1, 
+                        color: `hsl(${190 + (r * 35)}, 85%, 60%)`, 
+                        points: (brickRows - r) * 10
+                    };
+                }
+            }
+
+            if (gameLoopInterval) clearInterval(gameLoopInterval);
+            gameLoopInterval = setInterval(updateBricksGame, 1000 / 60); 
+        }
+
+        // Brick Breaker Mobile Button Controls
+        const btnLeft = document.getElementById('btn-left-brick');
+        const btnRight = document.getElementById('btn-right-brick');
+
+        btnLeft.addEventListener('mousedown', () => leftPressed = true);
+        btnLeft.addEventListener('mouseup', () => leftPressed = false);
+        btnLeft.addEventListener('mouseleave', () => leftPressed = false);
+        btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); leftPressed = true; });
+        btnLeft.addEventListener('touchend', () => leftPressed = false);
+
+        btnRight.addEventListener('mousedown', () => rightPressed = true);
+        btnRight.addEventListener('mouseup', () => rightPressed = false);
+        btnRight.addEventListener('mouseleave', () => rightPressed = false);
+        btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); rightPressed = true; });
+        btnRight.addEventListener('touchend', () => rightPressed = false);
+
+        function updateBricksGame() {
+            if (rightPressed && paddleX < bricksCanvas.width - paddleWidth) {
+                paddleX += 5.5;
+            } else if (leftPressed && paddleX > 0) {
+                paddleX -= 5.5;
+            }
+
+            ballX += dx;
+            ballY += dy;
+
+            if (ballX + dx > bricksCanvas.width - ballRadius || ballX + dx < ballRadius) {
+                dx = -dx;
+                playSound('paddle');
+            }
+            if (ballY + dy < ballRadius) {
+                dy = -dy;
+                playSound('paddle');
+            } else if (ballY + dy > bricksCanvas.height - ballRadius - 10) { 
+                if (ballX > paddleX && ballX < paddleX + paddleWidth) {
+                    playSound('paddle');
+                    let hitPos = (ballX - (paddleX + paddleWidth / 2)) / (paddleWidth / 2);
+                    dx = hitPos * 5;
+                    dy = -dy;
+                } else if (ballY + dy > bricksCanvas.height - ballRadius) {
+                    endGame();
+                    return;
+                }
+            }
+
+            let bricksLeft = false;
+            const calculatedBrickWidth = (bricksCanvas.width - (brickOffsetLeft * 2) - (brickPadding * (brickCols - 1))) / brickCols;
+            const brickHeight = 16;
+
+            for (let c = 0; c < brickCols; c++) {
+                for (let r = 0; r < brickRows; r++) {
+                    let b = bricks[c][r];
+                    if (b.status === 1) {
+                        bricksLeft = true;
+                        let bx = c * (calculatedBrickWidth + brickPadding) + brickOffsetLeft;
+                        let by = r * (brickHeight + brickPadding) + brickOffsetTop;
+                        b.x = bx;
+                        b.y = by;
+
+                        if (ballX > bx && ballX < bx + calculatedBrickWidth && ballY > by && ballY < by + brickHeight) {
+                            dy = -dy;
+                            b.status = 0;
+                            incrementScore(b.points);
+                            playSound('break');
+                        }
+                    }
+                }
+            }
+
+            if (!bricksLeft) {
+                incrementScore(100); 
+                initBricksGame(); 
+            }
+
+            drawBricksGame();
+        }
+
+        function drawBricksGame() {
+            bCtx.fillStyle = '#020617';
+            bCtx.fillRect(0, 0, bricksCanvas.width, bricksCanvas.height);
+
+            const calculatedBrickWidth = (bricksCanvas.width - (brickOffsetLeft * 2) - (brickPadding * (brickCols - 1))) / brickCols;
+            const brickHeight = 16;
+
+            for (let c = 0; c < brickCols; c++) {
+                for (let r = 0; r < brickRows; r++) {
+                    const b = bricks[c][r];
+                    if (b.status === 1) {
+                        bCtx.fillStyle = b.color;
+                        bCtx.beginPath();
+                        bCtx.roundRect(b.x, b.y, calculatedBrickWidth, brickHeight, 3);
+                        bCtx.fill();
+                    }
+                }
+            }
+
+            bCtx.fillStyle = '#0ea5e9';
+            bCtx.beginPath();
+            bCtx.roundRect(paddleX, bricksCanvas.height - paddleHeight - 8, paddleWidth, paddleHeight, 5);
+            bCtx.fill();
+
+            bCtx.fillStyle = '#ffffff';
+            bCtx.beginPath();
+            bCtx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
+            bCtx.fill();
+        }
+
+        // PERFECT MOBILE SCALING: Maps touch coordinates on any screen ratio
+        function handleDrag(clientX) {
+            if (!gameActive || activeGame !== 'bricks') return;
+            const rect = bricksCanvas.getBoundingClientRect();
+            
+            // Get touch location relative to the bounds of the rendered canvas
+            const relativeX = clientX - rect.left;
+            
+            // Scale bounding box coordinates into 400x400 coordinate space
+            const scaleX = bricksCanvas.width / rect.width;
+            const targetPaddleX = (relativeX * scaleX) - paddleWidth / 2;
+            
+            paddleX = Math.max(0, Math.min(bricksCanvas.width - paddleWidth, targetPaddleX));
+        }
+
+        bricksCanvas.addEventListener('mousemove', (e) => handleDrag(e.clientX));
+        bricksCanvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                handleDrag(e.touches[0].clientX);
+            }
+        }, { passive: true });
+
+
+        /* ==========================================================================
+           3. WHACK-A-MOLE GAME ENGINE
+           ========================================================================== */
+        let activeMoleIndex = -1;
+        let moleTimeout = null;
+        let molePopTimeout = null;
+        let gameTimeLeft = 30; 
+
+        function initWhackGame() {
+            gameTimeLeft = 30;
+            
+            const holes = document.querySelectorAll('.whack-hole');
+            holes.forEach((hole, idx) => {
+                hole.replaceWith(hole.cloneNode(true));
+            });
+
+            const newHoles = document.querySelectorAll('.whack-hole');
+            newHoles.forEach((hole, idx) => {
+                hole.addEventListener('mousedown', () => whackMole(idx));
+                hole.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    whackMole(idx);
+                });
+            });
+
+            popNextMole();
+
+            if (gameLoopInterval) clearInterval(gameLoopInterval);
+            gameLoopInterval = setInterval(() => {
+                gameTimeLeft--;
+                if (gameTimeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function popNextMole() {
+            if (!gameActive || activeGame !== 'whack') return;
+
+            const moles = document.querySelectorAll('.mole-element');
+            moles.forEach(m => m.classList.add('translate-y-full'));
+
+            let newIdx = activeMoleIndex;
+            while (newIdx === activeMoleIndex) {
+                newIdx = Math.floor(Math.random() * moles.length);
+            }
+            activeMoleIndex = newIdx;
+
+            const targetMole = moles[activeMoleIndex];
+            targetMole.classList.remove('translate-y-full');
+
+            let showTime = Math.max(550, 1000 - currentScore * 4);
+
+            clearTimeout(moleTimeout);
+            moleTimeout = setTimeout(() => {
+                targetMole.classList.add('translate-y-full');
+                clearTimeout(molePopTimeout);
+                molePopTimeout = setTimeout(popNextMole, Math.random() * 400 + 150);
+            }, showTime);
+        }
+
+        function whackMole(idx) {
+            if (!gameActive || activeGame !== 'whack') return;
+
+            if (idx === activeMoleIndex) {
+                playSound('whack');
+                incrementScore(15);
+                
+                const moles = document.querySelectorAll('.mole-element');
+                moles[idx].classList.add('translate-y-full');
+                activeMoleIndex = -1; 
+                
+                clearTimeout(moleTimeout);
+                clearTimeout(molePopTimeout);
+                molePopTimeout = setTimeout(popNextMole, 100);
+            }
+        }
+
+
+        /* ==========================================================================
+           GLOBAL UTILITIES & BINDINGS
+           ========================================================================== */
+        // Global Keyboard Event Listener
+        window.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+
+            if (activeGame === 'snake') {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    e.preventDefault(); 
+                    triggerDirection(e.key);
+                }
+            } else if (activeGame === 'bricks') {
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    leftPressed = true;
+                }
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    rightPressed = true;
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (activeGame === 'bricks') {
+                if (e.key === 'ArrowLeft') leftPressed = false;
+                if (e.key === 'ArrowRight') rightPressed = false;
+            }
+        });
+
+        // Initialize Snake on Boot
+        window.onload = () => {
+            switchGame('snake');
+        };
+    </script>
+</body>
+</html>
