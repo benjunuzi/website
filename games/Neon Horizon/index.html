@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Horizon: Synthwave Rider</title>
+    <!-- Tailwind CSS for modern glassmorphic styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght=400;700;900&family=Rajdhani:wght=500;700&display=swap');
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #03001e;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Neon glowing effects */
+        .neon-text-cyan {
+            text-shadow: 0 0 5px #00f0ff, 0 0 10px #00f0ff, 0 0 20px #00f0ff;
+        }
+        .neon-text-pink {
+            text-shadow: 0 0 5px #ff007f, 0 0 10px #ff007f, 0 0 20px #ff007f;
+        }
+        .neon-border-pink {
+            box-shadow: 0 0 10px #ff007f, inset 0 0 10px #ff007f;
+            border-color: #ff007f;
+        }
+        .neon-border-cyan {
+            box-shadow: 0 0 10px #00f0ff, inset 0 0 10px #00f0ff;
+            border-color: #00f0ff;
+        }
+        /* Hide scrollbars */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center h-screen w-screen relative">
+
+    <!-- Primary Game Container -->
+    <div class="relative w-full h-full max-w-5xl max-h-[700px] md:rounded-2xl md:border-2 border-pink-500/30 overflow-hidden bg-black shadow-2xl flex flex-col justify-between">
+        
+        <!-- Game Canvas -->
+        <canvas id="gameCanvas" class="absolute top-0 left-0 w-full h-full z-0"></canvas>
+
+        <!-- UI Overlay: Start Screen -->
+        <div id="startScreen" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm transition-all duration-300">
+            <div class="text-center p-6 max-w-md w-full">
+                <h1 class="orbitron text-5xl md:text-6xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 animate-pulse mb-2">
+                    NEON HORIZON
+                </h1>
+                <p class="text-cyan-400 orbitron tracking-widest text-sm mb-8 neon-text-cyan">SYNTHWAVE RIDER</p>
+                
+                <div class="space-y-3 mb-8">
+                    <button id="btnPlay" class="w-full py-4 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold text-xl orbitron rounded-lg transition duration-200 border-b-4 border-pink-800 shadow-lg active:scale-95">
+                        START RIDE
+                    </button>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btnGarage" class="py-3 bg-slate-900/80 hover:bg-slate-800/80 text-cyan-400 font-semibold text-sm orbitron rounded-lg transition duration-200 border border-cyan-500/50 flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            GARAGE
+                        </button>
+                        <button id="btnLeaderboard" class="py-3 bg-slate-900/80 hover:bg-slate-800/80 text-pink-400 font-semibold text-sm orbitron rounded-lg transition duration-200 border border-pink-500/50 flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                            LEADERBOARD
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-slate-400 text-xs space-y-1">
+                    <p>Desktop: Use <span class="text-pink-400 font-bold">LEFT / RIGHT / A / D</span> to steer</p>
+                    <p>Mobile: Tap left/right side of screen or use HUD buttons</p>
+                    <p class="text-purple-400 font-semibold mt-2">🎧 Use headphones for custom adaptive retro synth music!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- UI Overlay: HUD -->
+        <div id="gameHUD" class="absolute inset-x-0 top-0 z-10 p-4 flex justify-between items-start pointer-events-none transition-all duration-300 opacity-0">
+            <!-- Left Panel: Distance & Speed -->
+            <div class="flex flex-col gap-1 bg-slate-950/70 border border-cyan-500/30 p-3 rounded-lg backdrop-blur-xs text-white">
+                <div class="text-xs text-cyan-400 font-semibold tracking-wider orbitron">DISTANCE</div>
+                <div class="text-2xl font-bold orbitron text-cyan-200" id="hudDistance">0 m</div>
+                <div class="text-xs text-slate-400" id="hudSpeed">0 KM/H</div>
+            </div>
+
+            <!-- Center Panel: Messages (Combo, Crash alerts) -->
+            <div class="flex flex-col items-center">
+                <div id="hudAlert" class="text-pink-500 font-extrabold text-2xl orbitron hidden neon-text-pink animate-bounce">SHIELD ACTIVE</div>
+            </div>
+
+            <!-- Right Panel: Cores & Score -->
+            <div class="flex flex-col items-end gap-1 bg-slate-950/70 border border-pink-500/30 p-3 rounded-lg backdrop-blur-xs text-white">
+                <div class="text-xs text-pink-400 font-semibold tracking-wider orbitron">NEON CORES</div>
+                <div class="text-2xl font-bold orbitron text-pink-200 flex items-center gap-1" id="hudCores">
+                    <svg class="w-5 h-5 text-pink-500 animate-spin" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+                    0
+                </div>
+                <div class="text-xs text-slate-400" id="hudScore">SCORE: 0</div>
+            </div>
+        </div>
+
+        <!-- Touch Controls (Mobile Overlay) -->
+        <div id="touchControls" class="absolute inset-x-0 bottom-4 z-10 flex justify-between px-6 pointer-events-none opacity-0 transition-opacity duration-300">
+            <button id="touchLeft" class="w-20 h-20 bg-cyan-500/10 border-2 border-cyan-500/40 rounded-full active:bg-cyan-500/30 flex items-center justify-center pointer-events-auto text-cyan-400 focus:outline-none">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button id="touchRight" class="w-20 h-20 bg-pink-500/10 border-2 border-pink-500/40 rounded-full active:bg-pink-500/30 flex items-center justify-center pointer-events-auto text-pink-400 focus:outline-none">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
+            </button>
+        </div>
+
+        <!-- UI Overlay: Garage / Upgrades -->
+        <div id="garageScreen" class="absolute inset-0 z-10 flex flex-col bg-slate-950/95 backdrop-blur-md p-6 overflow-y-auto transition-all duration-300 translate-x-full">
+            <div class="max-w-xl mx-auto w-full flex flex-col h-full justify-between">
+                <div>
+                    <!-- Garage Header -->
+                    <div class="flex justify-between items-center border-b border-purple-500/30 pb-4 mb-6">
+                        <h2 class="orbitron text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">SYNTH GARAGE</h2>
+                        <div class="flex items-center gap-1 bg-pink-500/10 border border-pink-500/40 px-3 py-1 rounded-full text-pink-400 orbitron font-bold">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+                            <span id="garageBank">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Upgrade Cards Container -->
+                    <div class="space-y-4">
+                        <!-- Upgrade Item 1: Engine Speed -->
+                        <div class="bg-slate-900/80 border border-cyan-500/20 rounded-xl p-4 flex items-center justify-between">
+                            <div class="flex-1">
+                                <h3 class="orbitron font-bold text-white text-lg">HYPERDRIVE ENGINE</h3>
+                                <p class="text-xs text-slate-400">Increases maximum speed and acceleration rate.</p>
+                                <div class="flex gap-1 mt-2" id="barsEngine">
+                                    <!-- Dynamic bars loaded by JS -->
+                                </div>
+                            </div>
+                            <button id="btnBuyEngine" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold orbitron rounded-lg transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="price-val">50</span> C
+                            </button>
+                        </div>
+
+                        <!-- Upgrade Item 2: Core Magnet -->
+                        <div class="bg-slate-900/80 border border-pink-500/20 rounded-xl p-4 flex items-center justify-between">
+                            <div class="flex-1">
+                                <h3 class="orbitron font-bold text-white text-lg">NEON MAGNET</h3>
+                                <p class="text-xs text-slate-400">Pulls valuable neon energy cores from further away.</p>
+                                <div class="flex gap-1 mt-2" id="barsMagnet">
+                                    <!-- Dynamic bars loaded by JS -->
+                                </div>
+                            </div>
+                            <button id="btnBuyMagnet" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white font-bold orbitron rounded-lg transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="price-val">50</span> C
+                            </button>
+                        </div>
+
+                        <!-- Upgrade Item 3: Shields -->
+                        <div class="bg-slate-900/80 border border-purple-500/20 rounded-xl p-4 flex items-center justify-between">
+                            <div class="flex-1">
+                                <h3 class="orbitron font-bold text-white text-lg">DEFLECTOR SHIELD</h3>
+                                <p class="text-xs text-slate-400">Absorb crashes. Restores over distance segments.</p>
+                                <div class="flex gap-1 mt-2" id="barsShield">
+                                    <!-- Dynamic bars loaded by JS -->
+                                </div>
+                            </div>
+                            <button id="btnBuyShield" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold orbitron rounded-lg transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="price-val">75</span> C
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Garage Back button -->
+                <div class="mt-6">
+                    <button id="btnBackToMenu" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold orbitron rounded-lg transition duration-150">
+                        RETURN TO MENU
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- UI Overlay: Leaderboard Screen -->
+        <div id="leaderboardScreen" class="absolute inset-0 z-10 flex flex-col bg-slate-950/95 backdrop-blur-md p-6 overflow-y-auto transition-all duration-300 translate-x-full">
+            <div class="max-w-xl mx-auto w-full flex flex-col h-full justify-between">
+                <div>
+                    <!-- Leaderboard Header -->
+                    <div class="flex justify-between items-center border-b border-pink-500/30 pb-4 mb-6">
+                        <h2 class="orbitron text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400">NEON HALL OF FAME</h2>
+                        <span class="text-cyan-400 orbitron tracking-widest text-xs neon-text-cyan">TOP RIDERS</span>
+                    </div>
+
+                    <!-- Scores Table -->
+                    <div class="bg-slate-900/50 border border-pink-500/20 rounded-xl overflow-hidden backdrop-blur-xs">
+                        <div class="grid grid-cols-3 bg-slate-950/60 p-3 border-b border-pink-500/20 orbitron font-bold text-xs text-pink-400 tracking-wider">
+                            <div>RANK</div>
+                            <div>RIDER</div>
+                            <div class="text-right">DISTANCE</div>
+                        </div>
+                        <div id="leaderboardList" class="divide-y divide-slate-800/40 text-slate-200">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Close button -->
+                <div class="mt-6">
+                    <button id="btnLeaderboardBack" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold orbitron rounded-lg transition duration-150">
+                        RETURN TO MENU
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- UI Overlay: Game Over Screen -->
+        <div id="gameOverScreen" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm transition-all duration-300 translate-y-full">
+            <div class="text-center p-6 max-w-sm w-full">
+                <h2 class="orbitron text-4xl font-extrabold text-pink-500 tracking-wider mb-2 neon-text-pink">RIDE CONCLUDED</h2>
+                <p class="text-slate-400 text-sm mb-4 uppercase tracking-widest">Systems Overloaded</p>
+
+                <!-- New High Score Record input panel -->
+                <div id="highScorePanel" class="hidden bg-slate-900 border-2 border-cyan-400 rounded-xl p-4 mb-4 shadow-lg shadow-cyan-500/20">
+                    <div class="orbitron text-cyan-400 font-bold tracking-widest text-sm mb-2 neon-text-cyan">NEW TOP RIDER!</div>
+                    <p class="text-xs text-slate-300 mb-3">Your distance made the Hall of Fame. Enter initials:</p>
+                    <div class="flex gap-2 justify-center items-center">
+                        <input id="initialsInput" type="text" maxlength="3" class="w-24 text-center py-2 bg-slate-950 border border-cyan-500 rounded text-cyan-200 orbitron text-xl uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="NEO">
+                        <button id="btnSaveScore" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold orbitron rounded transition duration-150 text-sm">SAVE</button>
+                    </div>
+                </div>
+
+                <!-- Stats Panel -->
+                <div class="bg-slate-900/80 border border-purple-500/40 rounded-xl p-4 mb-6 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">TOTAL SCORE</span>
+                        <span id="goScore" class="orbitron font-bold text-white text-xl">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">DISTANCE TRAVELED</span>
+                        <span id="goDistance" class="orbitron font-bold text-cyan-300 text-md">0m</span>
+                    </div>
+                    <div class="flex justify-between items-center border-t border-slate-800 pt-2">
+                        <span class="text-pink-400 text-sm flex items-center gap-1">
+                            CORES COLLECTED
+                        </span>
+                        <span id="goCores" class="orbitron font-bold text-pink-400 text-md">+0</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="space-y-3" id="gameOverActions">
+                    <button id="btnRestart" class="w-full py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold orbitron rounded-lg transition duration-200">
+                        PLAY AGAIN
+                    </button>
+                    <button id="btnGoToGarage" class="w-full py-3 bg-slate-900 border border-cyan-500/50 text-cyan-400 font-bold orbitron rounded-lg transition duration-200">
+                        GARAGE & UPGRADES
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JS Logic -->
+    <script>
+        // --- 1. GAME SETUP & LOCALSTORAGE STATE ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Responsive Resizing
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game State Core Data (Including Default Hall of Fame Leaders)
+        let state = {
+            coresBank: parseInt(localStorage.getItem('neon_cores_bank')) || 0,
+            upgrades: {
+                engine: parseInt(localStorage.getItem('neon_up_engine')) || 0,   // Max level 5
+                magnet: parseInt(localStorage.getItem('neon_up_magnet')) || 0,   // Max level 5
+                shield: parseInt(localStorage.getItem('neon_up_shield')) || 0    // Max level 5
+            },
+            leaderboard: JSON.parse(localStorage.getItem('neon_leaderboard')) || [
+                { initials: 'WAV', distance: 1800 },
+                { initials: 'SYN', distance: 1200 },
+                { initials: 'NEO', distance: 800 },
+                { initials: 'CYB', distance: 450 },
+                { initials: 'RDR', distance: 200 }
+            ]
+        };
+
+        function saveStateToLocal() {
+            localStorage.setItem('neon_cores_bank', state.coresBank);
+            localStorage.setItem('neon_up_engine', state.upgrades.engine);
+            localStorage.setItem('neon_up_magnet', state.upgrades.magnet);
+            localStorage.setItem('neon_up_shield', state.upgrades.shield);
+            localStorage.setItem('neon_leaderboard', JSON.stringify(state.leaderboard));
+        }
+
+        // --- 2. RETRO AUDIO ENGINE (Web Audio API) ---
+        class SynthwaveAudio {
+            constructor() {
+                this.ctx = null;
+                this.isPlaying = false;
+                this.sequenceTimer = null;
+                this.beatIndex = 0;
+            }
+
+            init() {
+                if (this.ctx) return;
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContextClass();
+            }
+
+            playCrash() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.6);
+                
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.6);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.6);
+            }
+
+            playCoin() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, this.ctx.currentTime); // D5
+                osc.frequency.setValueAtTime(880.00, this.ctx.currentTime + 0.08); // A5
+                
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playShieldBreak() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc2.type = 'triangle';
+                
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.4);
+                
+                osc2.frequency.setValueAtTime(310, this.ctx.currentTime);
+                osc2.frequency.exponentialRampToValueAtTime(95, this.ctx.currentTime + 0.4);
+                
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+                
+                osc.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc2.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+                osc2.stop(this.ctx.currentTime + 0.4);
+            }
+
+            startMusic() {
+                if (this.isPlaying) return;
+                this.init();
+                
+                // Resume Context if suspended (browser security)
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+
+                this.isPlaying = true;
+                this.beatIndex = 0;
+                this.scheduler();
+            }
+
+            stopMusic() {
+                this.isPlaying = false;
+                if (this.sequenceTimer) {
+                    clearTimeout(this.sequenceTimer);
+                }
+            }
+
+            scheduler() {
+                if (!this.isPlaying) return;
+                
+                const stepDuration = 0.13; // BPM around 115
+                const lookahead = 150; // ms
+                
+                // Play synths aligned to simple steps
+                this.playSequenceStep(this.beatIndex, this.ctx.currentTime);
+                
+                this.beatIndex = (this.beatIndex + 1) % 16;
+                this.sequenceTimer = setTimeout(() => this.scheduler(), stepDuration * 1000);
+            }
+
+            playSequenceStep(step, time) {
+                // Cyberpunk Retro Synth bassline loop
+                const bassNotes = [55, 55, 65.4, 65.4, 73.4, 73.4, 82.4, 82.4, 55, 55, 55, 55, 48.9, 48.9, 51.9, 51.9];
+                const melodyNotes = [220, 261.6, 293.7, 329.6, 392, 329.6, 293.7, 261.6, 440, 392, 329.6, 293.7, 220, 0, 220, 0];
+                
+                // Trigger Bass
+                if (step % 2 === 0) {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(bassNotes[step], time);
+                    
+                    gain.gain.setValueAtTime(0.12, time);
+                    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.25);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(time);
+                    osc.stop(time + 0.25);
+                }
+
+                // Trigger Retro Arpeggio Lead
+                if (step % 4 === 0 || step % 4 === 2) {
+                    const note = melodyNotes[step];
+                    if (note > 0) {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(note, time);
+                        
+                        gain.gain.setValueAtTime(0.04, time);
+                        gain.gain.exponentialRampToValueAtTime(0.005, time + 0.2);
+                        
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(time);
+                        osc.stop(time + 0.2);
+                    }
+                }
+
+                // Simple hi-hat (noise) or snare simulation
+                if (step % 4 === 2) {
+                    const bufferSize = this.ctx.sampleRate * 0.05;
+                    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    
+                    const noiseFilter = this.ctx.createBiquadFilter();
+                    noiseFilter.type = 'highpass';
+                    noiseFilter.frequency.value = 1000;
+
+                    const gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.03, time);
+                    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+
+                    noise.connect(noiseFilter);
+                    noiseFilter.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    noise.start(time);
+                    noise.stop(time + 0.05);
+                }
+            }
+        }
+
+        const audio = new SynthwaveAudio();
+
+        // --- 3. PSEUDO-3D ROAD LOGIC & SEGMENTS ---
+        // Basic road logic based on arcade projections
+        class RoadEngine {
+            constructor() {
+                this.segments = [];
+                this.segmentLength = 200; // how long is each segment
+                this.totalSegments = 500; 
+                this.rumbleLength = 3;    // number of segments per color strip
+                this.roadWidth = 2000;    
+                this.cameraHeight = 1000; 
+                this.cameraDepth = null;  // distance from camera to screen
+                this.fieldOfView = 100;
+                
+                this.init();
+            }
+
+            init() {
+                this.cameraDepth = 1 / Math.tan((this.fieldOfView / 2) * Math.PI / 180);
+                this.segments = [];
+
+                // FIXED: Track has been simplified to be perfectly straight with zero hills.
+                for (let i = 0; i < this.totalSegments; i++) {
+                    let curve = 0; // Perfectly straight track
+                    let hill = 0;  // Completely flat track
+
+                    this.segments.push({
+                        index: i,
+                        p1: { world: { x: 0, y: hill, z: i * this.segmentLength }, screen: { x: 0, y: 0, w: 0 } },
+                        p2: { world: { x: 0, y: hill, z: (i + 1) * this.segmentLength }, screen: { x: 0, y: 0, w: 0 } },
+                        curve: curve,
+                        color: Math.floor(i / this.rumbleLength) % 2 === 0 ? { road: '#060112', rumble: '#00f0ff', line: '#ffffff' } : { road: '#0b021a', rumble: '#ff007f', line: '#000000' },
+                        sprites: [] // obstacles / collectible cores
+                    });
+                }
+            }
+
+            // Map segment index to loop smoothly
+            findSegment(z) {
+                return this.segments[Math.floor(z / this.segmentLength) % this.segments.length];
+            }
+
+            // Projection formula
+            project(p, cameraX, cameraY, cameraZ, width, height) {
+                p.camera = {
+                    x: p.world.x - cameraX,
+                    y: p.world.y - cameraY,
+                    z: p.world.z - cameraZ
+                };
+                
+                // Scale factor from projection
+                p.screen.scale = this.cameraDepth / p.camera.z;
+                p.screen.x = Math.round((width / 2) + (p.screen.scale * p.camera.x * width / 2));
+                p.screen.y = Math.round((height / 2) - (p.screen.scale * p.camera.y * height / 2));
+                p.screen.w = Math.round(p.screen.scale * this.roadWidth * width / 2);
+            }
+        }
+
+        const road = new RoadEngine();
+
+        // --- 4. GAME OBJECTS (Player, Obstacles, Cores, Particles) ---
+        class PlayerShip {
+            constructor() {
+                this.x = 0;           // center of track (-1 to 1)
+                this.y = 0;
+                this.width = 160;
+                this.height = 60;
+                this.shieldCount = 0; // set dynamically from upgrades
+                this.maxShields = 0;
+                this.invulnerableTimer = 0; // safety timer after hit
+            }
+
+            draw(ctx, width, height, isAccelerating) {
+                // Flash ship if invulnerable
+                if (this.invulnerableTimer > 0 && Math.floor(Date.now() / 80) % 2 === 0) {
+                    return; 
+                }
+
+                const px = width / 2 + (this.x * width * 0.35);
+                const py = height - 100;
+
+                // Particle Thruster Flames
+                const thrustColor = isAccelerating ? '#00ffff' : '#ff00ff';
+                const thrustSize = isAccelerating ? 25 + Math.random() * 20 : 10 + Math.random() * 10;
+
+                ctx.save();
+                ctx.translate(px, py);
+
+                // Left Engine Flame
+                ctx.fillStyle = thrustColor;
+                ctx.shadowBlur = thrustSize;
+                ctx.shadowColor = thrustColor;
+                ctx.beginPath();
+                ctx.moveTo(-40, 20);
+                ctx.lineTo(-45, 20 + thrustSize);
+                ctx.lineTo(-35, 20);
+                ctx.fill();
+
+                // Right Engine Flame
+                ctx.beginPath();
+                ctx.moveTo(40, 20);
+                ctx.lineTo(45, 20 + thrustSize);
+                ctx.lineTo(35, 20);
+                ctx.fill();
+
+                // Draw Neon Spacecraft/Rider
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ff007f';
+                ctx.strokeStyle = '#ff007f';
+                ctx.lineWidth = 3;
+
+                // Main Wing Body
+                ctx.beginPath();
+                ctx.moveTo(0, -25); // Nose
+                ctx.lineTo(55, 15);  // Right wing tip
+                ctx.lineTo(35, 10);
+                ctx.lineTo(-35, 10);
+                ctx.lineTo(-55, 15); // Left wing tip
+                ctx.closePath();
+                ctx.fillStyle = '#11052C';
+                ctx.fill();
+                ctx.stroke();
+
+                // Cabin / Cockpit
+                ctx.strokeStyle = '#00f0ff';
+                ctx.shadowColor = '#00f0ff';
+                ctx.beginPath();
+                ctx.moveTo(0, -15);
+                ctx.lineTo(15, 5);
+                ctx.lineTo(-15, 5);
+                ctx.closePath();
+                ctx.fillStyle = '#00f0ff22';
+                ctx.fill();
+                ctx.stroke();
+
+                // Shield visual helper
+                if (this.shieldCount > 0) {
+                    ctx.shadowColor = '#a855f7';
+                    ctx.strokeStyle = '#a855f7';
+                    ctx.lineWidth = 2 + Math.sin(Date.now() / 100) * 1.5;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 75, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        const player = new PlayerShip();
+
+        // High-performance Particle System for collection effects
+        class ParticleSystem {
+            constructor() {
+                this.particles = [];
+            }
+            spawn(x, y, color, count = 10) {
+                for (let i = 0; i < count; i++) {
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: (Math.random() - 0.5) * 12,
+                        vy: (Math.random() - 0.5) * 12,
+                        size: Math.random() * 4 + 2,
+                        color: color,
+                        alpha: 1,
+                        decay: Math.random() * 0.03 + 0.01
+                    });
+                }
+            }
+            update() {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    let p = this.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.alpha -= p.decay;
+                    if (p.alpha <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+            draw(ctx) {
+                ctx.save();
+                for (let p of this.particles) {
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fillStyle = p.color;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        const particles = new ParticleSystem();
+
+        // --- 5. OBSTACLE & COLLECTIBLE POPULATION ---
+        class ActiveEntity {
+            constructor(type, trackZ, roadX) {
+                this.type = type; // 'obstacle' or 'core'
+                this.trackZ = trackZ;
+                this.roadX = roadX; // lane placement -1 to 1
+                this.width = type === 'core' ? 200 : 250; // FIXED: Narrowed obstacle visual scale from 350 to 250
+                this.active = true;
+                this.bobOffset = Math.random() * 100; // animations
+            }
+
+            draw(ctx, screenX, screenY, scale, width) {
+                if (!this.active) return;
+                
+                const drawW = this.width * scale * width / 2;
+                const drawH = drawW; // keep square aspects
+
+                ctx.save();
+                ctx.translate(screenX, screenY);
+
+                if (this.type === 'core') {
+                    // Floating Shiny Neon Diamond Core
+                    const bobY = Math.sin((Date.now() / 200) + this.bobOffset) * 15;
+                    ctx.translate(0, bobY - drawH / 2);
+                    
+                    // Draw neon crystal outline
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#ff007f';
+                    ctx.strokeStyle = '#ff007f';
+                    ctx.lineWidth = 3;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(0, -drawH / 2);
+                    ctx.lineTo(drawW / 2, 0);
+                    ctx.lineTo(0, drawH / 2);
+                    ctx.lineTo(-drawW / 2, 0);
+                    ctx.closePath();
+                    
+                    ctx.fillStyle = '#ff007f15';
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Inner energy glowing core
+                    ctx.shadowColor = '#ffffff';
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -drawH / 4);
+                    ctx.lineTo(drawW / 4, 0);
+                    ctx.lineTo(0, drawH / 4);
+                    ctx.lineTo(-drawW / 4, 0);
+                    ctx.closePath();
+                    ctx.fillStyle = '#ffffffbb';
+                    ctx.fill();
+                    ctx.stroke();
+
+                } else if (this.type === 'obstacle') {
+                    // Holographic cyber hazard barrier
+                    ctx.translate(0, -drawH / 2);
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#00f0ff';
+                    ctx.strokeStyle = '#00f0ff';
+                    ctx.lineWidth = 4;
+
+                    // Barrier box structure
+                    ctx.beginPath();
+                    ctx.moveTo(-drawW / 2, drawH / 2);
+                    ctx.lineTo(-drawW / 3, -drawH / 2);
+                    ctx.lineTo(drawW / 3, -drawH / 2);
+                    ctx.lineTo(drawW / 2, drawH / 2);
+                    ctx.closePath();
+                    ctx.fillStyle = '#00f0ff1a';
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Warning Stripes Inside Barrier
+                    ctx.strokeStyle = '#00f0ff';
+                    ctx.lineWidth = 2;
+                    for (let i = -drawW / 4; i < drawW / 4; i += 20) {
+                        ctx.beginPath();
+                        ctx.moveTo(i - 10, drawH / 4);
+                        ctx.lineTo(i + 10, -drawH / 4);
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.restore();
+            }
+        }
+
+        let entities = [];
+
+        // FIXED: Reduced obstacle spawn frequency to make the ride smoother and less punishing
+        function generateLevelContent() {
+            entities = [];
+            // Spawn items procedurally along the road
+            for (let i = 25; i < road.totalSegments - 10; i += 4) {
+                const roll = Math.random();
+                if (roll < 0.25) {
+                    // Random lane position for energy cores
+                    const lane = (Math.random() * 1.6) - 0.8;
+                    entities.push(new ActiveEntity('core', i * road.segmentLength, lane));
+                } else if (roll < 0.35) { // Reduced obstacle spawning threshold (approx 10% chance instead of 23%)
+                    const lane = (Math.random() * 1.4) - 0.7;
+                    entities.push(new ActiveEntity('obstacle', i * road.segmentLength, lane));
+                }
+            }
+        }
+
+        // --- 6. BACKGROUND RENDERING (Retro Grid, Sunset, Mountains) ---
+        let skyOffset = 0;
+        function drawRetroBackground(ctx, width, height, playerCurve) {
+            // FIXED: Since the road is straight, we drift the sky offset based on playerX lateral position
+            // to provide visual feedback and parallax motion when steering left or right!
+            skyOffset = playerX * -150;
+
+            // Dark space gradient
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, height / 2);
+            skyGrad.addColorStop(0, '#020010');
+            skyGrad.addColorStop(0.5, '#0d0124');
+            skyGrad.addColorStop(1, '#2c023d');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Stars
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 0;
+            for (let i = 0; i < 50; i++) {
+                const starX = (Math.sin(i * 382.43) * 0.5 + 0.5) * width;
+                const starY = (Math.cos(i * 128.91) * 0.5 + 0.5) * (height / 2);
+                ctx.fillRect(starX, starY, 1.5, 1.5);
+            }
+
+            // Parallax Retro Mountain Ranges
+            ctx.save();
+            ctx.fillStyle = '#100122';
+            ctx.strokeStyle = '#ff007f33';
+            ctx.lineWidth = 1;
+            
+            // Background Mountains
+            ctx.beginPath();
+            ctx.moveTo(0, height / 2);
+            for (let i = 0; i <= width; i += 40) {
+                const shift = (skyOffset * 0.1) % 40;
+                const mY = (height / 2) - 30 - Math.sin((i + shift) * 0.01) * 40 - Math.cos((i + shift) * 0.03) * 20;
+                ctx.lineTo(i, mY);
+            }
+            ctx.lineTo(width, height / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Foreground Mountains
+            ctx.fillStyle = '#180230';
+            ctx.beginPath();
+            ctx.moveTo(0, height / 2);
+            for (let i = 0; i <= width; i += 30) {
+                const shift = (skyOffset * 0.2) % 30;
+                const mY = (height / 2) - 15 - Math.sin((i + shift) * 0.02) * 25 - Math.cos((i + shift) * 0.05) * 10;
+                ctx.lineTo(i, mY);
+            }
+            ctx.lineTo(width, height / 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+
+            // Glowing Synthwave Sun (With horizontal slices)
+            const sunRadius = Math.min(width, height) * 0.22;
+            const sunX = width / 2;
+            const sunY = (height / 2) - 20;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
+            ctx.clip(); // Restrict drawing to sun circle
+
+            // Sun color gradient (Hot orange to deep purple-pink)
+            const sunGrad = ctx.createLinearGradient(0, sunY - sunRadius, 0, sunY + sunRadius);
+            sunGrad.addColorStop(0, '#ffe600');
+            sunGrad.addColorStop(0.5, '#ff007f');
+            sunGrad.addColorStop(1, '#0e001a');
+            ctx.fillStyle = sunGrad;
+            ctx.fillRect(sunX - sunRadius, sunY - sunRadius, sunRadius * 2, sunRadius * 2);
+
+            // Draw horizontal horizontal sunset slices
+            ctx.fillStyle = '#020010'; // match base sky color
+            for (let y = sunY - sunRadius; y < sunY + sunRadius; y += 12) {
+                // Slices get wider closer to bottom of sun
+                const factor = (y - (sunY - sunRadius)) / (sunRadius * 2);
+                const sliceH = Math.max(1, factor * 8);
+                ctx.fillRect(sunX - sunRadius, y, sunRadius * 2, sliceH);
+            }
+            ctx.restore();
+
+            // Subtle sun glow aura
+            ctx.save();
+            ctx.shadowBlur = 40;
+            ctx.shadowColor = '#ff007f';
+            ctx.strokeStyle = '#ff007f33';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- 7. CORE RUNTIME ENGINE / LOOP ---
+        let keys = {};
+        let position = 0;        // current camera Z position
+        let playerX = 0;         // player target X
+        let currentSpeed = 0;    // speed in units
+        let targetSpeed = 0;     // engine targets
+        let distanceCount = 0;
+        let score = 0;
+        let collectedCoresThisRun = 0;
+        let isDead = false;
+        let gameActive = false;
+
+        // Upgrade Scaled Modifiers
+        let maxSpeed = 160;      // max speed units
+        let accelFactor = 1.8;   // acceleration speed
+        let magnetDist = 200;    // units distance of coin pull
+        
+        function updateStatsWithUpgrades() {
+            // Engine Speed levels
+            maxSpeed = 160 + (state.upgrades.engine * 40);
+            accelFactor = 1.8 + (state.upgrades.engine * 0.4);
+            
+            // Magnet levels
+            magnetDist = 200 + (state.upgrades.magnet * 150);
+
+            // Shields level
+            player.maxShields = state.upgrades.shield;
+            player.shieldCount = player.maxShields;
+            player.invulnerableTimer = 0;
+        }
+
+        // Steer Control Listeners
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // Mobile Controls Left / Right
+        let isTouchLeft = false;
+        let isTouchRight = false;
+        
+        const touchLeftBtn = document.getElementById('touchLeft');
+        const touchRightBtn = document.getElementById('touchRight');
+
+        touchLeftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); isTouchLeft = true; });
+        touchLeftBtn.addEventListener('touchend', (e) => { e.preventDefault(); isTouchLeft = false; });
+        touchRightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); isTouchRight = true; });
+        touchRightBtn.addEventListener('touchend', (e) => { e.preventDefault(); isTouchRight = false; });
+
+        // Backup Touch on Canvas
+        canvas.addEventListener('touchstart', (e) => {
+            const touchX = e.touches[0].clientX;
+            if (touchX < window.innerWidth / 2) {
+                isTouchLeft = true;
+            } else {
+                isTouchRight = true;
+            }
+        });
+        canvas.addEventListener('touchend', () => {
+            isTouchLeft = false;
+            isTouchRight = false;
+        });
+
+        function triggerHUDMessage(text, isAlert = false) {
+            const el = document.getElementById('hudAlert');
+            el.innerText = text;
+            el.classList.remove('hidden');
+            if (isAlert) {
+                el.classList.add('text-pink-500', 'neon-text-pink');
+                el.classList.remove('text-cyan-400', 'neon-text-cyan');
+            } else {
+                el.classList.add('text-cyan-400', 'neon-text-cyan');
+                el.classList.remove('text-pink-500', 'neon-text-pink');
+            }
+            setTimeout(() => {
+                el.classList.add('hidden');
+            }, 1800);
+        }
+
+        // --- MAIN DRAW/RENDER & LOGIC PROCESS ---
+        function update(dt) {
+            if (!gameActive || isDead) return;
+
+            // Update invulnerability safety timer
+            if (player.invulnerableTimer > 0) {
+                player.invulnerableTimer -= dt;
+            }
+
+            // Handle Input movement
+            let dx = 0;
+            if (keys['a'] || keys['arrowleft'] || isTouchLeft) dx -= 0.045;
+            if (keys['d'] || keys['arrowright'] || isTouchRight) dx += 0.045;
+
+            // Constrain player position on road
+            playerX += dx;
+            playerX = Math.max(-1.1, Math.min(1.1, playerX));
+            player.x = playerX;
+
+            // Automatic Forward Acceleration
+            targetSpeed = maxSpeed;
+            if (currentSpeed < targetSpeed) {
+                currentSpeed += accelFactor;
+            } else {
+                currentSpeed -= 1; // friction deceleration
+            }
+
+            // Move camera along track
+            position += currentSpeed * dt * 60;
+            
+            // Handle endless track looping safely
+            const loopLength = road.totalSegments * road.segmentLength;
+            if (position >= loopLength) {
+                position -= loopLength;
+                // Seamlessly regenerate collectibles on next lap
+                generateLevelContent();
+            }
+
+            // Distance stats calculation
+            distanceCount += (currentSpeed * 0.1);
+            score += Math.round(currentSpeed * 0.05);
+
+            // Fetch current segment curves & apply camera parallax
+            const currentSegment = road.findSegment(position);
+            
+            // Magnet Logic & Collisions on Entities
+            const pZ = position + 100; // Offset player projection z index
+            
+            for (let ent of entities) {
+                if (!ent.active) continue;
+
+                const zDist = ent.trackZ - pZ;
+
+                // Core Magnet pull logic
+                if (ent.type === 'core' && Math.abs(zDist) < magnetDist) {
+                    const magnetSpeed = 0.08 * (1 - Math.abs(zDist) / magnetDist);
+                    // pull target road x coordinate towards playerX
+                    if (ent.roadX < playerX) ent.roadX += magnetSpeed;
+                    if (ent.roadX > playerX) ent.roadX -= magnetSpeed;
+                }
+
+                // Check collision intersection bounds
+                if (Math.abs(zDist) < 120) { // Segment Z tolerance matching
+                    // FIXED: Adjusted hitboxes for barrier obstacles vs energy cores to feel extremely fair
+                    const xCollisionThreshold = ent.type === 'core' ? 0.28 : 0.24; // Lowered barrier collision width from 0.42 to 0.24
+                    
+                    if (Math.abs(ent.roadX - playerX) < xCollisionThreshold) {
+                        
+                        if (ent.type === 'core') {
+                            // Core collected success!
+                            ent.active = false;
+                            collectedCoresThisRun++;
+                            score += 500;
+                            audio.playCoin();
+                            
+                            // Visual spawn sparkle particles
+                            const pScrX = canvas.width / 2 + (playerX * canvas.width * 0.35);
+                            particles.spawn(pScrX, canvas.height - 110, '#ff007f', 15);
+                            triggerHUDMessage("+1 CORE COGNITION");
+
+                        } else if (ent.type === 'obstacle') {
+                            // FIXED: Only process collision if player invulnerable grace timer is finished
+                            if (player.invulnerableTimer <= 0) {
+                                ent.active = false;
+                                
+                                if (player.shieldCount > 0) {
+                                    player.shieldCount--;
+                                    player.invulnerableTimer = 1.5; // Gain 1.5 seconds of safety blink
+                                    audio.playShieldBreak();
+                                    triggerHUDMessage("DEFLECTOR SHIELD BURST", true);
+                                    currentSpeed *= 0.4; // slow down significantly
+                                } else {
+                                    // Critical crash & death
+                                    isDead = true;
+                                    audio.playCrash();
+                                    triggerHUDMessage("COLLISION DETECTED - OVERLOAD", true);
+                                    handleGameOver();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Keep particles updated
+            particles.update();
+
+            // Refresh HTML HUD info
+            document.getElementById('hudDistance').innerText = `${Math.floor(distanceCount)} m`;
+            document.getElementById('hudSpeed').innerText = `${Math.floor(currentSpeed * 2.2)} KM/H`;
+            document.getElementById('hudCores').innerHTML = `
+                <svg class="w-5 h-5 text-pink-500 animate-spin" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+                ${collectedCoresThisRun}
+            `;
+            document.getElementById('hudScore').innerText = `SCORE: ${score}`;
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Camera curves calculations from road engine
+            const baseSegment = road.findSegment(position);
+            const percent = (position % road.segmentLength) / road.segmentLength;
+            
+            // Calculate starting curve cumulative values
+            let dx = - (baseSegment.curve * percent);
+            let x = 0;
+
+            // Draw Parallax Synth Horizon
+            drawRetroBackground(ctx, width, height, baseSegment.curve);
+
+            // Draw Road Segments (Painters algorithm: render Back to Front)
+            const drawDistance = 80; // limit segments drawn on screen
+            
+            // 1. PROJECT & COMPUTE COORDINATES
+            for (let n = 0; n < drawDistance; n++) {
+                const segmentIndex = (baseSegment.index + n) % road.totalSegments;
+                const segment = road.segments[segmentIndex];
+                
+                // Track looping wrap math offset
+                const loopOffset = (segmentIndex < baseSegment.index) ? (road.totalSegments * road.segmentLength) : 0;
+
+                road.project(
+                    segment.p1, 
+                    (playerX * road.roadWidth) - x, 
+                    road.cameraHeight + (baseSegment.p1.world.y - baseSegment.p2.world.y) * percent, 
+                    position - loopOffset, 
+                    width, 
+                    height
+                );
+                
+                road.project(
+                    segment.p2, 
+                    (playerX * road.roadWidth) - x - dx, 
+                    road.cameraHeight + (baseSegment.p1.world.y - baseSegment.p2.world.y) * percent, 
+                    position - loopOffset, 
+                    width, 
+                    height
+                );
+
+                x += dx;
+                dx += segment.curve;
+            }
+
+            // 2. RENDER THE SCENE POLYGONS BACK TO FRONT
+            for (let n = drawDistance - 1; n > 0; n--) {
+                const segmentIndex = (baseSegment.index + n) % road.totalSegments;
+                const prevSegmentIndex = (segmentIndex > 0) ? (segmentIndex - 1) : (road.totalSegments - 1);
+                
+                const segment = road.segments[segmentIndex];
+                const prevSegment = road.segments[prevSegmentIndex];
+
+                const p1 = prevSegment.p2; // segment closest to viewer
+                const p2 = segment.p2;     // segment furthest on horizon
+
+                // Don't render behind screen
+                if (p1.camera.z <= road.cameraDepth || p2.camera.z <= road.cameraDepth) continue;
+
+                // Render Retro Grid Grass Lanes
+                ctx.fillStyle = segment.color.road;
+                ctx.beginPath();
+                ctx.moveTo(0, p1.screen.y);
+                ctx.lineTo(width, p1.screen.y);
+                ctx.lineTo(width, p2.screen.y);
+                ctx.lineTo(0, p2.screen.y);
+                ctx.closePath();
+                ctx.fill();
+
+                // Draw Left & Right outer glowing rumble stripes
+                const r1 = p1.screen.w * 0.08;
+                const r2 = p2.screen.w * 0.08;
+                
+                // Left Rumble
+                ctx.fillStyle = segment.color.rumble;
+                ctx.beginPath();
+                ctx.moveTo(p1.screen.x - p1.screen.w - r1, p1.screen.y);
+                ctx.lineTo(p1.screen.x - p1.screen.w, p1.screen.y);
+                ctx.lineTo(p2.screen.x - p2.screen.w, p2.screen.y);
+                ctx.lineTo(p2.screen.x - p2.screen.w - r2, p2.screen.y);
+                ctx.closePath();
+                ctx.fill();
+
+                // Right Rumble
+                ctx.beginPath();
+                ctx.moveTo(p1.screen.x + p1.screen.w, p1.screen.y);
+                ctx.lineTo(p1.screen.x + p1.screen.w + r1, p1.screen.y);
+                ctx.lineTo(p2.screen.x + p2.screen.w + r2, p2.screen.y);
+                ctx.lineTo(p2.screen.x + p2.screen.w, p2.screen.y);
+                ctx.closePath();
+                ctx.fill();
+
+                // Core Main Asphalt Road Path
+                ctx.fillStyle = '#060113';
+                ctx.beginPath();
+                ctx.moveTo(p1.screen.x - p1.screen.w, p1.screen.y);
+                ctx.lineTo(p1.screen.x + p1.screen.w, p1.screen.y);
+                ctx.lineTo(p2.screen.x + p2.screen.w, p2.screen.y);
+                ctx.lineTo(p2.screen.x - p2.screen.w, p2.screen.y);
+                ctx.closePath();
+                ctx.fill();
+
+                // Center dashed lines
+                if (segment.color.line !== '#000000') {
+                    const l1 = p1.screen.w * 0.03;
+                    const l2 = p2.screen.w * 0.03;
+                    ctx.fillStyle = '#ff007f';
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#ff007f';
+                    ctx.beginPath();
+                    ctx.moveTo(p1.screen.x - l1, p1.screen.y);
+                    ctx.lineTo(p1.screen.x + l1, p1.screen.y);
+                    ctx.lineTo(p2.screen.x + l2, p2.screen.y);
+                    ctx.lineTo(p2.screen.x - l2, p2.screen.y);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                // Render Entities (obstacles & cores mapped inside this segment)
+                for (let ent of entities) {
+                    if (ent.trackZ >= prevSegment.p1.world.z && ent.trackZ < segment.p1.world.z) {
+                        const entX = p1.screen.x + (p1.screen.w * ent.roadX);
+                        const entY = p1.screen.y;
+                        ent.draw(ctx, entX, entY, p1.screen.scale, width);
+                    }
+                }
+            }
+
+            // Draw player ship overlay
+            if (!isDead) {
+                const isAccelerating = currentSpeed > 10;
+                player.draw(ctx, width, height, isAccelerating);
+            }
+
+            // Draw explosion sparks
+            particles.draw(ctx);
+        }
+
+        // Target ideal 60 FPS performance loops
+        let lastTime = 0;
+        function loop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            // Clamp massive lag spikes
+            const cappedDt = Math.min(dt, 0.1);
+
+            update(cappedDt);
+            render();
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- 8. GARAGE & UPGRADES STORE DESIGN ---
+        const prices = {
+            engine: [50, 150, 300, 500, 800],
+            magnet: [40, 100, 200, 400, 700],
+            shield: [75, 180, 350, 600, 950]
+        };
+
+        function refreshGarageUI() {
+            document.getElementById('garageBank').innerText = state.coresBank;
+            
+            // Build visual progress bars for Upgrades
+            const createBars = (lvl) => {
+                let html = '';
+                for (let i = 0; i < 5; i++) {
+                    if (i < lvl) {
+                        html += `<div class="w-5 h-3 bg-cyan-400 border border-cyan-300 rounded-xs shadow-md shadow-cyan-500/50"></div>`;
+                    } else {
+                        html += `<div class="w-5 h-3 bg-slate-800 border border-slate-700 rounded-xs"></div>`;
+                    }
+                }
+                return html;
+            };
+
+            document.getElementById('barsEngine').innerHTML = createBars(state.upgrades.engine);
+            document.getElementById('barsMagnet').innerHTML = createBars(state.upgrades.magnet);
+            document.getElementById('barsShield').innerHTML = createBars(state.upgrades.shield);
+
+            // Handle Engine button updates
+            const engineBtn = document.getElementById('btnBuyEngine');
+            if (state.upgrades.engine >= 5) {
+                engineBtn.innerText = "MAX";
+                engineBtn.disabled = true;
+            } else {
+                const price = prices.engine[state.upgrades.engine];
+                engineBtn.innerHTML = `${price} C`;
+                engineBtn.disabled = state.coresBank < price;
+            }
+
+            // Handle Magnet button updates
+            const magnetBtn = document.getElementById('btnBuyMagnet');
+            if (state.upgrades.magnet >= 5) {
+                magnetBtn.innerText = "MAX";
+                magnetBtn.disabled = true;
+            } else {
+                const price = prices.magnet[state.upgrades.magnet];
+                magnetBtn.innerHTML = `${price} C`;
+                magnetBtn.disabled = state.coresBank < price;
+            }
+
+            // Handle Shield button updates
+            const shieldBtn = document.getElementById('btnBuyShield');
+            if (state.upgrades.shield >= 5) {
+                shieldBtn.innerText = "MAX";
+                shieldBtn.disabled = true;
+            } else {
+                const price = prices.shield[state.upgrades.shield];
+                shieldBtn.innerHTML = `${price} C`;
+                shieldBtn.disabled = state.coresBank < price;
+            }
+        }
+
+        // Core Upgrade Purchases Actions
+        document.getElementById('btnBuyEngine').addEventListener('click', () => {
+            const cost = prices.engine[state.upgrades.engine];
+            if (state.coresBank >= cost && state.upgrades.engine < 5) {
+                state.coresBank -= cost;
+                state.upgrades.engine++;
+                saveStateToLocal();
+                refreshGarageUI();
+                audio.playCoin();
+            }
+        });
+
+        document.getElementById('btnBuyMagnet').addEventListener('click', () => {
+            const cost = prices.magnet[state.upgrades.magnet];
+            if (state.coresBank >= cost && state.upgrades.magnet < 5) {
+                state.coresBank -= cost;
+                state.upgrades.magnet++;
+                saveStateToLocal();
+                refreshGarageUI();
+                audio.playCoin();
+            }
+        });
+
+        document.getElementById('btnBuyShield').addEventListener('click', () => {
+            const cost = prices.shield[state.upgrades.shield];
+            if (state.coresBank >= cost && state.upgrades.shield < 5) {
+                state.coresBank -= cost;
+                state.upgrades.shield++;
+                saveStateToLocal();
+                refreshGarageUI();
+                audio.playCoin();
+            }
+        });
+
+        // --- 8b. LEADERBOARD UI POPULATION ---
+        function populateLeaderboardUI() {
+            const listEl = document.getElementById('leaderboardList');
+            listEl.innerHTML = '';
+            
+            // Sort leaderboard distance descending
+            state.leaderboard.sort((a, b) => b.distance - a.distance);
+
+            state.leaderboard.forEach((entry, idx) => {
+                const rank = idx + 1;
+                let rankStyle = "text-slate-400";
+                if (rank === 1) rankStyle = "text-yellow-400 font-extrabold neon-text-cyan";
+                if (rank === 2) rankStyle = "text-slate-300 font-bold";
+                if (rank === 3) rankStyle = "text-amber-600 font-bold";
+
+                listEl.innerHTML += `
+                    <div class="grid grid-cols-3 p-4 items-center orbitron text-sm transition hover:bg-slate-900/30">
+                        <div class="${rankStyle}">#${rank}</div>
+                        <div class="font-semibold text-white tracking-widest">${entry.initials}</div>
+                        <div class="text-right text-cyan-400 font-bold">${Math.floor(entry.distance)}m</div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- 9. SCREEN FLOWS & TRANSLATIONS ---
+        const startScreen = document.getElementById('startScreen');
+        const gameHUD = document.getElementById('gameHUD');
+        const touchControls = document.getElementById('touchControls');
+        const garageScreen = document.getElementById('garageScreen');
+        const leaderboardScreen = document.getElementById('leaderboardScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const highScorePanel = document.getElementById('highScorePanel');
+        const gameOverActions = document.getElementById('gameOverActions');
+
+        // Navigation Menu Actions
+        document.getElementById('btnPlay').addEventListener('click', startGame);
+        document.getElementById('btnRestart').addEventListener('click', startGame);
+        
+        document.getElementById('btnGarage').addEventListener('click', () => {
+            refreshGarageUI();
+            audio.init();
+            garageScreen.classList.remove('translate-x-full');
+        });
+
+        document.getElementById('btnLeaderboard').addEventListener('click', () => {
+            populateLeaderboardUI();
+            audio.init();
+            leaderboardScreen.classList.remove('translate-x-full');
+        });
+
+        // Return to Menu safely restores startScreen visibility state & cleans HUD elements
+        document.getElementById('btnBackToMenu').addEventListener('click', () => {
+            garageScreen.classList.add('translate-x-full');
+            startScreen.classList.remove('opacity-0', 'pointer-events-none');
+            gameHUD.classList.add('opacity-0');
+            touchControls.classList.add('opacity-0');
+        });
+
+        document.getElementById('btnLeaderboardBack').addEventListener('click', () => {
+            leaderboardScreen.classList.add('translate-x-full');
+            startScreen.classList.remove('opacity-0', 'pointer-events-none');
+            gameHUD.classList.add('opacity-0');
+            touchControls.classList.add('opacity-0');
+        });
+
+        document.getElementById('btnGoToGarage').addEventListener('click', () => {
+            gameOverScreen.classList.add('translate-y-full');
+            refreshGarageUI();
+            garageScreen.classList.remove('translate-x-full');
+        });
+
+        // Submit High Score Event Listener
+        document.getElementById('btnSaveScore').addEventListener('click', () => {
+            const input = document.getElementById('initialsInput');
+            let initials = input.value.trim().toUpperCase();
+            if (!initials) initials = 'NEO';
+            
+            // Insert score, sort list, slice top 5, and save
+            state.leaderboard.push({
+                initials: initials,
+                distance: Math.floor(distanceCount)
+            });
+            state.leaderboard.sort((a, b) => b.distance - a.distance);
+            state.leaderboard = state.leaderboard.slice(0, 5);
+            
+            saveStateToLocal();
+            
+            // Hide Input, show updated Leaderboard page!
+            highScorePanel.classList.add('hidden');
+            gameOverActions.classList.remove('opacity-30', 'pointer-events-none');
+            
+            gameOverScreen.classList.add('translate-y-full');
+            populateLeaderboardUI();
+            leaderboardScreen.classList.remove('translate-x-full');
+        });
+
+        // Initialize / Start Run Reset Parameters
+        function startGame() {
+            // Hide all overlays
+            startScreen.classList.add('opacity-0', 'pointer-events-none');
+            gameOverScreen.classList.add('translate-y-full');
+            garageScreen.classList.add('translate-x-full');
+            leaderboardScreen.classList.add('translate-x-full');
+            
+            // Reset input values
+            document.getElementById('initialsInput').value = '';
+            highScorePanel.classList.add('hidden');
+            gameOverActions.classList.remove('opacity-30', 'pointer-events-none');
+
+            // Display HUD
+            gameHUD.classList.remove('opacity-0');
+            // Show Touch HUD on mobile screens
+            if ('ontouchstart' in window) {
+                touchControls.classList.remove('opacity-0');
+            }
+
+            // Sound Init
+            audio.startMusic();
+
+            // Reset Level Settings
+            position = 0;
+            playerX = 0;
+            currentSpeed = 0;
+            distanceCount = 0;
+            score = 0;
+            collectedCoresThisRun = 0;
+            isDead = false;
+            
+            updateStatsWithUpgrades();
+            generateLevelContent();
+            
+            gameActive = true;
+        }
+
+        // Handle Crash / Overload Screen Transition
+        function handleGameOver() {
+            gameActive = false;
+            audio.stopMusic();
+
+            // Store Cores bank persistent
+            state.coresBank += collectedCoresThisRun;
+            saveStateToLocal();
+
+            // Set final stats overlays
+            document.getElementById('goScore').innerText = score;
+            document.getElementById('goDistance').innerText = `${Math.floor(distanceCount)}m`;
+            document.getElementById('goCores').innerText = `+${collectedCoresThisRun}`;
+
+            // Check if player qualified for the Leaderboard
+            const finalDist = Math.floor(distanceCount);
+            const lowestDist = state.leaderboard.length < 5 ? 0 : state.leaderboard[state.leaderboard.length - 1].distance;
+
+            if (finalDist > lowestDist || state.leaderboard.length < 5) {
+                highScorePanel.classList.remove('hidden');
+                gameOverActions.classList.add('opacity-30', 'pointer-events-none'); // block start until they submit
+            }
+
+            // Trigger slides transitions
+            setTimeout(() => {
+                gameHUD.classList.add('opacity-0');
+                touchControls.classList.add('opacity-0');
+                gameOverScreen.classList.remove('translate-y-full');
+            }, 1000);
+        }
+
+        // Trigger loop runtime on window loaded complete
+        window.onload = function() {
+            requestAnimationFrame(loop);
+        };
+    </script>
+</body>
+</html>
