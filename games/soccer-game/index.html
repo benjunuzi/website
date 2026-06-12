@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Soccer Champion</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap');
+        .font-arcade {
+            font-family: 'Press Start 2P', monospace;
+        }
+        .font-display {
+            font-family: 'Rajdhani', sans-serif;
+        }
+        canvas {
+            image-rendering: pixelated;
+        }
+        /* Hide scrollbars during gameplay */
+        body {
+            touch-action: none;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white font-display select-none h-screen w-screen flex flex-col items-center justify-center p-2 sm:p-4">
+
+    <!-- Game Container -->
+    <div id="game-container" class="relative w-full max-w-4xl bg-slate-900 border-4 border-slate-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-full">
+        
+        <!-- Scoreboard Header -->
+        <div class="bg-slate-950 p-3 flex justify-between items-center border-b-4 border-slate-700 px-4 sm:px-8">
+            <!-- Home Team (Player) -->
+            <div class="flex items-center space-x-3">
+                <div id="player-jersey-indicator" class="w-4 h-4 rounded-full border border-white bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                <div>
+                    <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Player</div>
+                    <div id="player-score-display" class="font-arcade text-xl sm:text-2xl text-blue-400">0</div>
+                </div>
+            </div>
+
+            <!-- Time / Status Display -->
+            <div class="text-center px-4 py-1 bg-slate-900 border-2 border-slate-800 rounded-lg">
+                <div id="game-timer" class="font-arcade text-lg sm:text-xl text-yellow-400 tracking-widest">02:00</div>
+                <div id="game-period" class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-1">1st Half</div>
+            </div>
+
+            <!-- Away Team (AI) -->
+            <div class="flex items-center space-x-3 text-right flex-row-reverse">
+                <div id="ai-jersey-indicator" class="w-4 h-4 rounded-full border border-white bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)] ml-3"></div>
+                <div>
+                    <div class="text-xs text-slate-400 font-bold uppercase tracking-wider">Opponent</div>
+                    <div id="ai-score-display" class="font-arcade text-xl sm:text-2xl text-red-400">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Playing Field Area -->
+        <div class="relative flex-grow flex items-center justify-center bg-emerald-950 overflow-hidden" style="min-height: 300px;">
+            <canvas id="gameCanvas" class="block w-full h-full max-h-[70vh] aspect-[1.6/1] object-contain"></canvas>
+
+            <!-- Overlay Message Banner -->
+            <div id="overlay-banner" class="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center transition-opacity duration-300 pointer-events-none opacity-0 z-10">
+                <h1 id="overlay-title" class="font-arcade text-2xl sm:text-4xl text-yellow-400 text-center uppercase drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] animate-bounce">GOAL!</h1>
+                <p id="overlay-subtitle" class="text-slate-200 text-lg mt-2 tracking-wider font-semibold">Blue Team Scores</p>
+            </div>
+
+            <!-- Mobile Touch Controls Layout (Overlayed on canvas area) -->
+            <div id="mobile-controls" class="absolute inset-0 pointer-events-none hidden grid-cols-2 p-6 z-20">
+                <!-- Virtual Joystick Area (Left Side) -->
+                <div class="relative pointer-events-auto h-full flex items-end justify-start">
+                    <div id="joystick-boundary" class="w-24 h-24 sm:w-32 sm:h-32 bg-white/10 border-2 border-white/20 rounded-full flex items-center justify-center backdrop-blur-xs relative active:scale-95 transition-transform duration-100">
+                        <div id="joystick-handle" class="w-10 h-10 sm:w-12 sm:h-12 bg-white/70 rounded-full shadow-lg absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-75"></div>
+                    </div>
+                </div>
+                <!-- Action / Kick Button Area (Right Side) -->
+                <div class="relative pointer-events-auto h-full flex items-end justify-end">
+                    <button id="mobile-kick-btn" class="w-20 h-20 sm:w-24 sm:h-24 bg-blue-500/80 active:bg-blue-600 border-4 border-white/40 rounded-full flex flex-col items-center justify-center shadow-2xl backdrop-blur-xs text-white transform active:scale-90 transition-all select-none">
+                        <i data-lucide="zap" class="w-8 h-8 animate-pulse text-yellow-300"></i>
+                        <span class="text-xs font-arcade mt-1 tracking-tight text-white/95">KICK</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Legend Footer (Desktop Only) -->
+        <div class="hidden sm:flex bg-slate-950/80 p-3 justify-between items-center text-xs text-slate-400 border-t-4 border-slate-700 px-6 font-medium">
+            <div class="flex items-center space-x-2">
+                <span class="px-2 py-1 bg-slate-800 rounded text-slate-300 border border-slate-700">W</span>
+                <span class="px-2 py-1 bg-slate-800 rounded text-slate-300 border border-slate-700">A</span>
+                <span class="px-2 py-1 bg-slate-800 rounded text-slate-300 border border-slate-700">S</span>
+                <span class="px-2 py-1 bg-slate-800 rounded text-slate-300 border border-slate-700">D</span>
+                <span class="text-slate-500">or</span>
+                <span class="px-2 py-1 bg-slate-800 rounded text-slate-300 border border-slate-700">↑</span>
+                <span class="px-2 py-1 bg-slate-800 rounded text-slate-300 border border-slate-700">↓</span>
+                <span class="px-2 py-1 bg-slate-800 rounded text-slate-300 border border-slate-700">←</span>
+                <span class="px-2 py-1 bg-slate-800 rounded text-slate-300 border border-slate-700">→</span>
+                <span class="ml-1 text-slate-300">Move Player</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="px-3 py-1 bg-slate-800 rounded text-slate-300 border border-slate-700 font-bold uppercase tracking-wide">Space</span>
+                <span class="text-slate-300">Super Kick / Speed Burst</span>
+            </div>
+        </div>
+
+        <!-- MENU OVERLAY / SETUP SCREEN -->
+        <div id="menu-overlay" class="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-4 z-50 overflow-y-auto">
+            <div class="max-w-md w-full text-center space-y-6">
+                <!-- Game Logo Header -->
+                <div class="space-y-2">
+                    <div class="inline-flex items-center space-x-2 px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-bold uppercase tracking-widest">
+                        <i data-lucide="award" class="w-4 h-4"></i>
+                        <span>Championship Series</span>
+                    </div>
+                    <h1 class="font-arcade text-3xl sm:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-blue-400 drop-shadow-[0_2px_8px_rgba(52,211,153,0.3)] uppercase">Arcade Soccer</h1>
+                </div>
+
+                <!-- Match Setup Settings -->
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl text-left space-y-4 shadow-xl">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">Match Settings</h2>
+                    
+                    <!-- Team Color Customization -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Choose Your Jersey Color</label>
+                        <div class="grid grid-cols-5 gap-2">
+                            <button onclick="setPlayerColor('#3b82f6')" class="color-btn border-2 border-white rounded-xl h-10 bg-blue-500 transition-all focus:outline-none" title="Blue"></button>
+                            <button onclick="setPlayerColor('#10b981')" class="color-btn border-2 border-transparent hover:border-slate-500 rounded-xl h-10 bg-emerald-500 transition-all focus:outline-none" title="Green"></button>
+                            <button onclick="setPlayerColor('#eab308')" class="color-btn border-2 border-transparent hover:border-slate-500 rounded-xl h-10 bg-yellow-500 transition-all focus:outline-none" title="Yellow"></button>
+                            <button onclick="setPlayerColor('#a855f7')" class="color-btn border-2 border-transparent hover:border-slate-500 rounded-xl h-10 bg-purple-500 transition-all focus:outline-none" title="Purple"></button>
+                            <button onclick="setPlayerColor('#ec4899')" class="color-btn border-2 border-transparent hover:border-slate-500 rounded-xl h-10 bg-pink-500 transition-all focus:outline-none" title="Pink"></button>
+                        </div>
+                    </div>
+
+                    <!-- Difficulty Configuration -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Opponent AI Difficulty</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button id="diff-easy" onclick="setDifficulty('easy')" class="py-2 text-xs font-bold uppercase tracking-widest border-2 border-slate-800 hover:border-slate-700 rounded-xl bg-slate-950 text-slate-400 transition-all">Rookie</button>
+                            <button id="diff-medium" onclick="setDifficulty('medium')" class="py-2 text-xs font-bold uppercase tracking-widest border-2 border-emerald-500/50 rounded-xl bg-emerald-950/40 text-emerald-400 transition-all">Pro</button>
+                            <button id="diff-hard" onclick="setDifficulty('hard')" class="py-2 text-xs font-bold uppercase tracking-widest border-2 border-slate-800 hover:border-slate-700 rounded-xl bg-slate-950 text-slate-400 transition-all">Legend</button>
+                        </div>
+                    </div>
+
+                    <!-- Match Length Configuration -->
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-500">Match Duration</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button id="time-1" onclick="setDuration(60)" class="py-2 text-xs font-bold uppercase tracking-widest border-2 border-slate-800 hover:border-slate-700 rounded-xl bg-slate-950 text-slate-400 transition-all">1 Min</button>
+                            <button id="time-2" onclick="setDuration(120)" class="py-2 text-xs font-bold uppercase tracking-widest border-2 border-emerald-500/50 rounded-xl bg-emerald-950/40 text-emerald-400 transition-all">2 Min</button>
+                            <button id="time-3" onclick="setDuration(180)" class="py-2 text-xs font-bold uppercase tracking-widest border-2 border-slate-800 hover:border-slate-700 rounded-xl bg-slate-950 text-slate-400 transition-all">3 Min</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Launch Button & Instructions Info -->
+                <div class="space-y-3">
+                    <button id="start-game-btn" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-arcade text-lg rounded-2xl shadow-lg transition-transform active:scale-95 flex items-center justify-center space-x-2 font-bold cursor-pointer">
+                        <i data-lucide="play-circle" class="w-6 h-6"></i>
+                        <span>KICK OFF</span>
+                    </button>
+                    <p class="text-[11px] text-slate-500 leading-relaxed">
+                        Best played in full-screen on desktop or mobile. Mobile devices feature auto-detecting touch overlay controls.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- END GAME OVERLAY SCREEN -->
+        <div id="end-overlay" class="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-4 z-50 hidden">
+            <div class="max-w-md w-full text-center space-y-6">
+                <!-- Champion Status Cup -->
+                <div class="inline-flex p-4 bg-yellow-500/10 border-2 border-yellow-500/30 rounded-full text-yellow-400">
+                    <i data-lucide="trophy" class="w-12 h-12 animate-pulse"></i>
+                </div>
+                
+                <div class="space-y-1">
+                    <h1 id="end-title" class="font-arcade text-3xl text-yellow-400 uppercase">VICTORY!</h1>
+                    <p id="end-subtitle" class="text-slate-300 text-lg">You defeated the Opponent</p>
+                </div>
+
+                <!-- Match Score Detail Summary -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex justify-around items-center">
+                    <div class="text-center">
+                        <div class="text-xs text-slate-500 uppercase font-bold tracking-wider">Player Score</div>
+                        <div id="end-player-score" class="font-arcade text-3xl text-blue-400 mt-1">4</div>
+                    </div>
+                    <div class="font-arcade text-slate-600 text-xl">-</div>
+                    <div class="text-center">
+                        <div class="text-xs text-slate-500 uppercase font-bold tracking-wider">Opponent Score</div>
+                        <div id="end-ai-score" class="font-arcade text-3xl text-red-400 mt-1">2</div>
+                    </div>
+                </div>
+
+                <!-- Restart Match Actions -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="rematch-btn" class="py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-arcade rounded-xl transition-all cursor-pointer">
+                        REMATCH
+                    </button>
+                    <button id="setup-menu-btn" class="py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-sm font-arcade rounded-xl transition-all font-bold cursor-pointer">
+                        MAIN MENU
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Sound FX / Music Toggle Indicator -->
+    <div class="mt-4 flex items-center justify-between max-w-4xl w-full px-4 text-xs text-slate-500 font-semibold tracking-wide">
+        <div class="flex items-center space-x-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping mr-1"></span>
+            <span>Local System Online</span>
+        </div>
+        <button id="sound-toggle-btn" class="flex items-center space-x-1.5 hover:text-slate-300 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
+            <i id="sound-icon" data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+            <span id="sound-text">Sound ON</span>
+        </button>
+    </div>
+
+    <!-- Web Audio Synthesizer Controls & Game Loop Logic -->
+    <script>
+        // Check for touchscreen to display mobile controls overlay
+        function isTouchDevice() {
+            return (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0));
+        }
+
+        if (isTouchDevice()) {
+            document.getElementById('mobile-controls').classList.remove('hidden');
+            document.getElementById('mobile-controls').classList.add('grid');
+        }
+
+        // --- WEB AUDIO API SYNTHESIZER FOR SOUNDS ---
+        let audioEnabled = true;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioCtx();
+            }
+        }
+
+        // Synth function for short arcade kick
+        function playKickSound() {
+            if (!audioEnabled || !audioCtx) return;
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.12);
+
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.12);
+        }
+
+        // Bounce sound on border walls or goalposts
+        function playBounceSound() {
+            if (!audioEnabled || !audioCtx) return;
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.08);
+
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.08);
+        }
+
+        // Goal Whistle + Celebration cheer sound
+        function playGoalSound() {
+            if (!audioEnabled || !audioCtx) return;
+            initAudio();
+            
+            // Whistle Sound
+            const whistleOsc = audioCtx.createOscillator();
+            const whistleGain = audioCtx.createGain();
+            whistleOsc.connect(whistleGain);
+            whistleGain.connect(audioCtx.destination);
+
+            whistleOsc.type = 'sine';
+            whistleOsc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+            whistleOsc.frequency.linearRampToValueAtTime(1100, audioCtx.currentTime + 0.2);
+            whistleGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            whistleGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+            whistleOsc.start();
+            whistleOsc.stop(audioCtx.currentTime + 0.3);
+
+            // Crowd Noise / Celebration
+            const bufferSize = audioCtx.sampleRate * 1.5; // 1.5 seconds crowd roar
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noiseNode = audioCtx.createBufferSource();
+            noiseNode.buffer = buffer;
+
+            // Low-pass filter for roar
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(600, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(180, audioCtx.currentTime + 1.2);
+
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+
+            noiseNode.connect(filter);
+            filter.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+
+            noiseNode.start();
+            noiseNode.stop(audioCtx.currentTime + 1.5);
+        }
+
+        // Referee Match Whistle
+        function playRefereeWhistle() {
+            if (!audioEnabled || !audioCtx) return;
+            initAudio();
+
+            const osc1 = audioCtx.createOscillator();
+            const osc2 = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(1000, audioCtx.currentTime);
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(1015, audioCtx.currentTime);
+
+            gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + 0.4);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+
+            osc1.start();
+            osc2.start();
+            osc1.stop(audioCtx.currentTime + 0.6);
+            osc2.stop(audioCtx.currentTime + 0.6);
+        }
+
+        // --- Sound Toggle Controller ---
+        const soundBtn = document.getElementById('sound-toggle-btn');
+        const soundIcon = document.getElementById('sound-icon');
+        const soundText = document.getElementById('sound-text');
+
+        soundBtn.addEventListener('click', () => {
+            audioEnabled = !audioEnabled;
+            if (audioEnabled) {
+                soundText.textContent = "Sound ON";
+                soundIcon.setAttribute('data-lucide', 'volume-2');
+            } else {
+                soundText.textContent = "Sound OFF";
+                soundIcon.setAttribute('data-lucide', 'volume-x');
+            }
+            lucide.createIcons();
+        });
+
+
+        // --- PHYSICS GAME CODE ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game dimensions
+        const FIELD_WIDTH = 1280;
+        const FIELD_HEIGHT = 800;
+        canvas.width = FIELD_WIDTH;
+        canvas.height = FIELD_HEIGHT;
+
+        // Custom Jersey Styling Options
+        let playerColor = '#3b82f6'; // Default: Blue
+        const aiColor = '#ef4444';     // AI opponent: Red
+
+        // Match difficulty variables
+        let difficulty = 'medium';
+        let matchDurationSec = 120; // 2 Minutes
+        let matchTimer = matchDurationSec;
+        let timerInterval = null;
+        let isMatchEnded = false;
+
+        // Game State Variables
+        let playerScore = 0;
+        let aiScore = 0;
+        let currentPeriod = "1st Half";
+        let matchRunning = false;
+        let activeKickAnimationTimer = 0;
+
+        // Interactive entities
+        const ball = {
+            x: FIELD_WIDTH / 2,
+            y: FIELD_HEIGHT / 2,
+            radius: 20,
+            vx: 0,
+            vy: 0,
+            friction: 0.985,
+            mass: 1,
+            maxSpeed: 30
+        };
+
+        const player = {
+            x: FIELD_WIDTH / 4,
+            y: FIELD_HEIGHT / 2,
+            radius: 35,
+            vx: 0,
+            vy: 0,
+            speed: 7.5,
+            dashFactor: 1.5,
+            isDashing: false,
+            mass: 4,
+            number: "7"
+        };
+
+        const ai = {
+            x: (FIELD_WIDTH / 4) * 3,
+            y: FIELD_HEIGHT / 2,
+            radius: 35,
+            vx: 0,
+            vy: 0,
+            speed: 5.5, // dynamic depending on difficulty
+            mass: 4,
+            number: "10"
+        };
+
+        // Goal settings
+        const goalHeight = 240;
+        const goals = {
+            left: {
+                x: 0,
+                top: (FIELD_HEIGHT - goalHeight) / 2,
+                bottom: (FIELD_HEIGHT + goalHeight) / 2,
+                width: 45
+            },
+            right: {
+                x: FIELD_WIDTH,
+                top: (FIELD_HEIGHT - goalHeight) / 2,
+                bottom: (FIELD_HEIGHT + goalHeight) / 2,
+                width: 45
+            }
+        };
+
+        // Keyboard setup
+        const keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key === ' ') {
+                player.isDashing = true;
+                e.preventDefault(); // Stop window scrolling
+            }
+        });
+        window.addEventListener('keyup', e => {
+            keys[e.key.toLowerCase()] = false;
+            if (e.key === ' ') {
+                player.isDashing = false;
+            }
+        });
+
+        // Joystick Setup
+        const joystickBoundary = document.getElementById('joystick-boundary');
+        const joystickHandle = document.getElementById('joystick-handle');
+        let joystickActive = false;
+        let joystickOrigin = { x: 0, y: 0 };
+        let joystickVector = { x: 0, y: 0 };
+
+        // Handle touch inputs for Virtual Joystick
+        joystickBoundary.addEventListener('touchstart', (e) => {
+            joystickActive = true;
+            const rect = joystickBoundary.getBoundingClientRect();
+            joystickOrigin = {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+            handleJoystickMove(e.touches[0]);
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!joystickActive) return;
+            handleJoystickMove(e.touches[0]);
+        });
+
+        document.addEventListener('touchend', () => {
+            if (!joystickActive) return;
+            joystickActive = false;
+            joystickVector = { x: 0, y: 0 };
+            joystickHandle.style.transform = 'translate(-50%, -50%)';
+        });
+
+        function handleJoystickMove(touch) {
+            const dx = touch.clientX - joystickOrigin.x;
+            const dy = touch.clientY - joystickOrigin.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const maxRadius = joystickBoundary.clientWidth / 2;
+
+            if (dist === 0) {
+                joystickVector = { x: 0, y: 0 };
+                return;
+            }
+
+            const scale = Math.min(dist, maxRadius) / maxRadius;
+            const angle = Math.atan2(dy, dx);
+            
+            joystickVector = {
+                x: Math.cos(angle) * scale,
+                y: Math.sin(angle) * scale
+            };
+
+            // Move the graphic handle visually
+            const visualX = Math.cos(angle) * scale * (maxRadius - 10);
+            const visualY = Math.sin(angle) * scale * (maxRadius - 10);
+            joystickHandle.style.transform = `translate(calc(-50% + ${visualX}px), calc(-50% + ${visualY}px))`;
+        }
+
+        // Mobile Kick Button interaction
+        const mobileKickBtn = document.getElementById('mobile-kick-btn');
+        mobileKickBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            player.isDashing = true;
+        });
+        mobileKickBtn.addEventListener('touchend', () => {
+            player.isDashing = false;
+        });
+
+
+        // --- SETUP MENUS & DIFFICULTY SETUP ---
+        function setPlayerColor(color) {
+            playerColor = color;
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.classList.remove('border-white');
+                btn.classList.add('border-transparent');
+            });
+            event.target.classList.add('border-white');
+            event.target.classList.remove('border-transparent');
+            
+            // Sync dashboard UI indicator
+            document.getElementById('player-jersey-indicator').style.backgroundColor = color;
+            document.getElementById('player-jersey-indicator').style.boxShadow = `0 0 10px ${color}`;
+        }
+
+        function setDifficulty(lvl) {
+            difficulty = lvl;
+            const buttons = {
+                easy: document.getElementById('diff-easy'),
+                medium: document.getElementById('diff-medium'),
+                hard: document.getElementById('diff-hard')
+            };
+            Object.keys(buttons).forEach(key => {
+                buttons[key].className = "py-2 text-xs font-bold uppercase tracking-widest border-2 border-slate-800 hover:border-slate-700 rounded-xl bg-slate-950 text-slate-400 transition-all";
+            });
+            buttons[lvl].className = "py-2 text-xs font-bold uppercase tracking-widest border-2 border-emerald-500/50 rounded-xl bg-emerald-950/40 text-emerald-400 transition-all";
+
+            // Apply specific difficulty speed levels
+            if (lvl === 'easy') {
+                ai.speed = 3.8;
+            } else if (lvl === 'medium') {
+                ai.speed = 5.2;
+            } else {
+                ai.speed = 6.8;
+            }
+        }
+
+        function setDuration(sec) {
+            matchDurationSec = sec;
+            const buttons = {
+                60: document.getElementById('time-1'),
+                120: document.getElementById('time-2'),
+                180: document.getElementById('time-3')
+            };
+            [60, 120, 180].forEach(t => {
+                buttons[t].className = "py-2 text-xs font-bold uppercase tracking-widest border-2 border-slate-800 hover:border-slate-700 rounded-xl bg-slate-950 text-slate-400 transition-all";
+            });
+            buttons[sec].className = "py-2 text-xs font-bold uppercase tracking-widest border-2 border-emerald-500/50 rounded-xl bg-emerald-950/40 text-emerald-400 transition-all";
+        }
+
+        // Particle System for Goal Explosions
+        const particles = [];
+        function createGoalExplosion(x, y, color) {
+            for (let i = 0; i < 40; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 15 + (x < FIELD_WIDTH / 2 ? 8 : -8),
+                    vy: (Math.random() - 0.5) * 15,
+                    color: color,
+                    size: Math.random() * 6 + 3,
+                    life: 1.0,
+                    decay: Math.random() * 0.03 + 0.015
+                });
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1; // mild gravity
+                p.vx *= 0.98;
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+
+        // --- BASELINE GRAPHICS RENDERING FOR FIELD ---
+        function drawField() {
+            // Draw pitch green background
+            ctx.fillStyle = '#0f5132';
+            ctx.fillRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+
+            // Subtle dark pitch grass stripes
+            ctx.fillStyle = '#0a4228';
+            const numStripes = 15;
+            const stripeWidth = FIELD_WIDTH / numStripes;
+            for (let i = 0; i < numStripes; i += 2) {
+                ctx.fillRect(i * stripeWidth, 0, stripeWidth, FIELD_HEIGHT);
+            }
+
+            // Draw pitch white lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+            ctx.lineWidth = 6;
+
+            // Outer Boundary Box
+            ctx.strokeRect(30, 30, FIELD_WIDTH - 60, FIELD_HEIGHT - 60);
+
+            // Center Line
+            ctx.beginPath();
+            ctx.moveTo(FIELD_WIDTH / 2, 30);
+            ctx.lineTo(FIELD_WIDTH / 2, FIELD_HEIGHT - 30);
+            ctx.stroke();
+
+            // Center Circle
+            ctx.beginPath();
+            ctx.arc(FIELD_WIDTH / 2, FIELD_HEIGHT / 2, 120, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Center Spot
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.beginPath();
+            ctx.arc(FIELD_WIDTH / 2, FIELD_HEIGHT / 2, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Goal Boxes
+            // Left Penalty Area
+            ctx.strokeRect(30, (FIELD_HEIGHT - 440) / 2, 150, 440);
+            // Left Goal Box
+            ctx.strokeRect(30, (FIELD_HEIGHT - 240) / 2, 60, 240);
+            // Left Penalty Spot
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.beginPath();
+            ctx.arc(140, FIELD_HEIGHT / 2, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Right Penalty Area
+            ctx.strokeRect(FIELD_WIDTH - 180, (FIELD_HEIGHT - 440) / 2, 150, 440);
+            // Right Goal Box
+            ctx.strokeRect(FIELD_WIDTH - 90, (FIELD_HEIGHT - 240) / 2, 60, 240);
+            // Right Penalty Spot
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.beginPath();
+            ctx.arc(FIELD_WIDTH - 140, FIELD_HEIGHT / 2, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw Corner Arcs
+            const arcR = 25;
+            // Top-Left
+            ctx.beginPath(); ctx.arc(30, 30, arcR, 0, Math.PI / 2); ctx.stroke();
+            // Bottom-Left
+            ctx.beginPath(); ctx.arc(30, FIELD_HEIGHT - 30, arcR, 1.5 * Math.PI, 0); ctx.stroke();
+            // Top-Right
+            ctx.beginPath(); ctx.arc(FIELD_WIDTH - 30, 30, arcR, Math.PI / 2, Math.PI); ctx.stroke();
+            // Bottom-Right
+            ctx.beginPath(); ctx.arc(FIELD_WIDTH - 30, FIELD_HEIGHT - 30, arcR, Math.PI, 1.5 * Math.PI); ctx.stroke();
+
+            // Net Shading / Back Goal Box Drawing
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+            // Left Goal net space
+            ctx.fillRect(0, goals.left.top, 30, goalHeight);
+            // Right Goal net space
+            ctx.fillRect(FIELD_WIDTH - 30, goals.right.top, 30, goalHeight);
+
+            // Net Mesh Grid Design
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let y = goals.left.top; y <= goals.left.bottom; y += 15) {
+                ctx.moveTo(0, y); ctx.lineTo(30, y);
+                ctx.moveTo(FIELD_WIDTH - 30, y); ctx.lineTo(FIELD_WIDTH, y);
+            }
+            for (let x = 0; x <= 30; x += 10) {
+                ctx.moveTo(x, goals.left.top); ctx.lineTo(x, goals.left.bottom);
+                ctx.moveTo(FIELD_WIDTH - x, goals.right.top); ctx.lineTo(FIELD_WIDTH - x, goals.right.bottom);
+            }
+            ctx.stroke();
+        }
+
+        // Draw Player and AI jerseys on pitch
+        function drawPlayer(obj, color, label) {
+            ctx.save();
+            ctx.translate(obj.x, obj.y);
+
+            // Draw shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.arc(0, 15, obj.radius - 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Highlight ring for local active kick/dash action
+            if (obj === player && player.isDashing) {
+                ctx.strokeStyle = '#eab308';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.arc(0, 0, obj.radius + 6, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Outer Team Primary Jersey Ring
+            ctx.fillStyle = color;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, 0, obj.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner styling/Skin
+            ctx.fillStyle = '#fbcfe8'; // light skin/hair highlight accent
+            ctx.beginPath();
+            ctx.arc(0, -5, obj.radius * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Hair/Cap
+            ctx.fillStyle = '#334155';
+            ctx.beginPath();
+            ctx.arc(0, -10, obj.radius * 0.45, Math.PI, 0);
+            ctx.fill();
+
+            // Draw player shirt number
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `900 ${obj.radius * 0.55}px 'Rajdhani', sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(obj.number, 0, 12);
+
+            ctx.restore();
+        }
+
+        // Beautiful Soccer Ball Pattern Rendering
+        function drawBall() {
+            ctx.save();
+            ctx.translate(ball.x, ball.y);
+
+            // Dynamic Ball Speed Rotation/Shadow direction
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.beginPath();
+            ctx.arc(0, 10, ball.radius - 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ball Base white
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ball Pentagons / Soccer lines
+            ctx.strokeStyle = '#1e293b';
+            ctx.fillStyle = '#1e293b';
+            ctx.lineWidth = 2;
+
+            // Simple Classic Soccer pattern geometry mapping
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Draw central black pentagon
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+                const px = Math.cos(angle) * (ball.radius * 0.35);
+                const py = Math.sin(angle) * (ball.radius * 0.35);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // Lines going out
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * 2 * Math.PI) / 5 - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle) * (ball.radius * 0.35), Math.sin(angle) * (ball.radius * 0.35));
+                ctx.lineTo(Math.cos(angle) * ball.radius, Math.sin(angle) * ball.radius);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // Render Goalposts to field foreground
+        function drawGoalposts() {
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 3;
+
+            // Draw Left Post Caps
+            ctx.fillRect(30, goals.left.top - 8, 8, 16);
+            ctx.strokeRect(30, goals.left.top - 8, 8, 16);
+
+            ctx.fillRect(30, goals.left.bottom - 8, 8, 16);
+            ctx.strokeRect(30, goals.left.bottom - 8, 8, 16);
+
+            // Draw Right Post Caps
+            ctx.fillRect(FIELD_WIDTH - 38, goals.right.top - 8, 8, 16);
+            ctx.strokeRect(FIELD_WIDTH - 38, goals.right.top - 8, 8, 16);
+
+            ctx.fillRect(FIELD_WIDTH - 38, goals.right.bottom - 8, 8, 16);
+            ctx.strokeRect(FIELD_WIDTH - 38, goals.right.bottom - 8, 8, 16);
+        }
+
+
+        // --- DYNAMIC AI GAMEPLAY LOGIC ---
+        function runAILogic() {
+            // Ball relative coords
+            const dx = ball.x - ai.x;
+            const dy = ball.y - ai.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // Basic State Machine: Attack, Defend, Reposition
+            let targetX = ball.x;
+            let targetY = ball.y;
+
+            const isBallInPlayerHalf = ball.x < FIELD_WIDTH / 2;
+
+            if (isBallInPlayerHalf) {
+                // If the ball is deep in the player's side, position defensively near mid-court
+                targetX = Math.max(FIELD_WIDTH * 0.65, ball.x + 120);
+                targetY = ball.y;
+            } else {
+                // Ball is on AI side: Aggressively play ball
+                // Add minor offsets to nudge/angle the ball towards player's left goal
+                const goalTargetX = 30;
+                const goalTargetY = FIELD_HEIGHT / 2;
+                
+                // Position AI slightly behind the ball relative to player's goal
+                const angleToGoal = Math.atan2(goalTargetY - ball.y, goalTargetX - ball.x);
+                targetX = ball.x - Math.cos(angleToGoal) * 45;
+                targetY = ball.y - Math.sin(angleToGoal) * 45;
+            }
+
+            // Soft boundaries for active AI sandbox to prevent trapped behaviors
+            targetX = Math.max(FIELD_WIDTH / 2 - 100, Math.min(FIELD_WIDTH - 60, targetX));
+            targetY = Math.max(60, Math.min(FIELD_HEIGHT - 60, targetY));
+
+            // Move AI towards desired targets
+            const moveX = targetX - ai.x;
+            const moveY = targetY - ai.y;
+            const moveDist = Math.sqrt(moveX * moveX + moveY * moveY);
+
+            if (moveDist > 5) {
+                ai.vx = (moveX / moveDist) * ai.speed;
+                ai.vy = (moveY / moveDist) * ai.speed;
+            } else {
+                ai.vx *= 0.8;
+                ai.vy *= 0.8;
+            }
+
+            // AI dash trigger if ball is very close for striking
+            if (dist < 110 && !isBallInPlayerHalf) {
+                // Push AI speed for striking
+                ai.vx *= 1.35;
+                ai.vy *= 1.35;
+            }
+        }
+
+
+        // --- MAIN GAME PHYSICS & COLLISION CALCULATIONS ---
+        function checkCollisions() {
+            // Player field limits (within white lines margins)
+            const margin = 30;
+            player.x = Math.max(margin + player.radius, Math.min(FIELD_WIDTH - margin - player.radius, player.x));
+            player.y = Math.max(margin + player.radius, Math.min(FIELD_HEIGHT - margin - player.radius, player.y));
+
+            // AI field limits
+            ai.x = Math.max(margin + ai.radius, Math.min(FIELD_WIDTH - margin - ai.radius, ai.x));
+            ai.y = Math.max(margin + ai.radius, Math.min(FIELD_HEIGHT - margin - ai.radius, ai.y));
+
+            // Physics resolve: Player with AI
+            const dx_players = ai.x - player.x;
+            const dy_players = ai.y - player.y;
+            const dist_players = Math.sqrt(dx_players * dx_players + dy_players * dy_players);
+            const minDist_players = player.radius + ai.radius;
+
+            if (dist_players < minDist_players) {
+                // Simple solid rebound collision
+                const overlap = minDist_players - dist_players;
+                const nx = dx_players / dist_players;
+                const ny = dy_players / dist_players;
+
+                // Push players apart evenly
+                player.x -= nx * overlap * 0.5;
+                player.y -= ny * overlap * 0.5;
+                ai.x += nx * overlap * 0.5;
+                ai.y += ny * overlap * 0.5;
+
+                // Bounce velocities
+                const kx = player.vx - ai.vx;
+                const ky = player.vy - ai.vy;
+                const p = 2 * (nx * kx + ny * ky) / (player.mass + ai.mass);
+
+                player.vx -= p * ai.mass * nx;
+                player.vy -= p * ai.mass * ny;
+                ai.vx += p * player.mass * nx;
+                ai.vy += p * player.mass * ny;
+                playBounceSound();
+            }
+
+            // Helper resolve player with ball
+            resolveBallCollision(player);
+            resolveBallCollision(ai);
+
+            // Resolve ball and Goalposts physical bounces
+            checkGoalpostCollision(30, goals.left.top);
+            checkGoalpostCollision(30, goals.left.bottom);
+            checkGoalpostCollision(FIELD_WIDTH - 38, goals.right.top);
+            checkGoalpostCollision(FIELD_WIDTH - 38, goals.right.bottom);
+
+            // Ball field limit bounces (bounces if top/bottom)
+            const ballMinX = margin + ball.radius;
+            const ballMaxX = FIELD_WIDTH - margin - ball.radius;
+            const ballMinY = margin + ball.radius;
+            const ballMaxY = FIELD_HEIGHT - margin - ball.radius;
+
+            if (ball.y < ballMinY) {
+                ball.y = ballMinY;
+                ball.vy = -ball.vy * 0.8;
+                playBounceSound();
+            } else if (ball.y > ballMaxY) {
+                ball.y = ballMaxY;
+                ball.vy = -ball.vy * 0.8;
+                playBounceSound();
+            }
+
+            // Normal X boundaries check (only active if ball is NOT inside the Goal Height range)
+            const insideGoalHeight = ball.y > goals.left.top && ball.y < goals.left.bottom;
+            if (!insideGoalHeight) {
+                if (ball.x < ballMinX) {
+                    ball.x = ballMinX;
+                    ball.vx = -ball.vx * 0.8;
+                    playBounceSound();
+                } else if (ball.x > ballMaxX) {
+                    ball.x = ballMaxX;
+                    ball.vx = -ball.vx * 0.8;
+                    playBounceSound();
+                }
+            } else {
+                // Goal Scoring Conditions!
+                if (ball.x < 30 - ball.radius) {
+                    triggerGoal("ai");
+                } else if (ball.x > FIELD_WIDTH - 30 + ball.radius) {
+                    triggerGoal("player");
+                }
+            }
+        }
+
+        // Elastic Player-to-Ball Physics Interaction with Kick Mechanics
+        function resolveBallCollision(athlete) {
+            const dx = ball.x - athlete.x;
+            const dy = ball.y - athlete.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = athlete.radius + ball.radius;
+
+            if (dist < minDist) {
+                // Overlap calculation
+                const overlap = minDist - dist;
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                // Push ball out of athlete's body bounds
+                ball.x += nx * overlap;
+                ball.y += ny * overlap;
+
+                // Relative velocity
+                const rvx = ball.vx - athlete.vx;
+                const rvy = ball.vy - athlete.vy;
+
+                // Velocity dot product with normal vector
+                const velAlongNormal = rvx * nx + rvy * ny;
+
+                // Do not resolve if velocities are already separating
+                if (velAlongNormal < 0) {
+                    const restitution = 0.85; // highly bouncy match ball
+                    let impulseScalar = -(1 + restitution) * velAlongNormal;
+                    impulseScalar /= (1 / athlete.mass) + (1 / ball.mass);
+
+                    // If human player triggers spacebar dash or touch kick
+                    let extraKickPower = 1.0;
+                    if (athlete === player && player.isDashing) {
+                        extraKickPower = 2.0; // High force striking
+                    }
+
+                    // Apply impulse force
+                    ball.vx += (impulseScalar * nx * extraKickPower) / ball.mass;
+                    ball.vy += (impulseScalar * ny * extraKickPower) / ball.mass;
+
+                    // Clamp ball top speed
+                    const ballSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+                    if (ballSpeed > ball.maxSpeed) {
+                        ball.vx = (ball.vx / ballSpeed) * ball.maxSpeed;
+                        ball.vy = (ball.vy / ballSpeed) * ball.maxSpeed;
+                    }
+
+                    playKickSound();
+                }
+            }
+        }
+
+        // Goalpost collision circle check
+        function checkGoalpostCollision(postX, postY) {
+            const postRadius = 8;
+            const dx = ball.x - postX;
+            const dy = ball.y - postY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = ball.radius + postRadius;
+
+            if (dist < minDist) {
+                const overlap = minDist - dist;
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                ball.x += nx * overlap;
+                ball.y += ny * overlap;
+
+                // Invert and bounce
+                const dot = ball.vx * nx + ball.vy * ny;
+                ball.vx = (ball.vx - 2 * dot * nx) * 0.75;
+                ball.vy = (ball.vy - 2 * dot * ny) * 0.75;
+
+                playBounceSound();
+            }
+        }
+
+
+        // --- STATE MANAGEMENT: GOAL DETECTION, RESETS ---
+        function triggerGoal(scorer) {
+            matchRunning = false;
+            playGoalSound();
+
+            const banner = document.getElementById('overlay-banner');
+            const title = document.getElementById('overlay-title');
+            const subtitle = document.getElementById('overlay-subtitle');
+
+            if (scorer === "player") {
+                playerScore++;
+                title.textContent = "GOAL!!!";
+                title.className = "font-arcade text-3xl sm:text-5xl text-blue-400 text-center uppercase drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] animate-bounce";
+                subtitle.textContent = "Player scores a stunning goal!";
+                createGoalExplosion(FIELD_WIDTH - 30, FIELD_HEIGHT / 2, '#3b82f6');
+            } else {
+                aiScore++;
+                title.textContent = "CONCEDED!";
+                title.className = "font-arcade text-3xl sm:text-5xl text-red-500 text-center uppercase drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] animate-bounce";
+                subtitle.textContent = "The opponent drills it in!";
+                createGoalExplosion(30, FIELD_HEIGHT / 2, '#ef4444');
+            }
+
+            // Sync scoreboard
+            document.getElementById('player-score-display').textContent = playerScore;
+            document.getElementById('ai-score-display').textContent = aiScore;
+
+            // Display banner overlay
+            banner.classList.remove('opacity-0');
+            banner.classList.add('opacity-100');
+
+            setTimeout(() => {
+                banner.classList.remove('opacity-100');
+                banner.classList.add('opacity-0');
+                resetMatchObjects();
+                matchRunning = true;
+            }, 3000);
+        }
+
+        function resetMatchObjects() {
+            // Kickoff positions
+            player.x = FIELD_WIDTH / 4;
+            player.y = FIELD_HEIGHT / 2;
+            player.vx = 0;
+            player.vy = 0;
+
+            ai.x = (FIELD_WIDTH / 4) * 3;
+            ai.y = FIELD_HEIGHT / 2;
+            ai.vx = 0;
+            ai.vy = 0;
+
+            ball.x = FIELD_WIDTH / 2;
+            ball.y = FIELD_HEIGHT / 2;
+            ball.vx = 0;
+            ball.vy = 0;
+        }
+
+        // Reset the score and timer configurations fully
+        function fullMatchReset() {
+            playerScore = 0;
+            aiScore = 0;
+            matchTimer = matchDurationSec;
+            currentPeriod = "1st Half";
+            isMatchEnded = false;
+
+            document.getElementById('player-score-display').textContent = "0";
+            document.getElementById('ai-score-display').textContent = "0";
+            document.getElementById('game-period').textContent = currentPeriod;
+
+            resetMatchObjects();
+        }
+
+
+        // --- ENGINE TIMER SYSTEM ---
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (matchRunning) {
+                    matchTimer--;
+                    if (matchTimer <= 0) {
+                        endMatch();
+                    } else {
+                        // Dynamically swap halves
+                        if (matchTimer === Math.floor(matchDurationSec / 2)) {
+                            currentPeriod = "2nd Half";
+                            document.getElementById('game-period').textContent = currentPeriod;
+                            playRefereeWhistle();
+                        }
+                    }
+                    updateTimerUI();
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            const minutes = Math.floor(matchTimer / 60);
+            const seconds = matchTimer % 60;
+            document.getElementById('game-timer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function endMatch() {
+            matchRunning = false;
+            isMatchEnded = true;
+            clearInterval(timerInterval);
+            playRefereeWhistle();
+
+            // Set up End Game Modal View details
+            const endOverlay = document.getElementById('end-overlay');
+            const endTitle = document.getElementById('end-title');
+            const endSubtitle = document.getElementById('end-subtitle');
+
+            document.getElementById('end-player-score').textContent = playerScore;
+            document.getElementById('end-ai-score').textContent = aiScore;
+
+            if (playerScore > aiScore) {
+                endTitle.textContent = "VICTORY!";
+                endTitle.className = "font-arcade text-3xl text-emerald-400 uppercase tracking-widest";
+                endSubtitle.textContent = `You won the game against a ${difficulty.toUpperCase()} AI!`;
+            } else if (playerScore < aiScore) {
+                endTitle.textContent = "DEFEAT";
+                endTitle.className = "font-arcade text-3xl text-red-500 uppercase tracking-widest";
+                endSubtitle.textContent = "The opponent takes home the Cup!";
+            } else {
+                endTitle.textContent = "DRAW MATCH";
+                endTitle.className = "font-arcade text-3xl text-yellow-500 uppercase tracking-widest";
+                endSubtitle.textContent = "A tough fought defensive battle!";
+            }
+
+            endOverlay.classList.remove('hidden');
+        }
+
+
+        // --- ENGINE CONTROLLER & CORE LOOP ---
+        function updateGame() {
+            if (!matchRunning) return;
+
+            // Player keyboard movement inputs
+            let moveX = 0;
+            let moveY = 0;
+
+            if (keys['w'] || keys['arrowup']) moveY = -1;
+            if (keys['s'] || keys['arrowdown']) moveY = 1;
+            if (keys['a'] || keys['arrowleft']) moveX = -1;
+            if (keys['d'] || keys['arrowright']) moveX = 1;
+
+            // Apply mobile virtual joystick overrides
+            if (joystickActive) {
+                moveX = joystickVector.x;
+                moveY = joystickVector.y;
+            }
+
+            // Calculate speed factor
+            let currentSpeed = player.speed;
+            if (player.isDashing) {
+                currentSpeed *= player.dashFactor;
+            }
+
+            // Normalize vector velocity to prevent faster diagonal speeds
+            const len = Math.sqrt(moveX * moveX + moveY * moveY);
+            if (len > 0) {
+                player.vx = (moveX / len) * currentSpeed;
+                player.vy = (moveY / len) * currentSpeed;
+            } else {
+                player.vx *= 0.8;
+                player.vy *= 0.8;
+            }
+
+            // Move entities based on physics
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // AI Logic & Position Calculation
+            runAILogic();
+            ai.x += ai.vx;
+            ai.y += ai.vy;
+
+            // Ball movement & Friction deceleration decay
+            ball.vx *= ball.friction;
+            ball.vy *= ball.friction;
+
+            // Halt tiny micro movements
+            if (Math.abs(ball.vx) < 0.05) ball.vx = 0;
+            if (Math.abs(ball.vy) < 0.05) ball.vy = 0;
+
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // Handle boundaries, posts, and goals
+            checkCollisions();
+
+            // Run particle system updates
+            updateParticles();
+        }
+
+        // Full Canvas Render Dispatch
+        function render() {
+            ctx.clearRect(0, 0, FIELD_WIDTH, FIELD_HEIGHT);
+
+            // Back field layout
+            drawField();
+
+            // Render goal particles
+            drawParticles();
+
+            // Render sports players
+            drawPlayer(player, playerColor, "P1");
+            drawPlayer(ai, aiColor, "AI");
+
+            // Render Ball
+            drawBall();
+
+            // Render Posts Foreground Overlap
+            drawGoalposts();
+        }
+
+        // Frame timing loop
+        function gameLoop() {
+            updateGame();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+
+        // --- UI INTERACTIVE CONTROLLERS ---
+        document.getElementById('start-game-btn').addEventListener('click', () => {
+            initAudio();
+            document.getElementById('menu-overlay').classList.add('hidden');
+            fullMatchReset();
+            matchRunning = true;
+            playRefereeWhistle();
+            startTimer();
+        });
+
+        document.getElementById('rematch-btn').addEventListener('click', () => {
+            document.getElementById('end-overlay').classList.add('hidden');
+            fullMatchReset();
+            matchRunning = true;
+            playRefereeWhistle();
+            startTimer();
+        });
+
+        document.getElementById('setup-menu-btn').addEventListener('click', () => {
+            document.getElementById('end-overlay').classList.add('hidden');
+            document.getElementById('menu-overlay').classList.remove('hidden');
+        });
+
+        // Initialize Lucide SVG Icons visually
+        window.addEventListener('load', () => {
+            lucide.createIcons();
+            // Start silent graphics engine rendering early for visual backdrop
+            requestAnimationFrame(gameLoop);
+            setDifficulty('medium');
+            setDuration(120);
+        });
+    </script>
+</body>
+</html>
