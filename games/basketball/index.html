@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Hoops Pro - Arcade Basketball</title>
+    <!-- Tailwind CSS for modern neon aesthetic styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght=500;700&display=swap');
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #030008;
+            overflow-x: hidden;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Custom Neon Glows */
+        .neon-text-cyan {
+            text-shadow: 0 0 5px #06b6d4, 0 0 15px #06b6d4;
+        }
+        .neon-text-pink {
+            text-shadow: 0 0 5px #ec4899, 0 0 15px #ec4899;
+        }
+        .neon-border {
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.5), inset 0 0 10px rgba(6, 182, 212, 0.3);
+        }
+        .neon-border-pink {
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.6), inset 0 0 10px rgba(236, 72, 153, 0.3);
+        }
+        /* Hide scrollbars */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-white select-none items-center justify-center p-2 sm:p-4">
+
+    <!-- Main Game Container -->
+    <div id="game-container" class="relative w-full max-w-4xl bg-[#090514] border border-cyan-500/30 rounded-2xl overflow-hidden neon-border flex flex-col md:flex-row shadow-2xl shadow-cyan-950/40">
+        
+        <!-- Game Area (Left side) -->
+        <div class="relative flex-1 flex flex-col items-center justify-center p-3 sm:p-4 border-b md:border-b-0 md:border-r border-cyan-500/20">
+            
+            <!-- In-game HUD -->
+            <div class="w-full flex justify-between items-center mb-3 px-2">
+                <!-- Score & Streak -->
+                <div class="flex flex-col">
+                    <span class="text-xs uppercase tracking-wider text-cyan-400 font-semibold font-orbitron">Score</span>
+                    <div class="flex items-baseline gap-2">
+                        <span id="hud-score" class="text-3xl sm:text-4xl font-black font-orbitron text-cyan-300 neon-text-cyan">0</span>
+                        <span id="hud-multiplier" class="hidden text-xs px-2 py-0.5 rounded bg-pink-500/20 border border-pink-500/40 text-pink-400 font-bold font-orbitron animate-pulse">2X FIRE</span>
+                    </div>
+                </div>
+
+                <!-- Streak Flame Icons -->
+                <div class="flex flex-col items-center">
+                    <span class="text-xs uppercase tracking-wider text-gray-400 mb-1 font-semibold">Streak</span>
+                    <div id="streak-meter" class="flex gap-1 text-gray-700">
+                        <!-- Flames filled dynamically -->
+                        <span class="flame text-lg transition-colors duration-300">🔥</span>
+                        <span class="flame text-lg transition-colors duration-300">🔥</span>
+                        <span class="flame text-lg transition-colors duration-300">🔥</span>
+                    </div>
+                </div>
+
+                <!-- Time Left -->
+                <div class="flex flex-col items-end">
+                    <span class="text-xs uppercase tracking-wider text-pink-400 font-semibold font-orbitron">Time Left</span>
+                    <span id="hud-timer" class="text-3xl sm:text-4xl font-black font-orbitron text-pink-400 neon-text-pink">60s</span>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative w-full aspect-[4/3] bg-[#030107] border border-pink-500/20 rounded-xl overflow-hidden">
+                <canvas id="gameCanvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+                
+                <!-- Overlay Message Screens (Inside Canvas Area) -->
+                <!-- 1. Main Menu Screen -->
+                <div id="menu-screen" class="absolute inset-0 bg-[#030107]/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center z-10 transition-opacity duration-300">
+                    <div class="animate-bounce mb-2">
+                        <span class="text-5xl">🏀</span>
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl font-black font-orbitron text-cyan-400 neon-text-cyan tracking-tight mb-2">NEON HOOPS PRO</h1>
+                    <p class="text-gray-400 text-sm max-w-md mb-6 leading-relaxed">
+                        An immersive retro-arcade experience. Drag and release to shoot, or use the **new on-screen buttons** below!
+                    </p>
+                    
+                    <!-- Game Mode Selection -->
+                    <div class="grid grid-cols-2 gap-4 w-full max-w-sm mb-6">
+                        <button id="mode-classic-btn" class="p-3 bg-cyan-950/50 border-2 border-cyan-400 rounded-xl hover:bg-cyan-900/60 transition-all group text-left">
+                            <span class="block font-bold text-cyan-300 font-orbitron group-hover:text-cyan-200">CLASSIC</span>
+                            <span class="block text-xs text-gray-400 mt-1">60 seconds, static hoop. Great for practicing!</span>
+                        </button>
+                        <button id="mode-moving-btn" class="p-3 bg-slate-900/40 border-2 border-gray-700 rounded-xl hover:bg-slate-800/50 transition-all hover:border-pink-400 group text-left">
+                            <span class="block font-bold text-gray-400 group-hover:text-pink-300 font-orbitron">MOVING HOOP</span>
+                            <span class="block text-xs text-gray-500 group-hover:text-gray-400 mt-1 font-sans">The hoop slides back & forth dynamically.</span>
+                        </button>
+                    </div>
+
+                    <button id="start-btn" class="px-8 py-3 bg-gradient-to-r from-cyan-500 to-pink-500 hover:from-cyan-400 hover:to-pink-400 font-orbitron font-extrabold text-lg tracking-wider rounded-xl transition-all shadow-lg hover:shadow-cyan-500/50 transform hover:-translate-y-0.5 active:translate-y-0">
+                        START SHOOTOUT
+                    </button>
+                </div>
+
+                <!-- 2. Game Over Screen -->
+                <div id="game-over-screen" class="absolute inset-0 bg-[#030107]/95 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center z-10 hidden transition-opacity duration-300">
+                    <span class="text-4xl mb-2">⏱️</span>
+                    <h2 class="text-3xl sm:text-4xl font-black font-orbitron text-pink-500 neon-text-pink mb-4">BUZZER BEATER!</h2>
+                    
+                    <div class="bg-slate-950/60 border border-cyan-500/30 rounded-xl p-4 w-full max-w-xs mb-6">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-gray-400">Final Score:</span>
+                            <span id="final-score" class="font-orbitron font-bold text-cyan-300">0</span>
+                        </div>
+                        <div class="flex justify-between mb-2">
+                            <span class="text-gray-400">Baskets Made:</span>
+                            <span id="final-baskets" class="font-bold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">High Score:</span>
+                            <span id="hud-highscore-over" class="font-orbitron font-bold text-pink-400">0</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button id="restart-btn" class="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-black font-orbitron font-bold rounded-lg transition-all transform active:scale-95">
+                            PLAY AGAIN
+                        </button>
+                        <button id="back-menu-btn" class="px-6 py-2.5 bg-transparent border border-gray-600 hover:border-gray-400 text-gray-300 font-orbitron font-bold rounded-lg transition-all transform active:scale-95">
+                            MAIN MENU
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Visual Sparkles/Hit indicator inside canvas area -->
+                <div id="score-indicator" class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 scale-50 transition-all duration-500 ease-out z-20 flex flex-col items-center">
+                    <span id="indicator-text" class="text-4xl sm:text-5xl font-black font-orbitron text-pink-400 neon-text-pink">+2 POINTS</span>
+                    <span id="swish-text" class="text-sm font-bold text-cyan-300 uppercase tracking-widest mt-1">SWISH!</span>
+                </div>
+            </div>
+
+            <!-- Arcade Play Controller Board -->
+            <div id="arcade-controls" class="w-full mt-3 p-3 bg-slate-950/80 border border-cyan-500/30 rounded-xl hidden flex-col sm:flex-row gap-4 items-center justify-between shadow-lg">
+                <div class="flex-1 w-full space-y-3">
+                    <!-- Angle Controller -->
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-xs font-bold text-cyan-400 font-orbitron uppercase tracking-wider w-24">Angle: <span id="angle-val" class="text-cyan-300">45</span>°</span>
+                        <input id="slider-angle" type="range" min="15" max="85" value="45" class="w-full accent-cyan-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                    </div>
+                    <!-- Power Controller -->
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-xs font-bold text-pink-400 font-orbitron uppercase tracking-wider w-24">Power: <span id="power-val" class="text-pink-300">14</span></span>
+                        <input id="slider-power" type="range" min="8" max="22" step="0.5" value="14" class="w-full accent-pink-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg">
+                    </div>
+                </div>
+                <button id="launch-btn" class="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-cyan-500 to-pink-500 hover:from-cyan-400 hover:to-pink-400 font-orbitron font-black text-sm tracking-widest rounded-xl transition-all shadow-md hover:shadow-cyan-500/50 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 shrink-0 uppercase text-black">
+                    LAUNCH BALL 🏀
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar / Settings Area (Right side / Bottom on small screen) -->
+        <div class="w-full md:w-80 bg-[#06030c]/70 p-4 sm:p-5 flex flex-col justify-between">
+            
+            <!-- Settings, Info, and Sounds -->
+            <div class="space-y-4">
+                <div class="border-b border-gray-800 pb-3">
+                    <h3 class="text-lg font-bold font-orbitron text-cyan-400">ARCADE HUB</h3>
+                    <p class="text-xs text-gray-400">Customize your retro hoops session</p>
+                </div>
+
+                <!-- Custom Sound Toggle -->
+                <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/40 border border-gray-800">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold">Retro Audio Synthesis</span>
+                        <span class="text-[10px] text-gray-400">Direct-synthesized sounds</span>
+                    </div>
+                    <button id="sound-toggle-btn" class="w-12 h-6 rounded-full bg-cyan-500/20 border border-cyan-500/40 p-0.5 transition-colors focus:outline-none relative flex items-center">
+                        <div id="sound-toggle-dot" class="w-4.5 h-4.5 rounded-full bg-cyan-400 absolute transition-all left-[3px]"></div>
+                    </button>
+                </div>
+
+                <!-- Ball Skin selector -->
+                <div class="space-y-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-gray-400 block">Neon Ball Skin</span>
+                    <div class="grid grid-cols-4 gap-2" id="ball-skins">
+                        <button data-color="#ff7f11" class="skin-btn w-full aspect-square rounded-lg border-2 border-cyan-500 bg-[#ff7f11] flex items-center justify-center hover:scale-105 transition-all shadow-md"></button>
+                        <button data-color="#00f5d4" class="skin-btn w-full aspect-square rounded-lg border border-gray-800 bg-[#00f5d4] flex items-center justify-center hover:scale-105 transition-all shadow-md"></button>
+                        <button data-color="#ff007f" class="skin-btn w-full aspect-square rounded-lg border border-gray-800 bg-[#ff007f] flex items-center justify-center hover:scale-105 transition-all shadow-md"></button>
+                        <button data-color="#7000ff" class="skin-btn w-full aspect-square rounded-lg border border-gray-800 bg-[#7000ff] flex items-center justify-center hover:scale-105 transition-all shadow-md"></button>
+                    </div>
+                </div>
+
+                <!-- Controls Guide -->
+                <div class="bg-cyan-950/20 border border-cyan-500/20 rounded-xl p-3 text-xs space-y-2 text-gray-400">
+                    <span class="font-bold text-cyan-300 font-orbitron block">HOW TO PLAY</span>
+                    <div class="flex items-start gap-2">
+                        <span class="text-cyan-400 font-bold">A.</span>
+                        <span>Use the <b>LAUNCH BALL</b> button along with the <b>Angle</b> and <b>Power</b> sliders to shoot accurately.</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-cyan-400 font-bold">B.</span>
+                        <span>Or, use drag-and-shoot: click/tap and pull <b>BACKWARD</b> anywhere on the left of the court to sling the ball.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Arcade High Score -->
+            <div class="mt-6 pt-4 border-t border-gray-800">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs uppercase tracking-wider text-gray-400">Arcade High Score</span>
+                        <div class="text-2xl font-bold font-orbitron text-pink-400 neon-text-pink" id="hud-highscore">0</div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs uppercase tracking-wider text-gray-400">Recent Game</span>
+                        <div class="text-lg font-bold text-gray-300" id="hud-last-score">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Audio Context Initializer Notice (for user engagement) -->
+    <p class="text-center text-[10px] text-gray-500 mt-3 max-w-md">
+        Neon Hoops Pro runs entirely client-side using pure Javascript vector rendering, sound-waves, and elastic colliders. Best played on desktop or widescreen devices.
+    </p>
+
+    <!-- Script Block for Arcade logic & Web Audio -->
+    <script>
+        // --- Web Audio Engine for Retro SFX ---
+        class SynthAudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (this.ctx) return;
+                // Create audio context
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playBounce(vol = 0.5) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                // Fast decay bounce sound
+                osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.15);
+                
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.16);
+            }
+
+            playRimClank() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                
+                // Mix triangle wave and high metal pitch
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(440, this.ctx.currentTime);
+                osc1.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.12);
+
+                osc2.type = 'sawtooth';
+                osc2.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc2.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.08);
+                
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc1.start();
+                osc2.start();
+                osc1.stop(this.ctx.currentTime + 0.16);
+                osc2.stop(this.ctx.currentTime + 0.16);
+            }
+
+            playSwish() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                
+                // Generate a synthesized swish using white noise
+                const bufferSize = this.ctx.sampleRate * 0.25; // 0.25 seconds
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                // Create bandpass filter to shape white noise into air sliding past net
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(2000, this.ctx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.25);
+                filter.Q.value = 4.0;
+                
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                noise.start();
+                noise.stop(this.ctx.currentTime + 0.26);
+            }
+
+            playBuzzer() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(75, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.6, this.ctx.currentTime + 0.8);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 1.2);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 1.2);
+            }
+
+            playOnFire() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                
+                // Rising high dynamic pitch
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.4);
+                
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.41);
+            }
+
+            playCheer() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                
+                // Low rumble pitch simulating retro crowds shouting yay
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(280, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(360, this.ctx.currentTime + 0.5);
+                
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.6);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.61);
+            }
+        }
+
+        const audio = new SynthAudioEngine();
+
+        // --- Game Setup and Constants ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Layout constants (Virtual resolution 800x600 for easy relative physics calculations)
+        const BASE_WIDTH = 800;
+        const BASE_HEIGHT = 600;
+
+        // Scale factors for responsiveness
+        let scaleX = 1;
+        let scaleY = 1;
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            // If parent height or width is 0 due to split-second tab loads, wait and retry
+            const w = rect.width || 800;
+            const h = rect.height || 600;
+            
+            canvas.width = w;
+            canvas.height = h;
+            scaleX = w / BASE_WIDTH;
+            scaleY = h / BASE_HEIGHT;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game Configuration
+        const PHYSICS = {
+            gravity: 0.4,
+            friction: 0.99,
+            ballElasticity: 0.78, // Bounciness
+            rimElasticity: 0.55
+        };
+
+        // UI DOM elements
+        const hudScore = document.getElementById('hud-score');
+        const hudMultiplier = document.getElementById('hud-multiplier');
+        const hudTimer = document.getElementById('hud-timer');
+        const menuScreen = document.getElementById('menu-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScore = document.getElementById('final-score');
+        const finalBaskets = document.getElementById('final-baskets');
+        const hudHighScoreOver = document.getElementById('hud-highscore-over');
+        const hudHighScore = document.getElementById('hud-highscore');
+        const hudLastScore = document.getElementById('hud-last-score');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const backMenuBtn = document.getElementById('back-menu-btn');
+        const modeClassicBtn = document.getElementById('mode-classic-btn');
+        const modeMovingBtn = document.getElementById('mode-moving-btn');
+        const soundToggleBtn = document.getElementById('sound-toggle-btn');
+        const soundToggleDot = document.getElementById('sound-toggle-dot');
+        const scoreIndicator = document.getElementById('score-indicator');
+        const indicatorText = document.getElementById('indicator-text');
+        const swishText = document.getElementById('swish-text');
+        const streakFlames = document.querySelectorAll('.flame');
+
+        // New Arcade Controllers DOM Elements
+        const arcadeControls = document.getElementById('arcade-controls');
+        const sliderAngle = document.getElementById('slider-angle');
+        const sliderPower = document.getElementById('slider-power');
+        const angleVal = document.getElementById('angle-val');
+        const powerVal = document.getElementById('power-val');
+        const launchBtn = document.getElementById('launch-btn');
+
+        // State Machine variables
+        let gameState = 'MENU'; // MENU, PLAYING, GAMEOVER
+        let gameMode = 'CLASSIC'; // CLASSIC, MOVING
+        let score = 0;
+        let basketsMade = 0;
+        let streak = 0;
+        let isFireMode = false;
+        let gameTimer = 60;
+        let countdownInterval = null;
+        let highscore = localStorage.getItem('neon_hoops_highscore') || 0;
+        hudHighScore.innerText = highscore;
+
+        // Sound Engine UI initialization
+        let audioMuted = false;
+        soundToggleBtn.addEventListener('click', () => {
+            audioMuted = !audioMuted;
+            audio.muted = audioMuted;
+            if (audioMuted) {
+                soundToggleDot.style.left = 'auto';
+                soundToggleDot.style.right = '3px';
+                soundToggleDot.classList.remove('bg-cyan-400');
+                soundToggleDot.classList.add('bg-gray-600');
+                soundToggleBtn.classList.remove('border-cyan-500/40');
+                soundToggleBtn.classList.add('border-gray-700');
+            } else {
+                soundToggleDot.style.right = 'auto';
+                soundToggleDot.style.left = '3px';
+                soundToggleDot.classList.remove('bg-gray-600');
+                soundToggleDot.classList.add('bg-cyan-400');
+                soundToggleBtn.classList.remove('border-gray-700');
+                soundToggleBtn.classList.add('border-cyan-500/40');
+                // Play test sound
+                audio.init();
+                audio.playBounce(0.3);
+            }
+        });
+
+        // Ball Skin state
+        let ballSkinColor = '#ff7f11'; // Default Orange
+        const skinBtns = document.querySelectorAll('.skin-btn');
+        skinBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                skinBtns.forEach(b => {
+                    b.classList.remove('border-cyan-500');
+                    b.classList.add('border-gray-800');
+                });
+                btn.classList.add('border-cyan-500');
+                btn.classList.remove('border-gray-800');
+                ballSkinColor = btn.dataset.color;
+            });
+        });
+
+        // Mode Switching UI
+        modeClassicBtn.addEventListener('click', () => {
+            gameMode = 'CLASSIC';
+            modeClassicBtn.className = "p-3 bg-cyan-950/50 border-2 border-cyan-400 rounded-xl hover:bg-cyan-900/60 transition-all group text-left";
+            modeMovingBtn.className = "p-3 bg-slate-900/40 border-2 border-gray-700 rounded-xl hover:bg-slate-800/50 transition-all hover:border-pink-400 group text-left";
+            // Un-highlight elements
+            modeMovingBtn.querySelector('span').className = "block font-bold text-gray-400 group-hover:text-pink-300 font-orbitron";
+            modeClassicBtn.querySelector('span').className = "block font-bold text-cyan-300 font-orbitron";
+        });
+
+        modeMovingBtn.addEventListener('click', () => {
+            gameMode = 'MOVING';
+            modeMovingBtn.className = "p-3 bg-pink-950/50 border-2 border-pink-400 rounded-xl hover:bg-pink-900/60 transition-all group text-left";
+            modeClassicBtn.className = "p-3 bg-slate-900/40 border-2 border-gray-700 rounded-xl hover:bg-slate-800/50 transition-all hover:border-cyan-400 group text-left";
+            
+            modeClassicBtn.querySelector('span').className = "block font-bold text-gray-400 group-hover:text-cyan-300 font-orbitron";
+            modeMovingBtn.querySelector('span').className = "block font-bold text-pink-300 font-orbitron";
+        });
+
+        // --- Backboard & Net Objects ---
+        class Hoop {
+            constructor() {
+                // Fixed target geometry in 800x600 space
+                this.backboardX = 700;
+                this.backboardY = 120;
+                this.backboardWidth = 15;
+                this.backboardHeight = 120;
+                
+                this.rimX1 = 610; // Front of the rim
+                this.rimX2 = 680; // Back of the rim (attaches to backboard/mount)
+                this.rimY = 200;
+                this.rimRadius = 6;
+                this.rimThickness = 4;
+
+                // Motion properties (for MOVING Mode)
+                this.initialBackboardX = 700;
+                this.initialRimX1 = 610;
+                this.initialRimX2 = 680;
+                this.direction = -1;
+                this.speed = 1.6;
+                this.range = 100; // Distance it can slide to the left
+            }
+
+            update() {
+                if (gameMode === 'MOVING') {
+                    // Slide the board back and forth smoothly
+                    this.backboardX += this.direction * this.speed;
+                    this.rimX1 += this.direction * this.speed;
+                    this.rimX2 += this.direction * this.speed;
+
+                    // Bounds checking
+                    if (this.backboardX < this.initialBackboardX - this.range) {
+                        this.direction = 1;
+                    } else if (this.backboardX > this.initialBackboardX) {
+                        this.direction = -1;
+                    }
+                } else {
+                    // Reset to defaults
+                    this.backboardX = this.initialBackboardX;
+                    this.rimX1 = this.initialRimX1;
+                    this.rimX2 = this.initialRimX2;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.scale(scaleX, scaleY);
+
+                // Glow Filter for vector neon look
+                ctx.shadowBlur = 15;
+                
+                // Draw Support Structure / Wall Mount
+                ctx.shadowColor = '#475569';
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(this.backboardX + this.backboardWidth, this.backboardY + 45, 100, 20);
+
+                // Draw Backboard Outline (Pink Retro Neon)
+                ctx.shadowColor = '#ec4899';
+                ctx.strokeStyle = '#ec4899';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(this.backboardX, this.backboardY, this.backboardWidth, this.backboardHeight);
+                ctx.fillStyle = '#0f051c';
+                ctx.fillRect(this.backboardX, this.backboardY, this.backboardWidth, this.backboardHeight);
+
+                // Small Inner Backboard square
+                ctx.strokeStyle = '#ec4899';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(this.backboardX, this.backboardY + 60, this.backboardWidth, 40);
+
+                // Draw Hoop Bracket
+                ctx.shadowColor = '#06b6d4';
+                ctx.fillStyle = '#06b6d4';
+                ctx.fillRect(this.rimX2, this.rimY - 2, this.backboardX - this.rimX2, 6);
+
+                // Draw Front Rim Node & Back Rim Node (Colliders)
+                ctx.shadowColor = '#ff2255';
+                ctx.fillStyle = '#ff2255';
+                ctx.beginPath();
+                ctx.arc(this.rimX1, this.rimY, this.rimRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(this.rimX2, this.rimY, this.rimRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw the Rim Ring Line
+                ctx.strokeStyle = '#ff2255';
+                ctx.lineWidth = this.rimThickness;
+                ctx.beginPath();
+                ctx.moveTo(this.rimX1, this.rimY);
+                ctx.lineTo(this.rimX2, this.rimY);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        // --- Simulated Physical Net with dynamic deformation string nodes ---
+        class Net {
+            constructor(hoop) {
+                this.hoop = hoop;
+                this.nodes = [];
+                this.initNet();
+            }
+
+            initNet() {
+                this.nodes = [];
+                const rows = 4;
+                const cols = 5;
+                const netWidth = this.hoop.rimX2 - this.hoop.rimX1;
+                const topY = this.hoop.rimY;
+
+                // Create a grid of interconnected nodes representing cross strands
+                for (let r = 0; r < rows; r++) {
+                    const rowNodes = [];
+                    const y = topY + r * 16;
+                    // Gather inwards towards bottom of net
+                    const taper = 1 - (r * 0.15); 
+                    const curWidth = netWidth * taper;
+                    const offset = (netWidth - curWidth) / 2;
+
+                    for (let c = 0; c < cols; c++) {
+                        const x = this.hoop.rimX1 + offset + (curWidth / (cols - 1)) * c;
+                        rowNodes.push({
+                            x: x,
+                            y: y,
+                            ox: x, // relative offsets to track with hoop movement
+                            oy: y,
+                            vx: 0,
+                            vy: 0,
+                            pinned: r === 0 // Top row is anchored directly to the rim
+                        });
+                    }
+                    this.nodes.push(rowNodes);
+                }
+            }
+
+            update(ball) {
+                const rows = this.nodes.length;
+                const cols = this.nodes[0].length;
+                const netWidth = this.hoop.rimX2 - this.hoop.rimX1;
+
+                // Update base offsets based on potential hoop sliding
+                for (let r = 0; r < rows; r++) {
+                    const taper = 1 - (r * 0.15); 
+                    const curWidth = netWidth * taper;
+                    const offset = (netWidth - curWidth) / 2;
+                    for (let c = 0; c < cols; c++) {
+                        const targetX = this.hoop.rimX1 + offset + (curWidth / (cols - 1)) * c;
+                        const targetY = this.hoop.rimY + r * 16;
+                        const n = this.nodes[r][c];
+                        n.ox = targetX;
+                        n.oy = targetY;
+                        
+                        if (n.pinned) {
+                            n.x = targetX;
+                            n.y = targetY;
+                        }
+                    }
+                }
+
+                // Node Physics Simulation
+                for (let r = 1; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const n = this.nodes[r][c];
+
+                        // Elastic rest pull (to keep form)
+                        const k = 0.15;
+                        n.vx += (n.ox - n.x) * k;
+                        n.vy += (n.oy - n.y) * k + 0.12; // gentle gravity pull
+
+                        // Connection pulls (structural spring simulation)
+                        const neighbors = [];
+                        if (c > 0) neighbors.push(this.nodes[r][c - 1]);
+                        if (c < cols - 1) neighbors.push(this.nodes[r][c + 1]);
+                        neighbors.push(this.nodes[r - 1][c]);
+
+                        neighbors.forEach(nb => {
+                            const dx = nb.x - n.x;
+                            const dy = nb.y - n.y;
+                            const dist = Math.hypot(dx, dy);
+                            const stiffness = 0.2;
+                            if (dist > 1) {
+                                n.vx += (dx / dist) * stiffness;
+                                n.vy += (dy / dist) * stiffness;
+                            }
+                        });
+
+                        // Collision interaction with ball (pushes nodes outward)
+                        if (ball && ball.isReleased) {
+                            const dx = n.x - ball.x;
+                            const dy = n.y - ball.y;
+                            const d = Math.hypot(dx, dy);
+                            const combinedR = ball.radius + 5;
+                            if (d < combinedR) {
+                                const push = (combinedR - d) * 0.25;
+                                n.vx += (dx / d) * push + ball.vx * 0.15;
+                                n.vy += (dy / d) * push + ball.vy * 0.15;
+                            }
+                        }
+
+                        // Apply velocities
+                        n.vx *= 0.85; // Damping
+                        n.vy *= 0.85;
+                        n.x += n.vx;
+                        n.y += n.vy;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.scale(scaleX, scaleY);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 1.5;
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.2)';
+
+                const rows = this.nodes.length;
+                const cols = this.nodes[0].length;
+
+                // Draw strands (vertical & diagonal web net pattern)
+                for (let r = 0; r < rows - 1; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const curr = this.nodes[r][c];
+                        const below = this.nodes[r + 1][c];
+                        
+                        // Vertical lines
+                        ctx.beginPath();
+                        ctx.moveTo(curr.x, curr.y);
+                        ctx.lineTo(below.x, below.y);
+                        ctx.stroke();
+
+                        // Diagonals for modern netting
+                        if (c < cols - 1) {
+                            const belowRight = this.nodes[r + 1][c + 1];
+                            ctx.beginPath();
+                            ctx.moveTo(curr.x, curr.y);
+                            ctx.lineTo(belowRight.x, belowRight.y);
+                            ctx.stroke();
+                        }
+                        if (c > 0) {
+                            const belowLeft = this.nodes[r + 1][c - 1];
+                            ctx.beginPath();
+                            ctx.moveTo(curr.x, curr.y);
+                            ctx.lineTo(belowLeft.x, belowLeft.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                ctx.restore();
+            }
+        }
+
+        // --- Ball Object Class with Trajectory Projection ---
+        class Ball {
+            constructor(x, y, radius) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.vx = 0;
+                this.vy = 0;
+                this.isReleased = false;
+                this.hasScored = false;
+                this.isDead = false;
+                this.trail = [];
+                this.highestY = y; // to identify swish (if it starts high, drops cleanly)
+                this.touchedRim = false;
+                this.isFire = isFireMode;
+                this.opacity = 1;
+            }
+
+            update(hoop) {
+                if (!this.isReleased) return;
+
+                // Manage trail values for beautiful tail glow
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > 12) {
+                    this.trail.shift();
+                }
+
+                // Store highest height peak
+                if (this.y < this.highestY) {
+                    this.highestY = this.y;
+                }
+
+                // Apply physics constants
+                this.vy += PHYSICS.gravity;
+                this.vx *= PHYSICS.friction;
+                this.vy *= PHYSICS.friction;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Collide with court boundaries
+                // Top boundary (no bounce, just bounds)
+                if (this.y - this.radius < 0) {
+                    this.y = this.radius;
+                    this.vy = -this.vy * PHYSICS.ballElasticity;
+                }
+
+                // Left & Right walls
+                if (this.x - this.radius < 0) {
+                    this.x = this.radius;
+                    this.vx = -this.vx * PHYSICS.ballElasticity;
+                    audio.playBounce(0.3);
+                } else if (this.x + this.radius > BASE_WIDTH) {
+                    this.x = BASE_WIDTH - this.radius;
+                    this.vx = -this.vx * PHYSICS.ballElasticity;
+                    audio.playBounce(0.3);
+                }
+
+                // Ground floor
+                if (this.y + this.radius > BASE_HEIGHT) {
+                    this.y = BASE_HEIGHT - this.radius;
+                    this.vy = -this.vy * PHYSICS.ballElasticity;
+                    this.vx *= 0.95; // Extra ground drag
+                    
+                    if (Math.abs(this.vy) > 0.8) {
+                        audio.playBounce(Math.min(0.6, Math.abs(this.vy)/10));
+                    }
+
+                    // Mark as dead after rolling out
+                    if (Math.abs(this.vy) < 0.2 && Math.abs(this.vx) < 0.2) {
+                        this.opacity -= 0.05;
+                        if (this.opacity <= 0) {
+                            this.isDead = true;
+                        }
+                    }
+                }
+
+                // Collide with Backboard structure
+                // Backboard is located at hoop.backboardX, hoop.backboardY (width: 15, height: 120)
+                const bbLeft = hoop.backboardX;
+                const bbRight = hoop.backboardX + hoop.backboardWidth;
+                const bbTop = hoop.backboardY;
+                const bbBottom = hoop.backboardY + hoop.backboardHeight;
+
+                if (this.x + this.radius > bbLeft && this.x - this.radius < bbRight &&
+                    this.y + this.radius > bbTop && this.y - this.radius < bbBottom) {
+                    
+                    this.touchedRim = true; // No longer a clean swish if it hits backboard
+
+                    // Determine which side of backboard was struck
+                    const overlapLeft = (this.x + this.radius) - bbLeft;
+                    const overlapRight = bbRight - (this.x - this.radius);
+                    const overlapTop = (this.y + this.radius) - bbTop;
+                    const overlapBottom = bbBottom - (this.y - this.radius);
+
+                    const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+
+                    if (minOverlap === overlapLeft) {
+                        this.x = bbLeft - this.radius;
+                        this.vx = -Math.abs(this.vx) * PHYSICS.ballElasticity;
+                    } else if (minOverlap === overlapRight) {
+                        this.x = bbRight + this.radius;
+                        this.vx = Math.abs(this.vx) * PHYSICS.ballElasticity;
+                    } else if (minOverlap === overlapTop) {
+                        this.y = bbTop - this.radius;
+                        this.vy = -Math.abs(this.vy) * PHYSICS.ballElasticity;
+                    } else if (minOverlap === overlapBottom) {
+                        this.y = bbBottom + this.radius;
+                        this.vy = Math.abs(this.vy) * PHYSICS.ballElasticity;
+                    }
+
+                    audio.playRimClank();
+                }
+
+                // Collide with Hoop Rim Nodes (rimX1 & rimX2 at rimY)
+                const nodeDistance1 = Math.hypot(this.x - hoop.rimX1, this.y - hoop.rimY);
+                const nodeDistance2 = Math.hypot(this.x - hoop.rimX2, this.y - hoop.rimY);
+                const combinedRadius = this.radius + hoop.rimRadius;
+
+                if (nodeDistance1 < combinedRadius) {
+                    this.touchedRim = true;
+                    // Elastic normal bounce
+                    const nx = (this.x - hoop.rimX1) / nodeDistance1;
+                    const ny = (this.y - hoop.rimY) / nodeDistance1;
+                    const dot = this.vx * nx + this.vy * ny;
+                    
+                    this.x = hoop.rimX1 + nx * combinedRadius;
+                    this.vx = (this.vx - 2 * dot * nx) * PHYSICS.rimElasticity;
+                    this.vy = (this.vy - 2 * dot * ny) * PHYSICS.rimElasticity;
+                    audio.playRimClank();
+                }
+
+                if (nodeDistance2 < combinedRadius) {
+                    this.touchedRim = true;
+                    const nx = (this.x - hoop.rimX2) / nodeDistance2;
+                    const ny = (this.y - hoop.rimY) / nodeDistance2;
+                    const dot = this.vx * nx + this.vy * ny;
+
+                    this.x = hoop.rimX2 + nx * combinedRadius;
+                    this.vx = (this.vx - 2 * dot * nx) * PHYSICS.rimElasticity;
+                    this.vy = (this.vy - 2 * dot * ny) * PHYSICS.rimElasticity;
+                    audio.playRimClank();
+                }
+
+                // Score verification trigger (crossing rim plane downwards inside rim mouth bounds)
+                const prevY = this.y - this.vy;
+                if (prevY < hoop.rimY && this.y >= hoop.rimY) {
+                    // Check if ball x falls exactly inside the hoop's rim zone [rimX1, rimX2]
+                    if (this.x > hoop.rimX1 && this.x < hoop.rimX2) {
+                        if (!this.hasScored) {
+                            this.hasScored = true;
+                            triggerScore(this.touchedRim);
+                        }
+                    }
+                }
+
+                // Sweep ball if it drops far below viewport bounds
+                if (this.y - this.radius > BASE_HEIGHT + 100) {
+                    this.isDead = true;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.scale(scaleX, scaleY);
+
+                // Neon Fire Trail FX
+                if (this.isReleased && this.trail.length > 0) {
+                    for (let i = 0; i < this.trail.length; i++) {
+                        const alpha = (i / this.trail.length) * 0.4 * this.opacity;
+                        ctx.beginPath();
+                        ctx.arc(this.trail[i].x, this.trail[i].y, this.radius * (0.4 + (i / this.trail.length) * 0.6), 0, Math.PI * 2);
+                        ctx.fillStyle = this.isFire ? `rgba(236, 72, 153, ${alpha})` : `rgba(6, 182, 212, ${alpha})`;
+                        ctx.shadowBlur = this.isFire ? 15 : 8;
+                        ctx.shadowColor = this.isFire ? '#ec4899' : '#06b6d4';
+                        ctx.fill();
+                    }
+                }
+
+                // Core Ball Design
+                ctx.globalAlpha = this.opacity;
+                ctx.shadowBlur = 18;
+                ctx.shadowColor = this.isFire ? '#ec4899' : ballSkinColor;
+
+                // Main circular body
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.isFire ? '#ff007f' : ballSkinColor;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.fill();
+                ctx.stroke();
+
+                // Draw retro aesthetic basketball seam lines
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+                ctx.lineWidth = 2.5;
+                ctx.shadowBlur = 0; // Seam curves don't bleed glows
+
+                // Horizontal line
+                ctx.beginPath();
+                ctx.moveTo(this.x - this.radius, this.y);
+                ctx.lineTo(this.x + this.radius, this.y);
+                ctx.stroke();
+
+                // Vertical line
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - this.radius);
+                ctx.lineTo(this.x, this.y + this.radius);
+                ctx.stroke();
+
+                // Left curved rib
+                ctx.beginPath();
+                ctx.arc(this.x - this.radius * 1.1, this.y, this.radius, -Math.PI/3, Math.PI/3);
+                ctx.stroke();
+
+                // Right curved rib
+                ctx.beginPath();
+                ctx.arc(this.x + this.radius * 1.1, this.y, this.radius, Math.PI - Math.PI/3, Math.PI + Math.PI/3);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        // --- Spark Particle Blast FX Class ---
+        class BurstParticle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 12;
+                this.vy = (Math.random() - 0.5) * 12 - 4; // upward bias
+                this.radius = Math.random() * 3 + 1.5;
+                this.color = color;
+                this.alpha = 1.0;
+                this.decay = Math.random() * 0.03 + 0.015;
+            }
+
+            update() {
+                this.vy += 0.2; // Gravity
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.decay;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.scale(scaleX, scaleY);
+                ctx.globalAlpha = this.alpha;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- Core Physics & Logic Loop ---
+        const hoop = new Hoop();
+        const net = new Net(hoop);
+        let activeBall = null; // Currently spawning/controlled ball
+        let liveBalls = [];    // Released bouncing balls in motion
+        let fireParticles = []; // Sparks and burst particles
+        let isAiming = false;
+        let dragStartPos = { x: 0, y: 0 };
+        let dragCurrentPos = { x: 0, y: 0 };
+
+        // Ball spawning coordinator
+        const SPAWN_COORD = { x: 180, y: 440 };
+
+        function createNewBall() {
+            // Only allow creating a new ball if none are spawning or in the shooter's hand
+            if (activeBall && !activeBall.isReleased) return;
+            activeBall = new Ball(SPAWN_COORD.x, SPAWN_COORD.y, 24);
+        }
+
+        // Unified launch velocity calculator (resolves both slingshot drag or slide controllers)
+        function getAimVelocity() {
+            if (isAiming) {
+                const strengthCoeff = 0.16;
+                return {
+                    vx: (dragStartPos.x - dragCurrentPos.x) * strengthCoeff,
+                    vy: (dragStartPos.y - dragCurrentPos.y) * strengthCoeff
+                };
+            } else {
+                // Read directly from the slider state
+                const angleRad = parseFloat(sliderAngle.value) * Math.PI / 180;
+                const speed = parseFloat(sliderPower.value);
+                return {
+                    vx: Math.cos(angleRad) * speed,
+                    vy: -Math.sin(angleRad) * speed
+                };
+            }
+        }
+
+        // Project and render mathematical guide trajectory dots
+        function drawTrajectory() {
+            // Render guide trail either during active dragging, OR always when a shootable ball sits ready
+            const showingSliders = (gameState === 'PLAYING' && activeBall && !activeBall.isReleased);
+            if (!isAiming && !showingSliders) return;
+
+            const maxSteps = 28;
+            const stepDelta = 1.5;
+            const dots = [];
+
+            const launchVel = getAimVelocity();
+            let projectedX = activeBall ? activeBall.x : SPAWN_COORD.x;
+            let projectedY = activeBall ? activeBall.y : SPAWN_COORD.y;
+            let velX = launchVel.vx;
+            let velY = launchVel.vy;
+
+            for (let step = 0; step < maxSteps; step++) {
+                velY += PHYSICS.gravity * stepDelta;
+                velX *= PHYSICS.friction;
+                velY *= PHYSICS.friction;
+                
+                projectedX += velX * stepDelta;
+                projectedY += velY * stepDelta;
+
+                // Stop line if hitting ground coordinates
+                if (projectedY > BASE_HEIGHT) break;
+
+                dots.push({ x: projectedX, y: projectedY });
+            }
+
+            // Draw projected neon trajectory dots
+            ctx.save();
+            ctx.scale(scaleX, scaleY);
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = isFireMode ? '#ec4899' : '#06b6d4';
+            ctx.fillStyle = isFireMode ? '#f472b6' : '#22d3ee';
+
+            dots.forEach((dot, index) => {
+                const stepRadius = Math.max(1, 4.5 * (1 - index / maxSteps));
+                ctx.beginPath();
+                ctx.arc(dot.x, dot.y, stepRadius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.restore();
+        }
+
+        // Draw arcade style background vector lines and neon accents
+        function drawGridBackground() {
+            // Draw grid flooring lines
+            ctx.save();
+            ctx.scale(scaleX, scaleY);
+
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.04)';
+            ctx.lineWidth = 1.5;
+
+            // Render vertical alignment layout
+            for (let x = 0; x < BASE_WIDTH; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, BASE_HEIGHT);
+                ctx.stroke();
+            }
+
+            // Render horizontal segments
+            for (let y = 0; y < BASE_HEIGHT; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(BASE_WIDTH, y);
+                ctx.stroke();
+            }
+
+            // Draw fluorescent court floor lines
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#06b6d4';
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.25)';
+            ctx.lineWidth = 3.5;
+
+            // Three-point line curve arc
+            ctx.beginPath();
+            ctx.arc(0, BASE_HEIGHT, 540, -Math.PI / 2, 0);
+            ctx.stroke();
+
+            // Paint Neon Key Outline bounding box on right side floor area
+            ctx.strokeStyle = 'rgba(236, 72, 153, 0.2)';
+            ctx.shadowColor = '#ec4899';
+            ctx.strokeRect(520, 520, 280, 80);
+
+            ctx.restore();
+        }
+
+        // Canvas Shooting Actions (Click/Drag inputs)
+        function getCanvasMouseCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            const rw = rect.width || BASE_WIDTH;
+            const rh = rect.height || BASE_HEIGHT;
+
+            // Maps window screen positions directly into virtual coordinate canvas metrics
+            return {
+                x: ((clientX - rect.left) / rw) * BASE_WIDTH,
+                y: ((clientY - rect.top) / rh) * BASE_HEIGHT
+            };
+        }
+
+        function onDragStart(e) {
+            if (gameState !== 'PLAYING') return;
+            audio.init(); // Initialize audio context on player action
+
+            const coords = getCanvasMouseCoords(e);
+            
+            // Only initiate shooting if click/tap occurs near spawn or anywhere inside left-half of court
+            if (coords.x < BASE_WIDTH * 0.7 && activeBall && !activeBall.isReleased) {
+                isAiming = true;
+                dragStartPos = coords;
+                dragCurrentPos = coords;
+            }
+        }
+
+        function onDragMove(e) {
+            if (!isAiming) return;
+            dragCurrentPos = getCanvasMouseCoords(e);
+        }
+
+        function onDragEnd() {
+            if (!isAiming || !activeBall) return;
+            isAiming = false;
+
+            // Math to translate drag length to kinetic force
+            const dx = dragStartPos.x - dragCurrentPos.x;
+            const dy = dragStartPos.y - dragCurrentPos.y;
+            const distance = Math.hypot(dx, dy);
+
+            // Minimum drag limit to prevent accidental misfires
+            if (distance > 15) {
+                const strengthCoeff = 0.16;
+                activeBall.vx = dx * strengthCoeff;
+                activeBall.vy = dy * strengthCoeff;
+                activeBall.isReleased = true;
+
+                // Push shooting ball into live physical loop array
+                liveBalls.push(activeBall);
+                
+                // Play launch audio wave
+                audio.playBounce(0.4);
+
+                // Spawn the next ball quickly
+                setTimeout(() => {
+                    if (gameState === 'PLAYING') createNewBall();
+                }, 800);
+            }
+        }
+
+        // Sliders Realtime Sync Events
+        sliderAngle.addEventListener('input', () => {
+            angleVal.innerText = sliderAngle.value;
+        });
+
+        sliderPower.addEventListener('input', () => {
+            powerVal.innerText = sliderPower.value;
+        });
+
+        // Trigger Ball Shot from Arcade Control Board Button
+        launchBtn.addEventListener('click', () => {
+            if (gameState !== 'PLAYING' || !activeBall || activeBall.isReleased) return;
+            audio.init();
+
+            const finalVel = getAimVelocity();
+            activeBall.vx = finalVel.vx;
+            activeBall.vy = finalVel.vy;
+            activeBall.isReleased = true;
+
+            liveBalls.push(activeBall);
+            audio.playBounce(0.4);
+
+            setTimeout(() => {
+                if (gameState === 'PLAYING') createNewBall();
+            }, 800);
+        });
+
+        // Hook up Touch & Mouse handlers to support seamless mobile/tablet drag-release even outside canvas bounds
+        canvas.addEventListener('mousedown', onDragStart);
+        window.addEventListener('mousemove', onDragMove);
+        window.addEventListener('mouseup', onDragEnd);
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            onDragStart(e);
+        }, { passive: false });
+        
+        window.addEventListener('touchmove', (e) => {
+            if (isAiming) {
+                e.preventDefault();
+                onDragMove(e);
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            if (isAiming) {
+                onDragEnd();
+            }
+        });
+
+
+        // --- Trigger Score Multiplier Event ---
+        function triggerScore(touchedRim) {
+            basketsMade++;
+            
+            let pts = 2;
+            let swish = !touchedRim;
+
+            if (swish) {
+                pts = 3;
+                streak += 2;
+            } else {
+                streak++;
+            }
+
+            // Apply FIRE multipliers
+            if (isFireMode) {
+                pts *= 2;
+            }
+
+            score += pts;
+            hudScore.innerText = score;
+
+            // Animate HTML UI popups
+            indicatorText.innerText = `+${pts} POINTS`;
+            if (swish) {
+                swishText.innerText = "SWISH!";
+                swishText.classList.remove('text-pink-400');
+                swishText.classList.add('text-cyan-300');
+            } else {
+                swishText.innerText = "NICE!";
+                swishText.classList.remove('text-cyan-300');
+                swishText.classList.add('text-pink-400');
+            }
+
+            // Dynamic sparks color selection
+            const particlesColor = swish ? '#06b6d4' : '#ec4899';
+            
+            // Spawn spark vectors
+            for (let i = 0; i < 24; i++) {
+                fireParticles.push(new BurstParticle(hoop.rimX1 + (hoop.rimX2 - hoop.rimX1) / 2, hoop.rimY, particlesColor));
+            }
+
+            // Sound Effects
+            if (swish) {
+                audio.playSwish();
+                audio.playCheer();
+            } else {
+                audio.playBounce(0.7);
+                audio.playCheer();
+            }
+
+            // Animate Score alert
+            scoreIndicator.style.opacity = '1';
+            scoreIndicator.style.transform = 'translate(-50%, -50%) scale(1)';
+            setTimeout(() => {
+                scoreIndicator.style.opacity = '0';
+                scoreIndicator.style.transform = 'translate(-50%, -50%) scale(0.6)';
+            }, 1100);
+
+            // Streak System
+            updateStreakMeter();
+        }
+
+        // Refresh fire multipliers on UI
+        function updateStreakMeter() {
+            // Apply Flame fills on indicators
+            streakFlames.forEach((flame, idx) => {
+                if (streak > idx) {
+                    flame.classList.remove('text-gray-700');
+                    flame.classList.add('text-pink-500');
+                } else {
+                    flame.classList.remove('text-pink-500');
+                    flame.classList.add('text-gray-700');
+                }
+            });
+
+            if (streak >= 3 && !isFireMode) {
+                isFireMode = true;
+                hudMultiplier.classList.remove('hidden');
+                audio.playOnFire();
+            }
+        }
+
+        // Break streaks upon misses or ground rolls
+        function breakStreak() {
+            streak = 0;
+            isFireMode = false;
+            hudMultiplier.classList.add('hidden');
+            streakFlames.forEach(flame => {
+                flame.classList.remove('text-pink-500');
+                flame.classList.add('text-gray-700');
+            });
+        }
+
+        // --- Core Main Game Loops ---
+        function loop() {
+            // Fallback recovery if canvas dimensions or ratios got computed as 0 on initial load
+            if (canvas.width === 0 || canvas.height === 0 || scaleX === 0 || scaleY === 0) {
+                resizeCanvas();
+            }
+
+            // Clear entire board canvas safely
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Render static and responsive grid details
+            drawGridBackground();
+
+            // Run updates on our central hoop and netting entities
+            hoop.update();
+            
+            // Set dynamic net anchor physics
+            let primaryActiveBall = liveBalls.find(b => !b.hasScored && b.vy > 0 && Math.abs(b.x - hoop.rimX1 - 35) < 60) || activeBall;
+            net.update(primaryActiveBall);
+            net.draw();
+
+            // Render trajectory indicators
+            drawTrajectory();
+
+            // Update & Render shooter's active hand ball
+            if (activeBall && !activeBall.isReleased) {
+                activeBall.draw();
+            }
+
+            // Process existing released active balls inside simulation frame
+            for (let i = liveBalls.length - 1; i >= 0; i--) {
+                const b = liveBalls[i];
+                b.update(hoop);
+                b.draw();
+
+                // Check for misses: if ball hits ground or goes past rim without scoring
+                if (b.y > hoop.rimY + 50 && !b.hasScored && b.isReleased) {
+                    // Check if it's dead or already finished
+                    if (b.vy > 0 && !b.touchedRim) {
+                        breakStreak();
+                    }
+                }
+
+                if (b.isDead) {
+                    liveBalls.splice(i, 1);
+                }
+            }
+
+            // Process dynamic fireworks/particle simulations
+            for (let i = fireParticles.length - 1; i >= 0; i--) {
+                const p = fireParticles[i];
+                p.update();
+                p.draw();
+                if (p.alpha <= 0) {
+                    fireParticles.splice(i, 1);
+                }
+            }
+
+            // Always display the neon rim lines OVER the falling balls for visual layering
+            hoop.draw();
+
+            // Cycle frame requests
+            requestAnimationFrame(loop);
+        }
+
+        // --- Game Setup Controls & Timers ---
+        function startGame() {
+            audio.init();
+            resizeCanvas(); // Ensure scaled measurements are fresh on starting the shootout
+            
+            // Clean initial state values
+            score = 0;
+            basketsMade = 0;
+            streak = 0;
+            isFireMode = false;
+            gameTimer = 60;
+            liveBalls = [];
+            fireParticles = [];
+
+            hudScore.innerText = score;
+            hudTimer.innerText = `${gameTimer}s`;
+            hudMultiplier.classList.add('hidden');
+            
+            breakStreak();
+
+            menuScreen.classList.add('opacity-0');
+            gameOverScreen.classList.add('hidden');
+            arcadeControls.classList.remove('hidden');
+            arcadeControls.classList.add('flex');
+            
+            setTimeout(() => {
+                menuScreen.classList.add('hidden');
+            }, 300);
+
+            gameState = 'PLAYING';
+            createNewBall();
+
+            // Countdown timer engine
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = setInterval(() => {
+                gameTimer--;
+                hudTimer.innerText = `${gameTimer}s`;
+
+                if (gameTimer <= 10) {
+                    hudTimer.classList.add('animate-pulse');
+                } else {
+                    hudTimer.classList.remove('animate-pulse');
+                }
+
+                if (gameTimer <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            gameState = 'GAMEOVER';
+            clearInterval(countdownInterval);
+            audio.playBuzzer();
+
+            arcadeControls.classList.add('hidden');
+            arcadeControls.classList.remove('flex');
+
+            // Save High Score states
+            if (score > highscore) {
+                highscore = score;
+                localStorage.setItem('neon_hoops_highscore', highscore);
+                hudHighScore.innerText = highscore;
+            }
+
+            // Set final scores on DOM overlay screen
+            finalScore.innerText = score;
+            finalBaskets.innerText = basketsMade;
+            hudHighScoreOver.innerText = highscore;
+            hudLastScore.innerText = score;
+
+            // Remove shooter's inactive ball
+            activeBall = null;
+
+            // Transition screens smoothly
+            gameOverScreen.classList.remove('hidden');
+            gameOverScreen.classList.add('flex');
+        }
+
+        // Start button handlers
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+        backMenuBtn.addEventListener('click', () => {
+            gameOverScreen.classList.add('hidden');
+            menuScreen.classList.remove('hidden');
+            setTimeout(() => {
+                menuScreen.classList.remove('opacity-0');
+            }, 50);
+            gameState = 'MENU';
+        });
+
+        // Initialize Loop Core on DOM Load
+        window.onload = function() {
+            loop();
+        };
+    </script>
+</body>
+</html>
