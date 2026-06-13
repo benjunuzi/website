@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Air Hockey Championship</title>
+    <!-- Tailwind CSS for modern layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #060913;
+            overflow: hidden;
+            touch-action: none; /* Prevents default pull-to-refresh and gestures */
+        }
+        /* Pulse glow animation for UI elements */
+        .neon-glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+        }
+        .neon-glow-pink {
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between text-slate-100 select-none">
+
+    <!-- Header Panel -->
+    <header class="w-full bg-slate-950/80 backdrop-blur-md border-b border-slate-900 px-6 py-4 flex justify-between items-center z-10 shrink-0">
+        <div class="flex items-center gap-3">
+            <span class="text-3xl">🏓</span>
+            <div>
+                <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">NEON SLIDER</h1>
+                <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Air Hockey Arcade</p>
+            </div>
+        </div>
+        
+        <!-- Scoreboard Displays -->
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3 bg-slate-900/60 px-4 py-1.5 rounded-full border border-slate-800">
+                <div class="flex flex-col items-center">
+                    <span class="text-[9px] uppercase font-semibold text-cyan-400">Player</span>
+                    <span id="playerScore" class="text-xl font-black text-white">0</span>
+                </div>
+                <div class="text-slate-600 font-bold">:</div>
+                <div class="flex flex-col items-center">
+                    <span class="text-[9px] uppercase font-semibold text-rose-400">CPU</span>
+                    <span id="cpuScore" class="text-xl font-black text-white">0</span>
+                </div>
+            </div>
+
+            <!-- Audio Toggle & Help -->
+            <div class="flex gap-2">
+                <button id="audioBtn" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 transition">
+                    <svg id="audioIcon" class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75V5.25L8.25 9H4.5A1.5 1.5 0 003 10.5v3a1.5 1.5 0 001.5 1.5h3.75L12 18.75z"/>
+                    </svg>
+                </button>
+                <button id="rulesBtn" class="hidden sm:block p-2 text-sm font-semibold text-slate-400 hover:text-white transition">
+                    How to Play
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Workspace -->
+    <main class="flex-grow relative flex flex-col md:flex-row items-stretch justify-between w-full overflow-hidden">
+        
+        <!-- Sidebar Controls & Difficulty Select -->
+        <div class="w-full md:w-80 bg-slate-950/40 border-b md:border-b-0 md:border-r border-slate-900 p-6 flex flex-col justify-between shrink-0 gap-4 z-10">
+            <!-- Game Info Card -->
+            <div class="space-y-4">
+                <div class="bg-slate-950/90 border border-slate-900 rounded-2xl p-4 shadow-2xl relative overflow-hidden">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Target Match Score</div>
+                    <div class="text-3xl font-black text-white flex items-baseline gap-2">
+                        <span>7</span>
+                        <span class="text-xs text-emerald-400 font-medium">Points to Win</span>
+                    </div>
+                </div>
+
+                <!-- Difficulty Selector -->
+                <div id="lobbyControls" class="space-y-2">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Opponent Difficulty</label>
+                    <div class="grid grid-cols-3 md:grid-cols-1 gap-2">
+                        <button class="diff-btn active text-xs font-bold py-2.5 px-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 transition" data-diff="easy">
+                            👶 ROOKIE
+                        </button>
+                        <button class="diff-btn text-xs font-bold py-2.5 px-3 rounded-xl border border-slate-900 bg-slate-950/50 hover:bg-slate-900/40 text-slate-400 transition" data-diff="medium">
+                            ⚡ PRO
+                        </button>
+                        <button class="diff-btn text-xs font-bold py-2.5 px-3 rounded-xl border border-slate-900 bg-slate-950/50 hover:bg-slate-900/40 text-slate-400 transition" data-diff="hard">
+                            🔥 LEGEND
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- In-Game active gameplay instructions -->
+            <div id="gameplayDetails" class="hidden md:block p-4 bg-slate-900/40 border border-slate-900 rounded-xl">
+                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-widest mb-2">💡 Pro-Tips</h4>
+                <ul class="text-xs text-slate-400 space-y-2 list-disc pl-4">
+                    <li>Slam the puck on the side walls to curve your shots!</li>
+                    <li>Move your paddle faster for explosive attack speeds.</li>
+                    <li>Keep your mallet near the goal box when defending.</li>
+                </ul>
+            </div>
+
+            <!-- Footer Stats -->
+            <div class="text-xs text-slate-600 flex justify-between items-center border-t border-slate-900 pt-3">
+                <span>Cyber Stadium v1.4</span>
+                <span>Active Mode: AI Match</span>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="flex-grow relative bg-slate-950 overflow-hidden flex items-center justify-center p-2 sm:p-4">
+            <!-- Canvas Object Container (Slightly wider aspect ratio layout for a robust look) -->
+            <div id="canvasContainer" class="relative w-full h-full max-w-[480px] max-h-[920px] flex justify-center items-center">
+                <canvas id="gameCanvas" class="block cursor-crosshair rounded-2xl border-4 border-slate-900 shadow-2xl"></canvas>
+            </div>
+
+            <!-- Main Start Overlay -->
+            <div id="startOverlay" class="absolute inset-0 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm z-20 transition duration-300">
+                <div class="text-center p-8 rounded-3xl border border-slate-900 max-w-sm bg-slate-900/90 shadow-2xl mx-4">
+                    <div class="w-20 h-20 bg-gradient-to-tr from-cyan-400 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-500/20">
+                        <span class="text-4xl">🕹️</span>
+                    </div>
+                    <h2 class="text-3xl font-black text-white mb-2 tracking-tight bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent">NEON SLIDER</h2>
+                    <p class="text-slate-400 text-sm mb-6">Experience hyper-responsive air hockey. Slam, bounce, and strike your way to victory!</p>
+                    <button id="startGameBtn" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-600 hover:to-indigo-600 text-lg font-black rounded-2xl shadow-lg shadow-cyan-500/20 active:scale-95 transition duration-150 text-white">
+                        PLAY CHALLENGE
+                    </button>
+                </div>
+            </div>
+
+            <!-- Score Alert Overlay (Goal Animation) -->
+            <div id="goalOverlay" class="absolute inset-0 flex items-center justify-center bg-cyan-950/20 backdrop-blur-xs z-10 pointer-events-none opacity-0 transition-opacity duration-150">
+                <div class="text-center transform scale-90 transition-transform duration-200">
+                    <h2 id="goalText" class="text-6xl font-black tracking-widest text-white italic drop-shadow-[0_0_15px_rgba(6,182,212,0.8)] animate-bounce">GOAL!</h2>
+                </div>
+            </div>
+
+            <!-- Round Notification End Modal -->
+            <div id="matchOverOverlay" class="absolute inset-0 flex items-center justify-center bg-slate-950/90 backdrop-blur-md z-20 opacity-0 pointer-events-none transition duration-300">
+                <div class="text-center p-8 rounded-3xl border border-slate-900 max-w-md bg-slate-900/95 shadow-2xl mx-4">
+                    <span id="winIcon" class="text-6xl block mb-4">🏆</span>
+                    <h2 id="winTitle" class="text-3xl font-black text-white mb-2">CHAMPION!</h2>
+                    <p id="winDescription" class="text-slate-400 text-sm mb-6">Unstoppable skill on the rink!</p>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-900 mb-6 flex justify-around">
+                        <div>
+                            <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Final Player Score</div>
+                            <div id="finalPlayerScore" class="text-3xl font-extrabold text-cyan-400">0</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Computer Score</div>
+                            <div id="finalCpuScore" class="text-3xl font-extrabold text-rose-400">0</div>
+                        </div>
+                    </div>
+                    <button id="rematchBtn" class="w-full py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 font-extrabold text-lg rounded-2xl transition duration-150 text-white shadow-lg shadow-cyan-500/20">
+                        START REMATCH
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Instructional Rules popup -->
+    <div id="rulesModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 opacity-0 pointer-events-none transition duration-300">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl relative">
+            <button id="closeRulesBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <h3 class="text-xl font-black text-white mb-4">🎯 Air Hockey Rules</h3>
+            <div class="space-y-4 text-xs text-slate-300 leading-relaxed">
+                <p>Drag your glowing paddle <strong>anywhere on your bottom half</strong> of the board. Protect your goal box while aiming for the CPU's top goalbox!</p>
+                <div class="space-y-2">
+                    <div class="flex items-start gap-3 bg-slate-950 p-2.5 rounded-lg">
+                        <span class="text-lg">☄️</span>
+                        <div>
+                            <strong class="text-cyan-400 block">Strike Harder!</strong>
+                            Hitting the puck with swift motion transfers immense velocity. Aim for corners!
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 bg-slate-950 p-2.5 rounded-lg">
+                        <span class="text-lg">⭐</span>
+                        <div>
+                            <strong class="text-cyan-400 block">Game Goal</strong>
+                            The first player to score <strong>7 goals</strong> takes the championship trophy home.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button id="gotItRulesBtn" class="w-full mt-5 py-3 bg-slate-800 hover:bg-slate-700 font-bold rounded-xl text-white transition">
+                Got It, Let's Play!
+            </button>
+        </div>
+    </div>
+
+    <!-- Interactive Synthesizer script and Game engine core logic -->
+    <script>
+        // WEB AUDIO SYNTHESIZER
+        class SoundSynth {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playHit(freq = 180, duration = 0.08, volume = 0.4) {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + duration);
+                
+                gain.gain.setValueAtTime(volume, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start(now);
+                osc.stop(now + duration);
+            }
+
+            playWallBounce() {
+                this.playHit(120, 0.12, 0.3);
+            }
+
+            playPaddleSmash(speedFactor = 1) {
+                // Higher speed hits create higher frequency sounds
+                const freq = 200 + (speedFactor * 80);
+                this.playHit(freq, 0.1, 0.5);
+            }
+
+            playGoalScore(isPlayer) {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                // High pitch synthesizer siren alarm
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(isPlayer ? 440 : 220, now);
+                osc.frequency.linearRampToValueAtTime(isPlayer ? 880 : 330, now + 0.35);
+                osc.frequency.linearRampToValueAtTime(isPlayer ? 660 : 180, now + 0.7);
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.75);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.85);
+            }
+        }
+
+        const audio = new SoundSynth();
+
+        // Game Configuration & Dimensions
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Layout parameters
+        let tableWidth = 400;
+        let tableHeight = 600;
+
+        // Scores and Lobby
+        let scorePlayer = 0;
+        let scoreCpu = 0;
+        let selectedDifficulty = 'easy'; // 'easy', 'medium', 'hard'
+        let isPlaying = false;
+
+        // Object Dimensions
+        const PADDLE_RADIUS = 28;
+        const PUCK_RADIUS = 16;
+        let goalWidth = 130; // Will be scaled dynamically on resizing
+
+        // Dynamics objects
+        let player = { x: 200, y: 500, radius: PADDLE_RADIUS, vx: 0, vy: 0, targetX: 200, targetY: 500 };
+        let cpu = { x: 200, y: 100, radius: PADDLE_RADIUS, vx: 0, vy: 0, speed: 3.5, accuracy: 0.15 };
+        let puck = { x: 200, y: 300, radius: PUCK_RADIUS, vx: 0, vy: 0, maxSpeed: 18, trail: [] };
+
+        // Game Environment Friction
+        const FRICTION = 0.993;
+
+        // Particles System for goal animations
+        let particles = [];
+
+        // Scale Management
+        function resizeCanvas() {
+            const container = document.getElementById('canvasContainer');
+            const rect = container.getBoundingClientRect();
+            
+            // Strictly enforce an elongated 1:1.9 aspect ratio (making the field thicker than 1:2.3)
+            let width = rect.width;
+            let height = rect.height;
+
+            if (width * 1.9 > height) {
+                width = height / 1.9;
+            } else {
+                height = width * 1.9;
+            }
+
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+
+            // Set inline styles explicitly to ensure no fuzzy scaling or distortion
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            
+            tableWidth = width;
+            tableHeight = height;
+
+            // Make Goal Proportional to dynamic table size (35% of width)
+            goalWidth = tableWidth * 0.35;
+
+            // Constrain entities on screen resize
+            resetGameEntities();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function resetGameEntities() {
+            player.x = tableWidth / 2;
+            player.y = tableHeight * 0.86; // Positioned proportionally in the thickened rink
+            player.targetX = player.x;
+            player.targetY = player.y;
+            player.vx = 0;
+            player.vy = 0;
+
+            cpu.x = tableWidth / 2;
+            cpu.y = tableHeight * 0.14; 
+            cpu.vx = 0;
+            cpu.vy = 0;
+
+            // Place puck exactly in the middle of the long court
+            puck.x = tableWidth / 2;
+            puck.y = tableHeight / 2;
+            puck.vx = 0;
+            puck.vy = 0;
+            puck.trail = [];
+        }
+
+        // --- MOUSE & TOUCH CONTROLS ---
+        canvas.addEventListener('mousemove', (e) => handleInteractMove(e.clientX, e.clientY));
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                handleInteractMove(touch.clientX, touch.clientY);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        function handleInteractMove(clientX, clientY) {
+            if (!isPlaying) return;
+            const rect = canvas.getBoundingClientRect();
+            
+            // Map absolute screen coords to localized canvas coordinates
+            const px = (clientX - rect.left) * (tableWidth / rect.width);
+            const py = (clientY - rect.top) * (tableHeight / rect.height);
+
+            // Constrain player movement to bottom half of table and inside boundaries
+            player.targetX = Math.max(player.radius, Math.min(tableWidth - player.radius, px));
+            player.targetY = Math.max(tableHeight / 2 + player.radius, Math.min(tableHeight - player.radius, py));
+        }
+
+        // --- OPPONENT AI LOGIC ---
+        function updateAI() {
+            // Apply different intelligence speeds/accels depending on difficulty level
+            let reactSpeed = 0.04;
+            let trackingRange = tableHeight * 0.55; // CPU tracks the puck inside its side of the long court
+
+            if (selectedDifficulty === 'easy') {
+                reactSpeed = 0.055;
+                cpu.speed = 3.5;
+            } else if (selectedDifficulty === 'medium') {
+                reactSpeed = 0.085;
+                cpu.speed = 5.2;
+            } else if (selectedDifficulty === 'hard') {
+                reactSpeed = 0.145;
+                cpu.speed = 7.5;
+            }
+
+            // Target positions coordinates
+            let targetX = tableWidth / 2;
+            let targetY = tableHeight * 0.14; // default center resting position
+
+            // If puck is on AI's half of court, attack or defend
+            if (puck.y < trackingRange) {
+                targetX = puck.x;
+                targetY = puck.y;
+            } else {
+                // drift back slowly to guard goal center line
+                targetX = tableWidth / 2 + (puck.x - tableWidth / 2) * 0.4;
+                targetY = tableHeight * 0.12;
+            }
+
+            // Don't cross halfline
+            targetY = Math.min(tableHeight / 2 - cpu.radius, targetY);
+            // Don't go outside arena
+            targetX = Math.max(cpu.radius, Math.min(tableWidth - cpu.radius, targetX));
+
+            // Smoothly slide AI towards targets using interpolation (reactSpeed)
+            const dx = targetX - cpu.x;
+            const dy = targetY - cpu.y;
+            
+            cpu.vx = dx * reactSpeed;
+            cpu.vy = dy * reactSpeed;
+
+            // Cap AI velocities
+            const speed = Math.hypot(cpu.vx, cpu.vy);
+            if (speed > cpu.speed) {
+                cpu.vx = (cpu.vx / speed) * cpu.speed;
+                cpu.vy = (cpu.vy / speed) * cpu.speed;
+            }
+
+            cpu.x += cpu.vx;
+            cpu.y += cpu.vy;
+        }
+
+        // --- PHYSICS CALCULATION ---
+        function updatePhysics() {
+            // 1. Calculate Player Mallet speed based on interactive tracking delta
+            const lastPlayerX = player.x;
+            const lastPlayerY = player.y;
+            player.x = player.targetX;
+            player.y = player.targetY;
+            player.vx = player.x - lastPlayerX;
+            player.vy = player.y - lastPlayerY;
+
+            // 2. Compute Puck Trails
+            puck.trail.push({ x: puck.x, y: puck.y });
+            if (puck.trail.length > 8) puck.trail.shift();
+
+            // Apply environment speed decays
+            puck.vx *= FRICTION;
+            puck.vy *= FRICTION;
+
+            puck.x += puck.vx;
+            puck.y += puck.vy;
+
+            // 3. Wall Bounce Collision Logic
+            // Side boundaries
+            if (puck.x - puck.radius < 0) {
+                puck.x = puck.radius;
+                puck.vx = -puck.vx * 0.85;
+                audio.playWallBounce();
+            } else if (puck.x + puck.radius > tableWidth) {
+                puck.x = tableWidth - puck.radius;
+                puck.vx = -puck.vx * 0.85;
+                audio.playWallBounce();
+            }
+
+            // Top boundary (Wall bounces unless entering Goal zones)
+            const goalLeft = (tableWidth - goalWidth) / 2;
+            const goalRight = goalLeft + goalWidth;
+
+            if (puck.y - puck.radius < 0) {
+                if (puck.x > goalLeft && puck.x < goalRight) {
+                    // GOAL IN CPU BOX!
+                    triggerGoal(true);
+                } else {
+                    puck.y = puck.radius;
+                    puck.vy = -puck.vy * 0.85;
+                    audio.playWallBounce();
+                }
+            }
+
+            // Bottom boundary (Wall bounces unless entering Goal zones)
+            if (puck.y + puck.radius > tableHeight) {
+                if (puck.x > goalLeft && puck.x < goalRight) {
+                    // GOAL IN PLAYER BOX!
+                    triggerGoal(false);
+                } else {
+                    puck.y = tableHeight - puck.radius;
+                    puck.vy = -puck.vy * 0.85;
+                    audio.playWallBounce();
+                }
+            }
+
+            // 4. Resolve Paddle/Mallet to Puck collisions (Puck bounce physics)
+            resolvePuckCollision(player);
+            resolvePuckCollision(cpu);
+        }
+
+        function resolvePuckCollision(paddle) {
+            const dx = puck.x - paddle.x;
+            const dy = puck.y - paddle.y;
+            const distance = Math.hypot(dx, dy);
+            const minDist = paddle.radius + puck.radius;
+
+            if (distance < minDist) {
+                // Normal Unit Vectors
+                const nx = dx / distance;
+                const ny = dy / distance;
+
+                // Push objects apart so they do not overlap
+                puck.x = paddle.x + nx * minDist;
+                puck.y = paddle.y + ny * minDist;
+
+                // Relative velocity
+                const rvx = puck.vx - paddle.vx;
+                const rvy = puck.vy - paddle.vy;
+
+                // Dot product of relative velocity on normal unit vector
+                const velocityAlongNormal = rvx * nx + rvy * ny;
+
+                // Do not resolve if velocities are already separating
+                if (velocityAlongNormal < 0) {
+                    const restitution = 0.95; // bouncy scale
+                    let impulse = -(1 + restitution) * velocityAlongNormal;
+
+                    // Apply impulse force to Puck
+                    puck.vx += nx * impulse;
+                    puck.vy += ny * impulse;
+
+                    // Add paddle strike velocity weight transfers
+                    puck.vx += paddle.vx * 0.65;
+                    puck.vy += paddle.vy * 0.65;
+
+                    // Speed clamping logic
+                    const currentSpeed = Math.hypot(puck.vx, puck.vy);
+                    if (currentSpeed > puck.maxSpeed) {
+                        puck.vx = (puck.vx / currentSpeed) * puck.maxSpeed;
+                        puck.vy = (puck.vy / currentSpeed) * puck.maxSpeed;
+                    }
+
+                    // Play audio smash dynamic frequencies
+                    audio.playPaddleSmash(Math.max(1, currentSpeed / 4));
+                }
+            }
+        }
+
+        // --- PARTICLE GENERATION ENGINE ---
+        function triggerGoalExplosion(x, y, isPlayer) {
+            const color = isPlayer ? '#06b6d4' : '#f43f5e';
+            for (let i = 0; i < 35; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 6;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: 2 + Math.random() * 4,
+                    color: color,
+                    alpha: 1,
+                    life: 1.0,
+                    decay: 0.015 + Math.random() * 0.02
+                });
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= 0.98;
+                p.vy *= 0.98;
+                p.life -= p.decay;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Goal Logic scoring
+        function triggerGoal(isPlayerGoal) {
+            isPlaying = false;
+            
+            if (isPlayerGoal) {
+                scorePlayer++;
+                document.getElementById('playerScore').textContent = scorePlayer;
+                triggerGoalExplosion(puck.x, 2, true);
+                audio.playGoalScore(true);
+                showGoalBanner("GOAL FOR PLAYER!");
+            } else {
+                scoreCpu++;
+                document.getElementById('cpuScore').textContent = scoreCpu;
+                triggerGoalExplosion(puck.x, tableHeight - 2, false);
+                audio.playGoalScore(false);
+                showGoalBanner("GOAL FOR CPU!");
+            }
+
+            // Check if victory target score is reached
+            setTimeout(() => {
+                if (scorePlayer >= 7 || scoreCpu >= 7) {
+                    endGame();
+                } else {
+                    resetGameEntities();
+                    isPlaying = true;
+                }
+            }, 1200);
+        }
+
+        function showGoalBanner(message) {
+            const banner = document.getElementById('goalOverlay');
+            const bannerText = document.getElementById('goalText');
+            bannerText.textContent = message;
+            
+            banner.classList.remove('opacity-0');
+            banner.classList.add('opacity-100');
+            setTimeout(() => {
+                banner.classList.remove('opacity-100');
+                banner.classList.add('opacity-0');
+            }, 1000);
+        }
+
+        // --- RENDERING ROUTINES ---
+        function drawScene() {
+            // Clear Frame
+            ctx.clearRect(0, 0, tableWidth, tableHeight);
+
+            // 1. Draw Rink Floor and Boundary markings
+            drawRinkFloor();
+
+            // 2. Render goal gates on table limits
+            drawGoalGates();
+
+            // 3. Draw Puck trails for fast speed neon feel
+            drawPuckTrail();
+
+            // 4. Draw Goal celebration particle arrays
+            drawParticles();
+
+            // 5. Draw Puck
+            drawPuck();
+
+            // 6. Draw Mallets/Paddles
+            drawPaddle(player, '#06b6d4', 'rgba(6, 182, 212, 0.45)'); // Electric cyan
+            drawPaddle(cpu, '#f43f5e', 'rgba(244, 63, 94, 0.45)'); // Cyber rose
+        }
+
+        function drawRinkFloor() {
+            ctx.save();
+            
+            // Outer bounding border background color grid
+            ctx.fillStyle = '#0b0f19';
+            ctx.fillRect(0, 0, tableWidth, tableHeight);
+
+            // Draw soft grid lines for style depth
+            ctx.strokeStyle = '#111827';
+            ctx.lineWidth = 1;
+            const gridCells = 10; // Extra grid cells for a taller field
+            for (let i = 1; i < gridCells; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, (tableHeight / gridCells) * i);
+                ctx.lineTo(tableWidth, (tableHeight / gridCells) * i);
+                ctx.stroke();
+            }
+
+            // Center dividing court board line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, tableHeight / 2);
+            ctx.lineTo(tableWidth, tableHeight / 2);
+            ctx.stroke();
+
+            // Center neon rink ring outline
+            ctx.beginPath();
+            ctx.arc(tableWidth / 2, tableHeight / 2, 60, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Center node point
+            ctx.beginPath();
+            ctx.arc(tableWidth / 2, tableHeight / 2, 6, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.fill();
+
+            // Side board walls bounding neon borders
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(0, 0, tableWidth, tableHeight);
+
+            ctx.restore();
+        }
+
+        function drawGoalGates() {
+            ctx.save();
+            const goalLeft = (tableWidth - goalWidth) / 2;
+
+            // Player bottom goal glow box styling
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 5;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#06b6d4';
+            ctx.beginPath();
+            ctx.moveTo(goalLeft, tableHeight);
+            ctx.lineTo(goalLeft + goalWidth, tableHeight);
+            ctx.stroke();
+
+            // Opponent CPU top goal glow box styling
+            ctx.strokeStyle = '#f43f5e';
+            ctx.lineWidth = 5;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#f43f5e';
+            ctx.beginPath();
+            ctx.moveTo(goalLeft, 0);
+            ctx.lineTo(goalLeft + goalWidth, 0);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawPaddle(p, neonColor, glowColor) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+
+            // Glowing Outer Ring shadows
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = neonColor;
+            
+            // Drawing mallet main body sphere
+            ctx.fillStyle = neonColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Gloss core highlights overlay
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-p.radius * 0.2, -p.radius * 0.2, p.radius * 0.35, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner styling circle
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, p.radius * 0.65, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawPuck() {
+            ctx.save();
+            ctx.translate(puck.x, puck.y);
+
+            // Orange bright cyber neon glowing shadows
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#f59e0b';
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(0, 0, puck.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner dark details slot
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, puck.radius * 0.55, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Highlight core reflect
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-puck.radius * 0.2, -puck.radius * 0.2, puck.radius * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function drawPuckTrail() {
+            ctx.save();
+            for (let i = 0; i < puck.trail.length; i++) {
+                const ratio = i / puck.trail.length;
+                ctx.beginPath();
+                ctx.arc(puck.trail[i].x, puck.trail[i].y, puck.radius * 0.9 * ratio, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(245, 158, 11, ${0.12 * ratio})`;
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            ctx.save();
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                ctx.globalAlpha = p.alpha * p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // --- GAME ENGINE LIFE LOOP ---
+        function frameTick() {
+            if (isPlaying) {
+                updateAI();
+                updatePhysics();
+            }
+            updateParticles();
+            drawScene();
+
+            requestAnimationFrame(frameTick);
+        }
+
+        function startGame() {
+            audio.init();
+            
+            scorePlayer = 0;
+            scoreCpu = 0;
+            document.getElementById('playerScore').textContent = '0';
+            document.getElementById('cpuScore').textContent = '0';
+
+            // Hide UI overlays
+            document.getElementById('startOverlay').classList.add('hidden');
+            document.getElementById('matchOverOverlay').classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('lobbyControls').classList.add('opacity-50', 'pointer-events-none');
+
+            isPlaying = true;
+            resetGameEntities();
+        }
+
+        function endGame() {
+            isPlaying = false;
+            document.getElementById('lobbyControls').classList.remove('opacity-50', 'pointer-events-none');
+
+            // Show match over modal details
+            document.getElementById('finalPlayerScore').textContent = scorePlayer;
+            document.getElementById('finalCpuScore').textContent = scoreCpu;
+
+            const winIcon = document.getElementById('winIcon');
+            const winTitle = document.getElementById('winTitle');
+            const winDescription = document.getElementById('winDescription');
+
+            if (scorePlayer >= 7) {
+                winIcon.textContent = "🥇";
+                winTitle.textContent = "CHAMPION!";
+                winDescription.textContent = `Excellent work! You defeated the ${selectedDifficulty.toUpperCase()} CPU.`;
+            } else {
+                winIcon.textContent = "🦾";
+                winTitle.textContent = "DEFEAT!";
+                winDescription.textContent = `The CPU wins this round. Keep practicing your curves!`;
+            }
+
+            const overOverlay = document.getElementById('matchOverOverlay');
+            overOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            overOverlay.classList.add('opacity-100');
+        }
+
+        // --- BUTTON HANDLERS ---
+        document.getElementById('startGameBtn').addEventListener('click', startGame);
+        document.getElementById('rematchBtn').addEventListener('click', startGame);
+
+        // Difficulty Selection Toggle button group
+        const diffButtons = document.querySelectorAll('.diff-btn');
+        diffButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (isPlaying) return;
+
+                diffButtons.forEach(b => {
+                    b.classList.remove('active', 'border-cyan-500/30', 'bg-cyan-500/10', 'text-cyan-400');
+                    b.classList.add('border-slate-900', 'bg-slate-950/50', 'text-slate-400');
+                });
+
+                btn.classList.add('active', 'border-cyan-500/30', 'bg-cyan-500/10', 'text-cyan-400');
+                btn.classList.remove('border-slate-900', 'bg-slate-950/50', 'text-slate-400');
+
+                selectedDifficulty = btn.dataset.diff;
+            });
+        });
+
+        // Audio System Toggle Button
+        const audioBtn = document.getElementById('audioBtn');
+        const audioIcon = document.getElementById('audioIcon');
+        audioBtn.addEventListener('click', () => {
+            audio.enabled = !audio.enabled;
+            if (audio.enabled) {
+                audioIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75V5.25L8.25 9H4.5A1.5 1.5 0 003 10.5v3a1.5 1.5 0 001.5 1.5h3.75L12 18.75z"/>
+                `;
+                audioBtn.classList.remove('opacity-50');
+            } else {
+                audioIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663(12)5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                `;
+                audioBtn.classList.add('opacity-50');
+            }
+        });
+
+        // Rules Popups Open/Close Event bindings
+        const rulesModal = document.getElementById('rulesModal');
+        const openRules = () => {
+            rulesModal.classList.remove('opacity-0', 'pointer-events-none');
+            rulesModal.classList.add('opacity-100');
+        };
+        const closeRules = () => {
+            rulesModal.classList.add('opacity-0', 'pointer-events-none');
+            rulesModal.classList.remove('opacity-100');
+        };
+
+        document.getElementById('rulesBtn').addEventListener('click', openRules);
+        document.getElementById('closeRulesBtn').addEventListener('click', closeRules);
+        document.getElementById('gotItRulesBtn').addEventListener('click', closeRules);
+
+        // --- INIT LOAD ENGINE SEQUENCE ---
+        window.onload = function() {
+            resizeCanvas();
+            resetGameEntities();
+            requestAnimationFrame(frameTick);
+        };
+    </script>
+</body>
+</html>
