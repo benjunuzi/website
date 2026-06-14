@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyper Hoop Master: Arcade Basketball</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+        
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #030008;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        .orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Glowing effects */
+        .neon-text-cyan {
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.8), 0 0 20px rgba(6, 182, 212, 0.4);
+        }
+        .neon-text-pink {
+            text-shadow: 0 0 10px rgba(236, 72, 153, 0.8), 0 0 20px rgba(236, 72, 153, 0.4);
+        }
+        .neon-border-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.5);
+            border-color: rgba(6, 182, 212, 0.6);
+        }
+        .neon-border-pink {
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.5);
+            border-color: rgba(236, 72, 153, 0.6);
+        }
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="h-full w-full overflow-hidden flex flex-col items-center justify-center text-white relative">
+
+    <!-- Ambient background stadium-glow elements -->
+    <div class="absolute top-1/3 left-1/4 w-96 h-96 bg-cyan-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="absolute bottom-1/3 right-1/4 w-96 h-96 bg-pink-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <!-- Main Game Frame -->
+    <div id="game-container" class="relative w-full max-w-4xl h-full max-h-[800px] md:h-[95%] md:rounded-2xl overflow-hidden bg-black/50 md:border border-slate-800 flex flex-col">
+        
+        <!-- HUD / Status Bar -->
+        <div id="hud" class="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-10 pointer-events-none select-none transition-all duration-300">
+            <!-- Left: Mode / Level info -->
+            <div class="flex flex-col gap-1 pointer-events-auto">
+                <div id="mode-badge" class="bg-cyan-950/80 border border-cyan-500/40 px-3 py-1 rounded-full text-xs text-cyan-400 font-bold orbitron uppercase tracking-wider text-center">
+                    Arcade Mode
+                </div>
+                <!-- Wind Indicator -->
+                <div id="wind-indicator" class="hidden items-center gap-1.5 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700 mt-1">
+                    <i data-lucide="wind" class="w-3.5 h-3.5 text-sky-400"></i>
+                    <span id="wind-text" class="text-[11px] text-sky-400 font-bold">WIND: 0 MPH</span>
+                </div>
+            </div>
+
+            <!-- Center: Score / Time Remaining -->
+            <div class="flex flex-col items-center">
+                <div id="timer-box" class="bg-pink-950/80 border border-pink-500/30 px-3 py-1 rounded-lg mb-1 animate-pulse">
+                    <span id="timer-display" class="orbitron text-sm font-bold text-pink-400">00:60</span>
+                </div>
+                <div class="text-xs text-slate-400 uppercase tracking-widest">SCORE</div>
+                <div id="score-display" class="orbitron text-2xl md:text-4xl font-black text-white neon-text-cyan">00</div>
+            </div>
+
+            <!-- Right: Stars & Pause -->
+            <div class="flex items-center gap-3 pointer-events-auto">
+                <div class="flex items-center gap-1.5 bg-yellow-950/80 px-3 py-1.5 rounded-lg border border-yellow-500/30">
+                    <i data-lucide="star" class="w-4 h-4 text-yellow-400 fill-yellow-400 animate-pulse"></i>
+                    <span id="stars-display" class="text-yellow-400 font-bold orbitron">0</span>
+                </div>
+                <button id="btn-pause" class="bg-slate-900/80 hover:bg-slate-800 p-2 rounded-lg border border-slate-700 transition active:scale-95 text-slate-300">
+                    <i data-lucide="pause" id="pause-icon" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- The main physical court canvas -->
+        <canvas id="gameCanvas" class="w-full h-full block bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950"></canvas>
+
+        <!-- Welcome / Main Menu -->
+        <div id="screen-start" class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col justify-center items-center p-6 z-20 transition-all duration-300">
+            <div class="text-center max-w-md w-full">
+                <div class="w-20 h-20 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+                    <i data-lucide="dribbble" class="w-12 h-12 text-cyan-400 animate-spin" style="animation-duration: 6s;"></i>
+                </div>
+                <h1 class="orbitron font-black text-4xl md:text-5xl text-cyan-400 uppercase tracking-wider mb-1 neon-text-cyan">
+                    HYPER HOOP
+                </h1>
+                <div class="orbitron text-pink-500 font-bold text-lg tracking-widest uppercase mb-6 neon-text-pink">
+                    MASTER
+                </div>
+
+                <div class="space-y-3">
+                    <button id="btn-start-arcade" class="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl font-bold orbitron text-base tracking-wider transition-all transform active:scale-95 shadow-lg shadow-cyan-500/20 neon-border-cyan">
+                        CLASSIC ARCADE (60s)
+                    </button>
+                    <button id="btn-start-time" class="w-full py-3 bg-slate-900 hover:bg-slate-800 rounded-xl font-bold tracking-wider text-slate-300 border border-slate-700/80 text-sm transition transform active:scale-95">
+                        ⏱️ TIME ATTACK (60s)
+                    </button>
+                    <button id="btn-start-wind" class="w-full py-3 bg-slate-900 hover:bg-slate-800 rounded-xl font-bold tracking-wider text-slate-300 border border-slate-700/80 text-sm transition transform active:scale-95">
+                        🌀 WIND CHALLENGE (60s)
+                    </button>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                    <button id="btn-open-shop" class="py-2.5 bg-yellow-600/15 hover:bg-yellow-600/35 border border-yellow-500/30 text-yellow-400 font-bold rounded-lg text-xs transition flex items-center justify-center gap-1.5 uppercase">
+                        <i data-lucide="shopping-bag" class="w-4 h-4"></i> BALL PRO shop
+                    </button>
+                    <button id="btn-how-to" class="py-2.5 bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold rounded-lg text-xs transition uppercase">
+                        HOW TO PLAY
+                    </button>
+                </div>
+
+                <p class="text-[10px] text-slate-500 mt-10 uppercase tracking-widest">Powered by Web Audio Synths</p>
+            </div>
+        </div>
+
+        <!-- How To Play Instructions -->
+        <div id="screen-how-to" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md hidden flex-col justify-center items-center p-6 z-20">
+            <div class="max-w-md w-full bg-slate-900/60 p-6 rounded-2xl border border-slate-800">
+                <h3 class="orbitron text-xl font-bold text-cyan-400 mb-4 tracking-wider flex items-center gap-2">
+                    <i data-lucide="help-circle"></i> COURT TUTORIAL
+                </h3>
+                <div class="space-y-4 text-sm text-slate-300 mb-6 leading-relaxed">
+                    <p><strong class="text-white">Shooting:</strong> Left-click and drag (or hold & drag with your finger) anywhere on screen to draw your shot trajectory. Release to launch the ball!</p>
+                    <p><strong class="text-white">The Hoop:</strong> Score clean points by throwing the basketball through the basket. Points are registered when falling downwards through the rim.</p>
+                    <p><strong class="text-white">Clean Shots (Swishes):</strong> Landing a shot without touching the rim or backboard yields a <strong class="text-yellow-400">"SWISH"</strong> which awards double points & bonus Stars!</p>
+                    <p><strong class="text-white">Time Limit:</strong> Every shootout mode has a strict 60-second timer. Maximize your score before the buzzer sounds!</p>
+                    <p><strong class="text-white">Shifting Board:</strong> In Arcade, scoring higher increases the hoop's movement velocity. Adapt your shots!</p>
+                </div>
+                <button id="btn-how-to-back" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition">
+                    BACK TO LOCKER ROOM
+                </button>
+            </div>
+        </div>
+
+        <!-- Custom Ball Customization Pro Shop -->
+        <div id="screen-shop" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md hidden flex-col justify-center items-center p-6 z-20">
+            <div class="max-w-md w-full bg-slate-900/90 rounded-2xl border border-yellow-500/30 p-6 shadow-2xl relative flex flex-col max-h-[90%]">
+                <h3 class="orbitron text-2xl font-black text-center text-yellow-400 tracking-wider mb-1">PRO SKIN OUTPOST</h3>
+                <p class="text-center text-slate-400 text-xs uppercase tracking-widest mb-4">Trade Stars for neon equipment</p>
+
+                <!-- Current Star balance inside shop -->
+                <div class="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-800 mb-4">
+                    <span class="text-xs text-slate-400 uppercase tracking-widest">Star Balance:</span>
+                    <div class="flex items-center gap-1 text-lg font-black text-yellow-400 orbitron">
+                        <i data-lucide="star" class="w-5 h-5 text-yellow-400 fill-yellow-400"></i>
+                        <span id="shop-star-balance">0</span>
+                    </div>
+                </div>
+
+                <!-- Ball Grid list -->
+                <div class="grid grid-cols-2 gap-3 overflow-y-auto pr-1 mb-5 flex-1 max-h-[300px]" id="shop-grid">
+                    <!-- Cards will be populated dynamically -->
+                </div>
+
+                <button id="btn-close-shop" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition uppercase text-sm">
+                    RETURN TO MAIN MENU
+                </button>
+            </div>
+        </div>
+
+        <!-- Pause / Game Options Screen -->
+        <div id="screen-pause" class="absolute inset-0 bg-slate-950/80 backdrop-blur-md hidden flex-col justify-center items-center p-6 z-20">
+            <div class="max-w-sm w-full bg-slate-900/90 rounded-2xl border border-cyan-500/30 p-6 text-center">
+                <h3 class="orbitron text-2xl font-black text-cyan-400 tracking-wider mb-2">TIMEOUT CALLED</h3>
+                <p class="text-slate-400 text-xs uppercase tracking-widest mb-6">Game state is currently paused</p>
+
+                <div class="space-y-3">
+                    <button id="btn-resume" class="w-full py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl font-bold orbitron text-sm tracking-wide transition transform active:scale-95 shadow-md shadow-cyan-600/20">
+                        RESUME SHOOTOUT
+                    </button>
+                    <button id="btn-forfeit" class="w-full py-3 bg-slate-800 hover:bg-rose-950 hover:text-rose-400 border border-slate-700 rounded-xl text-slate-400 text-xs font-bold transition">
+                        FORFEIT / RETIRE
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Board -->
+        <div id="screen-game-over" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md hidden flex-col justify-center items-center p-6 z-20">
+            <div class="max-w-md w-full text-center">
+                <div class="w-16 h-16 bg-pink-500/10 border border-pink-500/30 rounded-full flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(236,72,153,0.2)]">
+                    <i data-lucide="clock" class="w-8 h-8 text-pink-500 animate-pulse"></i>
+                </div>
+                <h2 class="orbitron font-black text-3xl md:text-4xl text-pink-500 uppercase tracking-widest mb-1">BUZZER BEATER!</h2>
+                <p class="text-slate-400 text-xs uppercase tracking-widest mb-6">The shootout has concluded</p>
+
+                <!-- High score panel -->
+                <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-800 mb-6 space-y-3">
+                    <div class="flex justify-between items-center text-sm border-b border-slate-800/60 pb-2">
+                        <span class="text-slate-400">STADIUM SCORE</span>
+                        <span id="gameover-final-score" class="orbitron font-black text-2xl text-white">00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-slate-400">BEST RECORD</span>
+                        <span id="gameover-high-score" class="orbitron font-black text-xl text-cyan-400">00</span>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <button id="btn-restart" class="w-full py-3.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold orbitron rounded-xl transition transform active:scale-95 shadow-md shadow-cyan-600/20">
+                        REPLAY MATCH
+                    </button>
+                    <button id="btn-go-home" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold rounded-xl transition border border-slate-850">
+                        RETURN TO CLUBHOUSE
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shot Feedbacks Display (Perfect/Swish!) -->
+        <div id="shot-feedback" class="absolute top-1/4 left-1/2 transform -translate-x-1/2 text-center pointer-events-none select-none z-10 transition-all duration-300 scale-0 opacity-0">
+            <div id="feedback-text" class="orbitron font-black text-3xl uppercase tracking-wider text-yellow-400 drop-shadow-[0_0_10px_rgba(234,179,8,0.6)]">
+                SWISH!
+            </div>
+            <div id="feedback-sub" class="text-xs text-white uppercase font-bold tracking-widest mt-1">+2 Stars</div>
+        </div>
+
+        <!-- Custom Notification Banner (Toast) -->
+        <div id="toast-banner" class="absolute top-20 left-1/2 transform -translate-x-1/2 bg-cyan-950/90 border border-cyan-500 text-cyan-200 text-xs px-4 py-2.5 rounded-full z-30 opacity-0 pointer-events-none transition-all duration-300 shadow-lg shadow-cyan-500/20 flex items-center gap-2">
+            <i data-lucide="bell" class="w-4 h-4 text-cyan-400"></i>
+            <span id="toast-message">Notification Banner</span>
+        </div>
+
+    </div>
+
+    <!-- Retro Sound Synth & Physic Simulator Logic -->
+    <script>
+        // Initiate Lucide Icons
+        lucide.createIcons();
+
+        // ----------------- RETRO AUDIO SYNTH ENGINE -----------------
+        const AudioSynth = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+            playBounce() {
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(120, now);
+                osc.frequency.exponentialRampToValueAtTime(45, now + 0.15);
+                
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            },
+            playRimClank() {
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(650, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.12);
+                
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            },
+            playBackboard() {
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(80, now);
+                osc.frequency.exponentialRampToValueAtTime(30, now + 0.18);
+                
+                // Low pass filter to make it sound muffled
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(150, now);
+
+                gain.gain.setValueAtTime(0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.18);
+            },
+            playSwish() {
+                this.init();
+                const now = this.ctx.currentTime;
+                
+                // White noise for swish sound
+                const bufferSize = this.ctx.sampleRate * 0.22;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1800, now);
+                filter.frequency.exponentialRampToValueAtTime(600, now + 0.22);
+                
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+                
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                noise.start(now);
+                noise.stop(now + 0.22);
+            },
+            playCheer() {
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(250, now);
+                osc.frequency.linearRampToValueAtTime(450, now + 0.4);
+                
+                gain.gain.setValueAtTime(0.06, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.6);
+            },
+            playBuzzer() {
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.6);
+                
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.6);
+            }
+        };
+
+        // ----------------- STATE & ASSET CONSTANTS -----------------
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('game-container');
+
+        let state = {
+            isPlaying: false,
+            isPaused: false,
+            mode: 'arcade', // 'arcade', 'time', 'wind'
+            score: 0,
+            bestArcade: parseInt(localStorage.getItem('hoop_arcade_best')) || 0,
+            bestTime: parseInt(localStorage.getItem('hoop_time_best')) || 0,
+            bestWind: parseInt(localStorage.getItem('hoop_wind_best')) || 0,
+            stars: parseInt(localStorage.getItem('hoop_stars_count')) || 0,
+            timeRemaining: 60,
+            timerInterval: null,
+            windX: 0,
+            hasShotThisBall: false,
+            feedbackTimeout: null
+        };
+
+        // Custom Ball Skins (Pro Shop items)
+        let ballSkins = [
+            { id: 'neon-orange', name: 'Cyber Orange', cost: 0, unlocked: true, color: '#f97316', trailColor: 'rgba(249, 115, 22, 0.4)' },
+            { id: 'neon-pink', name: 'Laser Pink', cost: 15, unlocked: false, color: '#ec4899', trailColor: 'rgba(236, 72, 153, 0.4)' },
+            { id: 'laser-cyan', name: 'Volt Blue', cost: 25, unlocked: false, color: '#06b6d4', trailColor: 'rgba(6, 182, 212, 0.4)' },
+            { id: 'gold-lux', name: 'Gold Royale', cost: 50, unlocked: false, color: '#eab308', trailColor: 'rgba(234, 179, 8, 0.4)' },
+            { id: 'plasma-green', name: 'Tox Plasma', cost: 75, unlocked: false, color: '#22c55e', trailColor: 'rgba(34, 197, 94, 0.4)' },
+            { id: 'hyper-dark', name: 'Retro Grid', cost: 100, unlocked: false, color: '#a855f7', trailColor: 'rgba(168, 85, 247, 0.4)' }
+        ];
+        
+        // Load Unlocked stats from localStore
+        const savedUnlocks = localStorage.getItem('hoop_unlocked_skins');
+        if (savedUnlocks) {
+            const arr = JSON.parse(savedUnlocks);
+            ballSkins.forEach(skin => {
+                if (arr.includes(skin.id)) skin.unlocked = true;
+            });
+        }
+        
+        let activeSkinId = localStorage.getItem('hoop_active_skin') || 'neon-orange';
+        function getActiveSkin() {
+            return ballSkins.find(s => s.id === activeSkinId) || ballSkins[0];
+        }
+
+        // ----------------- PHYSICAL DIMENSIONS AND OBJECTS -----------------
+        function resizeCanvas() {
+            canvas.width = gameContainer.clientWidth;
+            canvas.height = gameContainer.clientHeight;
+            resetHoopLayout();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Grid/Hoop coordinates & dynamic movement
+        let hoop = {
+            x: 0,
+            y: 0,
+            width: 140, // Rim width
+            height: 10,
+            direction: 1,
+            speed: 0, // dynamic based on score
+            // Backboard variables
+            backboardX: 0,
+            backboardY: 0,
+            backboardW: 16,
+            backboardH: 110,
+            // Goal check boundaries
+            leftRimX: 0,
+            rightRimX: 0
+        };
+
+        let ball = {
+            x: 0,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            radius: 20,
+            gravity: 0.35,
+            bounceElasticity: 0.68,
+            rimElasticity: 0.55,
+            trail: [],
+            isLaunched: false,
+            isSinking: false,
+            passedRimY: false,
+            touchedBackboardOrRim: false
+        };
+
+        // Drag/Aim interface parameters
+        let aim = {
+            isDragging: false,
+            startX: 0,
+            startY: 0,
+            currentX: 0,
+            currentY: 0,
+            maxStrength: 15
+        };
+
+        // Net string nodes for physical ripple animations
+        let netNodes = [];
+        const netRows = 5;
+        const netCols = 7;
+
+        function initNetPhysics() {
+            netNodes = [];
+            const spacingX = hoop.width / (netCols - 1);
+            const spacingY = 14; // height drop per row
+            
+            for (let r = 0; r < netRows; r++) {
+                netNodes[r] = [];
+                for (let c = 0; c < netCols; c++) {
+                    const baseIdxX = hoop.leftRimX + c * spacingX;
+                    const baseIdxY = hoop.y + r * spacingY;
+                    netNodes[r].push({
+                        x: baseIdxX,
+                        y: baseIdxY,
+                        ox: baseIdxX, // home position x
+                        oy: baseIdxY, // home position y
+                        vx: 0,
+                        vy: 0
+                    });
+                }
+            }
+        }
+
+        function updateNetPhysics() {
+            const spacingX = hoop.width / (netCols - 1);
+            
+            for (let r = 0; r < netRows; r++) {
+                for (let c = 0; c < netCols; c++) {
+                    const node = netNodes[r][c];
+                    
+                    if (r === 0) {
+                        // Top row is strictly locked to the hoop's moving physical location
+                        node.x = hoop.leftRimX + c * spacingX;
+                        node.y = hoop.y;
+                        node.vx = 0;
+                        node.vy = 0;
+                    } else {
+                        // Physics simulation for hanging string points
+                        const parent = netNodes[r-1][c];
+                        const targetX = parent.x;
+                        const targetY = parent.y + 14;
+
+                        // String elasticity pull
+                        const dx = targetX - node.x;
+                        const dy = targetY - node.y;
+                        node.vx += dx * 0.16;
+                        node.vy += dy * 0.16;
+
+                        // Friction / resistance dampener
+                        node.vx *= 0.75;
+                        node.vy *= 0.75;
+
+                        node.x += node.vx;
+                        node.y += node.vy;
+
+                        // Pull towards adjacent column neighbors to maintain basket mesh web
+                        if (c > 0) {
+                            const leftNeighbor = netNodes[r][c-1];
+                            const ldx = leftNeighbor.x - node.x;
+                            node.vx += ldx * 0.05;
+                        }
+                        if (c < netCols - 1) {
+                            const rightNeighbor = netNodes[r][c+1];
+                            const rdx = rightNeighbor.x - node.x;
+                            node.vx += rdx * 0.05;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Apply a radial push on net string nodes if the ball passes through
+        function applyNetDistortion(ballX, ballY, power) {
+            for (let r = 1; r < netRows; r++) {
+                for (let c = 0; c < netCols; c++) {
+                    const node = netNodes[r][c];
+                    const dist = Math.sqrt((node.x - ballX) ** 2 + (node.y - ballY) ** 2);
+                    if (dist < ball.radius * 1.5) {
+                        const pushDirX = (node.x - ballX) / dist;
+                        node.vx += pushDirX * power * 2;
+                        node.vy += Math.abs(ball.vy) * 0.4;
+                    }
+                }
+            }
+        }
+
+        // ----------------- LAYOUT RESET -----------------
+        function resetHoopLayout() {
+            // Place the backboard on the far right
+            hoop.y = canvas.height * 0.32;
+            hoop.backboardX = canvas.width - 50;
+            hoop.backboardY = hoop.y - 85;
+            
+            // Rim extends to the left from the backboard structure
+            hoop.rightRimX = hoop.backboardX - 8;
+            hoop.leftRimX = hoop.rightRimX - hoop.width;
+            hoop.x = hoop.leftRimX;
+
+            initNetPhysics();
+            spawnBall();
+        }
+
+        function spawnBall() {
+            ball.x = canvas.width * 0.22;
+            ball.y = canvas.height * 0.72;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.trail = [];
+            ball.isLaunched = false;
+            ball.isSinking = false;
+            ball.passedRimY = false;
+            ball.touchedBackboardOrRim = false;
+            state.hasShotThisBall = false;
+        }
+
+        // ----------------- DISPLAY FEEDBACK POPUPS -----------------
+        function triggerScoreFeedback(isSwish) {
+            const container = document.getElementById('shot-feedback');
+            const text = document.getElementById('feedback-text');
+            const sub = document.getElementById('feedback-sub');
+
+            if (isSwish) {
+                text.innerText = "PERFECT SWISH!";
+                text.className = "orbitron font-black text-2xl md:text-4xl uppercase tracking-wider text-yellow-400 drop-shadow-[0_0_12px_rgba(234,179,8,0.7)] animate-bounce";
+                sub.innerText = "Double Score + Bonus Star!";
+                state.stars += 2;
+                state.score += 2; 
+            } else {
+                text.innerText = "NICE BASKET!";
+                text.className = "orbitron font-black text-2xl md:text-3xl uppercase tracking-wider text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]";
+                sub.innerText = "+1 Star Added";
+                state.stars += 1;
+                state.score += 1;
+            }
+
+            localStorage.setItem('hoop_stars_count', state.stars);
+            document.getElementById('stars-display').innerText = state.stars;
+            document.getElementById('score-display').innerText = String(state.score).padStart(2, '0');
+
+            container.classList.remove('scale-0', 'opacity-0');
+            container.classList.add('scale-100', 'opacity-100');
+
+            clearTimeout(state.feedbackTimeout);
+            state.feedbackTimeout = setTimeout(() => {
+                container.classList.remove('scale-100', 'opacity-100');
+                container.classList.add('scale-0', 'opacity-0');
+            }, 1800);
+        }
+
+        // ----------------- GAME STATE UPDATES -----------------
+        function updateGamePhysics() {
+            // Shifting Backboard logic (Arcade mode speed scales with score)
+            if (state.mode === 'arcade' && state.score >= 5) {
+                hoop.speed = Math.min(4, 1 + (state.score - 5) * 0.25);
+            } else if (state.mode === 'wind') {
+                hoop.speed = 1.2; // slight baseline sway
+            } else {
+                hoop.speed = 0;
+            }
+
+            if (hoop.speed > 0) {
+                hoop.backboardX += hoop.speed * hoop.direction;
+                // Clamp limits so hoop doesn't drift too far left or off screen right
+                const maxLeftBound = canvas.width * 0.58;
+                const maxRightBound = canvas.width - 50;
+
+                if (hoop.backboardX < maxLeftBound) {
+                    hoop.backboardX = maxLeftBound;
+                    hoop.direction = 1;
+                } else if (hoop.backboardX > maxRightBound) {
+                    hoop.backboardX = maxRightBound;
+                    hoop.direction = -1;
+                }
+
+                // Sync associated layout coordinates
+                hoop.rightRimX = hoop.backboardX - 8;
+                hoop.leftRimX = hoop.rightRimX - hoop.width;
+                hoop.x = hoop.leftRimX;
+            }
+
+            // Sync top row of net strings to moving rim coordinates
+            updateNetPhysics();
+
+            // Ball simulation
+            if (ball.isLaunched) {
+                // Apply wind force if we are in Wind Challenge Mode
+                if (state.mode === 'wind') {
+                    ball.vx += state.windX * 0.015;
+                }
+
+                // Apply Gravity force
+                ball.vy += ball.gravity;
+                
+                // Add position coords to trail array
+                ball.trail.push({ x: ball.x, y: ball.y });
+                if (ball.trail.length > 15) {
+                    ball.trail.shift();
+                }
+
+                // Update coordinates
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // 1. Boundary ground collision
+                if (ball.y + ball.radius > canvas.height) {
+                    ball.y = canvas.height - ball.radius;
+                    ball.vy = -ball.vy * ball.bounceElasticity;
+                    ball.vx *= 0.95; // floor drag friction
+                    AudioSynth.playBounce();
+                    ball.touchedBackboardOrRim = true; // touched floor = no swish possible anymore
+
+                    // If ball loses momentum and lays dead on ground, respawn
+                    if (Math.abs(ball.vy) < 0.8 && Math.abs(ball.vx) < 0.8) {
+                        spawnBall();
+                    }
+                }
+
+                // Left & Right boundaries bouncing
+                if (ball.x - ball.radius < 0) {
+                    ball.x = ball.radius;
+                    ball.vx = -ball.vx * ball.bounceElasticity;
+                    AudioSynth.playBounce();
+                    ball.touchedBackboardOrRim = true;
+                } else if (ball.x + ball.radius > canvas.width) {
+                    ball.x = canvas.width - ball.radius;
+                    ball.vx = -ball.vx * ball.bounceElasticity;
+                    AudioSynth.playBounce();
+                    ball.touchedBackboardOrRim = true;
+                }
+
+                // 2. Collision with Backboard structure
+                const bbLeft = hoop.backboardX;
+                const bbRight = hoop.backboardX + hoop.backboardW;
+                const bbTop = hoop.backboardY;
+                const bbBottom = hoop.backboardY + hoop.backboardH;
+
+                // Simple box overlap checks
+                if (ball.x + ball.radius > bbLeft && ball.x - ball.radius < bbRight &&
+                    ball.y + ball.radius > bbTop && ball.y - ball.radius < bbBottom) {
+                    
+                    // Identify overlap direction to push out cleanly
+                    const overlapLeft = (ball.x + ball.radius) - bbLeft;
+                    const overlapRight = bbRight - (ball.x - ball.radius);
+                    const overlapTop = (ball.y + ball.radius) - bbTop;
+                    const overlapBottom = bbBottom - (ball.y - ball.radius);
+
+                    const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+
+                    if (minOverlap === overlapLeft) {
+                        ball.x = bbLeft - ball.radius;
+                        ball.vx = -Math.abs(ball.vx) * ball.bounceElasticity;
+                    } else if (minOverlap === overlapRight) {
+                        ball.x = bbRight + ball.radius;
+                        ball.vx = Math.abs(ball.vx) * ball.bounceElasticity;
+                    } else if (minOverlap === overlapTop) {
+                        ball.y = bbTop - ball.radius;
+                        ball.vy = -Math.abs(ball.vy) * ball.bounceElasticity;
+                    } else {
+                        ball.y = bbBottom + ball.radius;
+                        ball.vy = Math.abs(ball.vy) * ball.bounceElasticity;
+                    }
+
+                    AudioSynth.playBackboard();
+                    ball.touchedBackboardOrRim = true;
+                }
+
+                // 3. Collision with metallic rim (Left and Right rim tips represent circular points)
+                const rimLeftDist = Math.sqrt((ball.x - hoop.leftRimX) ** 2 + (ball.y - hoop.y) ** 2);
+                const rimRightDist = Math.sqrt((ball.x - hoop.rightRimX) ** 2 + (ball.y - hoop.y) ** 2);
+
+                if (rimLeftDist < ball.radius + 3) {
+                    // Resolve overlap out from Left tip
+                    const dx = ball.x - hoop.leftRimX;
+                    const dy = ball.y - hoop.y;
+                    const len = Math.sqrt(dx*dx + dy*dy) || 1;
+                    ball.x = hoop.leftRimX + (dx / len) * (ball.radius + 3);
+
+                    // Dynamic rebound calculations
+                    const dot = ball.vx * (dx/len) + ball.vy * (dy/len);
+                    ball.vx = (ball.vx - 2 * dot * (dx/len)) * ball.rimElasticity;
+                    ball.vy = (ball.vy - 2 * dot * (dy/len)) * ball.rimElasticity;
+                    
+                    AudioSynth.playRimClank();
+                    ball.touchedBackboardOrRim = true;
+                }
+
+                if (rimRightDist < ball.radius + 3) {
+                    // Resolve overlap out from Right tip
+                    const dx = ball.x - hoop.rightRimX;
+                    const dy = ball.y - hoop.y;
+                    const len = Math.sqrt(dx*dx + dy*dy) || 1;
+                    ball.x = hoop.rightRimX + (dx / len) * (ball.radius + 3);
+
+                    // Rebound formula
+                    const dot = ball.vx * (dx/len) + ball.vy * (dy/len);
+                    ball.vx = (ball.vx - 2 * dot * (dx/len)) * ball.rimElasticity;
+                    ball.vy = (ball.vy - 2 * dot * (dy/len)) * ball.rimElasticity;
+
+                    AudioSynth.playRimClank();
+                    ball.touchedBackboardOrRim = true;
+                }
+
+                // 4. Goal Check / Net Interaction triggers
+                // The basket registers when the ball passes downwards between left and right rim points.
+                if (ball.x > hoop.leftRimX && ball.x < hoop.rightRimX) {
+                    // Detect intersecting transition from top of rim down to bottom of rim
+                    if (ball.y > hoop.y - 10 && ball.y < hoop.y + 15) {
+                        applyNetDistortion(ball.x, ball.y, Math.abs(ball.vx));
+                    }
+
+                    const wasAboveRim = (ball.y - ball.vy < hoop.y);
+                    const isBelowRim = (ball.y >= hoop.y);
+
+                    if (wasAboveRim && isBelowRim && ball.vy > 0 && !ball.isSinking) {
+                        ball.isSinking = true;
+                        AudioSynth.playSwish();
+                        AudioSynth.playCheer();
+
+                        // Fire off dynamic celebratory particles from net!
+                        for (let i = 0; i < 15; i++) {
+                            createParticle(ball.x, hoop.y, getActiveSkin().color, {
+                                vx: (Math.random() - 0.5) * 6,
+                                vy: (Math.random() - 0.5) * 4 - 2,
+                                size: Math.random() * 4 + 1.5,
+                                life: 30
+                            });
+                        }
+
+                        // Award points
+                        triggerScoreFeedback(!ball.touchedBackboardOrRim);
+
+                        // If in wind mode, randomize next wind speed & direction
+                        if (state.mode === 'wind') {
+                            randomizeWind();
+                        }
+
+                        // Auto-respawn after a successful score delay
+                        setTimeout(spawnBall, 1200);
+                    }
+                }
+
+                // Reset on airball falloff
+                if (ball.y > canvas.height + 60) {
+                    spawnBall();
+                }
+            }
+        }
+
+        // ----------------- PARTICLE ENGINE -----------------
+        let particles = [];
+        function createParticle(x, y, color, options = {}) {
+            particles.push({
+                x: x,
+                y: y,
+                color: color,
+                vx: options.vx !== undefined ? options.vx : (Math.random() - 0.5) * 4,
+                vy: options.vy !== undefined ? options.vy : (Math.random() - 0.5) * 4,
+                size: options.size || Math.random() * 3 + 1,
+                life: options.life || 30,
+                maxLife: options.life || 30
+            });
+        }
+
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // ----------------- RENDERING ENGINE -----------------
+        function drawCourt() {
+            // Dark elegant background textures
+            ctx.fillStyle = '#030008';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Gridlines for a sleek cyberpunk basketball stadium floor
+            ctx.strokeStyle = '#1e1b4b';
+            ctx.lineWidth = 1;
+            const gridSize = 45;
+            for (let x = 0; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Key floor court line arc (Left court area)
+            ctx.beginPath();
+            ctx.arc(0, canvas.height, canvas.height * 0.45, 0, -Math.PI / 2, true);
+            ctx.strokeStyle = '#312e81';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // Draw Wind Challenge vectors visually if applicable
+            if (state.mode === 'wind') {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(14, 165, 233, 0.2)';
+                ctx.lineWidth = 1.5;
+                const windSpacingY = 80;
+                const offset = (Date.now() * 0.05 * state.windX) % 150;
+                
+                for (let y = windSpacingY; y < canvas.height - 50; y += windSpacingY) {
+                    ctx.beginPath();
+                    const lineStartX = (state.windX > 0) ? -150 + offset : canvas.width + 150 + offset;
+                    for (let x = lineStartX; x < canvas.width + 150; x += 150) {
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + 50 * Math.sign(state.windX), y);
+                    }
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        function drawHoopStructure() {
+            // Draw Support Post extending off the right edge of screen
+            ctx.save();
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 12;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(canvas.width, hoop.y + 40);
+            ctx.lineTo(hoop.backboardX + 10, hoop.y + 45);
+            ctx.stroke();
+
+            // Draw Neon Backboard (glowing pink)
+            ctx.strokeStyle = '#ec4899';
+            ctx.shadowColor = '#ec4899';
+            ctx.shadowBlur = 10;
+            ctx.lineWidth = 4;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+            
+            ctx.beginPath();
+            // Rounded backboard outline box
+            ctx.roundRect(hoop.backboardX, hoop.backboardY, hoop.backboardW, hoop.backboardH, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner retro target rectangle on backboard
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(236, 72, 153, 0.5)';
+            ctx.lineWidth = 2.5;
+            ctx.roundRect(hoop.backboardX, hoop.y - 30, hoop.backboardW, 45, 2);
+            ctx.stroke();
+
+            // Draw Hanging Web Net strings
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#f1f5f9';
+            ctx.lineWidth = 1.8;
+            ctx.lineCap = 'round';
+
+            // Vertical strands
+            for (let c = 0; c < netCols; c++) {
+                ctx.beginPath();
+                ctx.moveTo(netNodes[0][c].x, netNodes[0][c].y);
+                for (let r = 1; r < netRows; r++) {
+                    ctx.lineTo(netNodes[r][c].x, netNodes[r][c].y);
+                }
+                ctx.stroke();
+            }
+
+            // Diagonal woven grid strands
+            ctx.strokeStyle = 'rgba(241, 245, 249, 0.35)';
+            for (let r = 0; r < netRows - 1; r++) {
+                for (let c = 0; c < netCols - 1; c++) {
+                    ctx.beginPath();
+                    // cross pattern left-to-right
+                    ctx.moveTo(netNodes[r][c].x, netNodes[r][c].y);
+                    ctx.lineTo(netNodes[r+1][c+1].x, netNodes[r+1][c+1].y);
+                    // cross pattern right-to-left
+                    ctx.moveTo(netNodes[r][c+1].x, netNodes[r][c+1].y);
+                    ctx.lineTo(netNodes[r+1][c].x, netNodes[r+1][c].y);
+                    ctx.stroke();
+                }
+            }
+
+            // Draw Hoop Rim (Cyan ring glowing)
+            ctx.strokeStyle = '#06b6d4';
+            ctx.shadowColor = '#06b6d4';
+            ctx.shadowBlur = 12;
+            ctx.lineWidth = 4.5;
+            ctx.lineCap = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(hoop.leftRimX, hoop.y);
+            ctx.lineTo(hoop.rightRimX, hoop.y);
+            ctx.stroke();
+
+            // Draw small connector bracket from backboard to rim
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(hoop.rightRimX, hoop.y);
+            ctx.lineTo(hoop.backboardX, hoop.y);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawBall() {
+            const skin = getActiveSkin();
+
+            // A: Draw Trajectory Forecast line if currently aiming/dragging
+            if (aim.isDragging && !ball.isLaunched) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([6, 6]);
+                ctx.beginPath();
+
+                // Compute theoretical physics path points
+                const pullX = aim.startX - aim.currentX;
+                const pullY = aim.startY - aim.currentY;
+                
+                // Limit speed force vector
+                let scale = 0.16;
+                let t_vx = pullX * scale;
+                let t_vy = pullY * scale;
+
+                let currX = ball.x;
+                let currY = ball.y;
+
+                ctx.moveTo(currX, currY);
+
+                // Run a mock mini physics simulation loop to render path curve
+                for (let i = 0; i < 40; i++) {
+                    t_vy += ball.gravity;
+                    
+                    // Wind modifier in simulation
+                    if (state.mode === 'wind') {
+                        t_vx += state.windX * 0.015;
+                    }
+
+                    currX += t_vx;
+                    currY += t_vy;
+                    ctx.lineTo(currX, currY);
+
+                    // End path visual early if hitting backboard or floor boundary
+                    if (currY > canvas.height || currX > hoop.backboardX) {
+                        break;
+                    }
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // B: Draw Dynamic glowing Ball trail
+            if (ball.isLaunched && ball.trail.length > 1) {
+                ctx.save();
+                for (let i = 0; i < ball.trail.length - 1; i++) {
+                    const ratio = i / ball.trail.length;
+                    ctx.beginPath();
+                    ctx.strokeStyle = skin.trailColor;
+                    ctx.lineWidth = ball.radius * 2 * ratio;
+                    ctx.lineCap = 'round';
+                    ctx.moveTo(ball.trail[i].x, ball.trail[i].y);
+                    ctx.lineTo(ball.trail[i+1].x, ball.trail[i+1].y);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            // C: Draw the actual Basketball
+            ctx.save();
+            ctx.translate(ball.x, ball.y);
+
+            // Shading glowing shadow
+            ctx.shadowColor = skin.color;
+            ctx.shadowBlur = 14;
+
+            // Base ball circle
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#0f172a'; // dark filled center
+            ctx.fill();
+            
+            ctx.strokeStyle = skin.color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Inner classic basketball structural line curves
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = skin.color;
+            ctx.lineWidth = 1.8;
+
+            // Horizontal core line
+            ctx.beginPath();
+            ctx.moveTo(-ball.radius, 0);
+            ctx.lineTo(ball.radius, 0);
+            ctx.stroke();
+
+            // Vertical core line
+            ctx.beginPath();
+            ctx.moveTo(0, -ball.radius);
+            ctx.lineTo(0, ball.radius);
+            ctx.stroke();
+
+            // Left crescent curve
+            ctx.beginPath();
+            ctx.arc(-ball.radius * 1.1, 0, ball.radius * 0.9, -Math.PI/3, Math.PI/3);
+            ctx.stroke();
+
+            // Right crescent curve
+            ctx.beginPath();
+            ctx.arc(ball.radius * 1.1, 0, ball.radius * 0.9, Math.PI - Math.PI/3, Math.PI + Math.PI/3);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ----------------- AIM / THROW CONTROLLERS -----------------
+        function handleAimStart(clientX, clientY) {
+            if (!state.isPlaying || state.isPaused || ball.isLaunched) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const posX = clientX - rect.left;
+            const posY = clientY - rect.top;
+
+            // Check if user taps/clicks in reasonable proximity of ball position to drag
+            const dist = Math.sqrt((posX - ball.x) ** 2 + (posY - ball.y) ** 2);
+            if (dist < ball.radius * 4.5) { // generous aim touch radius
+                aim.isDragging = true;
+                aim.startX = posX;
+                aim.startY = posY;
+                aim.currentX = posX;
+                aim.currentY = posY;
+                AudioSynth.playRimClank(); // soft clink to signify aim locked
+            }
+        }
+
+        function handleAimMove(clientX, clientY) {
+            if (!aim.isDragging) return;
+            const rect = canvas.getBoundingClientRect();
+            aim.currentX = clientX - rect.left;
+            aim.currentY = clientY - rect.top;
+        }
+
+        function handleAimEnd() {
+            if (!aim.isDragging) return;
+            aim.isDragging = false;
+
+            // Calculate directional launch force vector
+            const pullX = aim.startX - aim.currentX;
+            const pullY = aim.startY - aim.currentY;
+
+            // Do not fire if dragging distance is negligible
+            const distance = Math.sqrt(pullX * pullX + pullY * pullY);
+            if (distance < 15) return;
+
+            // Launch ball using a balanced force multiplier
+            const scale = 0.16;
+            ball.vx = pullX * scale;
+            ball.vy = pullY * scale;
+            ball.isLaunched = true;
+            state.hasShotThisBall = true;
+            
+            AudioSynth.playBounce(); // swoosh noise
+        }
+
+        // Mouse listeners
+        canvas.addEventListener('mousedown', (e) => {
+            handleAimStart(e.clientX, e.clientY);
+        });
+        window.addEventListener('mousemove', (e) => {
+            handleAimMove(e.clientX, e.clientY);
+        });
+        window.addEventListener('mouseup', () => {
+            handleAimEnd();
+        });
+
+        // Touch mobile listeners
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                handleAimStart(e.touches[0].clientX, e.touches[0].clientY);
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                handleAimMove(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchend', () => {
+            handleAimEnd();
+        });
+
+        // ----------------- THE MASTER LOOP -----------------
+        function mainLoop() {
+            if (!state.isPlaying) return;
+
+            if (!state.isPaused) {
+                updateGamePhysics();
+                drawCourt();
+                drawHoopStructure();
+                drawBall();
+                updateAndDrawParticles();
+            }
+
+            requestAnimationFrame(mainLoop);
+        }
+
+        // ----------------- WIND GENERATOR CHALLENGE -----------------
+        function randomizeWind() {
+            // Generates a float between -4.5 and +4.5
+            state.windX = (Math.random() - 0.5) * 9;
+            const dir = state.windX > 0 ? '➡️ EAST' : '⬅️ WEST';
+            const text = `WIND: ${Math.abs(state.windX).toFixed(1)} MPH ${dir}`;
+            
+            document.getElementById('wind-text').innerText = text;
+            showToast(`💨 Wind Shifted! ${text}`);
+        }
+
+        // ----------------- MENU OVERLAYS & STATE HANDLERS -----------------
+        const screenStart = document.getElementById('screen-start');
+        const screenHowTo = document.getElementById('screen-how-to');
+        const screenShop = document.getElementById('screen-shop');
+        const screenPause = document.getElementById('screen-pause');
+        const screenGameOver = document.getElementById('screen-game-over');
+        const badgeMode = document.getElementById('mode-badge');
+        const windBadge = document.getElementById('wind-indicator');
+        const timerBox = document.getElementById('timer-box');
+
+        // Play actions
+        document.getElementById('btn-start-arcade').addEventListener('click', () => {
+            initGame('arcade');
+        });
+        document.getElementById('btn-start-time').addEventListener('click', () => {
+            initGame('time');
+        });
+        document.getElementById('btn-start-wind').addEventListener('click', () => {
+            initGame('wind');
+        });
+
+        // Menu navigation
+        document.getElementById('btn-how-to').addEventListener('click', () => {
+            screenHowTo.classList.remove('hidden');
+        });
+        document.getElementById('btn-how-to-back').addEventListener('click', () => {
+            screenHowTo.classList.add('hidden');
+        });
+        document.getElementById('btn-pause').addEventListener('click', togglePause);
+        document.getElementById('btn-resume').addEventListener('click', togglePause);
+        
+        document.getElementById('btn-forfeit').addEventListener('click', () => {
+            togglePause();
+            concludeMatch();
+        });
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            screenGameOver.classList.add('hidden');
+            initGame(state.mode);
+        });
+
+        document.getElementById('btn-go-home').addEventListener('click', () => {
+            screenGameOver.classList.add('hidden');
+            screenStart.classList.remove('hidden');
+            state.isPlaying = false;
+        });
+
+        // ----------------- SHOP ACTIONS -----------------
+        const btnOpenShop = document.getElementById('btn-open-shop');
+        const btnCloseShop = document.getElementById('btn-close-shop');
+
+        btnOpenShop.addEventListener('click', () => {
+            populateShopGrid();
+            screenShop.classList.remove('hidden');
+        });
+
+        btnCloseShop.addEventListener('click', () => {
+            screenShop.classList.add('hidden');
+        });
+
+        function populateShopGrid() {
+            document.getElementById('shop-star-balance').innerText = state.stars;
+            const grid = document.getElementById('shop-grid');
+            grid.innerHTML = '';
+
+            ballSkins.forEach(skin => {
+                const isEquipped = activeSkinId === skin.id;
+                
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-xl border flex flex-col justify-between items-center transition ${isEquipped ? 'bg-yellow-950/20 border-yellow-500/80' : 'bg-slate-950 border-slate-800'}`;
+
+                // Render micro preview canvas of skin color
+                let btnHTML = '';
+                if (skin.unlocked) {
+                    btnHTML = isEquipped 
+                        ? `<span class="text-xs font-bold text-yellow-400 flex items-center gap-1"><i data-lucide="check" class="w-3.5 h-3.5"></i> ACTIVE</span>`
+                        : `<button onclick="equipSkin('${skin.id}')" class="w-full py-1 text-xs bg-cyan-600 hover:bg-cyan-500 text-white rounded font-bold transition">EQUIP</button>`;
+                } else {
+                    const canAfford = state.stars >= skin.cost;
+                    btnHTML = `<button onclick="buySkin('${skin.id}')" ${!canAfford ? 'disabled' : ''} class="w-full py-1 text-xs flex justify-center items-center gap-0.5 rounded font-bold transition ${canAfford ? 'bg-yellow-600 hover:bg-yellow-500 text-white' : 'bg-slate-900 text-slate-500 cursor-not-allowed'}">
+                        <i data-lucide="star" class="w-3 h-3 fill-yellow-500"></i> ${skin.cost}
+                    </button>`;
+                }
+
+                card.innerHTML = `
+                    <div class="w-10 h-10 rounded-full border-2 mb-2 flex items-center justify-center animate-pulse" style="border-color: ${skin.color}; background: radial-gradient(circle, ${skin.color}22 0%, #020205 80%);">
+                        <div class="w-4 h-4 rounded-full" style="background-color: ${skin.color}"></div>
+                    </div>
+                    <div class="text-[11px] font-bold text-slate-200 mb-2 truncate max-w-full text-center">${skin.name}</div>
+                    <div class="w-full">${btnHTML}</div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        window.buySkin = function(id) {
+            const skin = ballSkins.find(s => s.id === id);
+            if (skin && !skin.unlocked && state.stars >= skin.cost) {
+                state.stars -= skin.cost;
+                skin.unlocked = true;
+                activeSkinId = skin.id;
+
+                localStorage.setItem('hoop_stars_count', state.stars);
+                localStorage.setItem('hoop_active_skin', activeSkinId);
+                
+                // Save unlock arrays
+                const unlockedIds = ballSkins.filter(s => s.unlocked).map(s => s.id);
+                localStorage.setItem('hoop_unlocked_skins', JSON.stringify(unlockedIds));
+
+                AudioSynth.playSwish(); // success sound
+                populateShopGrid();
+                document.getElementById('stars-display').innerText = state.stars;
+            }
+        };
+
+        window.equipSkin = function(id) {
+            const skin = ballSkins.find(s => s.id === id);
+            if (skin && skin.unlocked) {
+                activeSkinId = skin.id;
+                localStorage.setItem('hoop_active_skin', activeSkinId);
+                AudioSynth.playRimClank(); // soft equipped tick sound
+                populateShopGrid();
+            }
+        };
+
+        // ----------------- TIMERS & MATCH INITS -----------------
+        function initGame(mode) {
+            AudioSynth.init();
+            screenStart.classList.add('hidden');
+            
+            state.isPlaying = true;
+            state.isPaused = false;
+            state.mode = mode;
+            state.score = 0;
+            state.timeRemaining = 60;
+            
+            document.getElementById('score-display').innerText = "00";
+            document.getElementById('stars-display').innerText = state.stars;
+
+            // The countdown timer is now active and visible for ALL game modes
+            timerBox.classList.remove('hidden');
+            document.getElementById('timer-display').innerText = "00:60";
+
+            // Clock countdown interval setup for all modes
+            clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                if (!state.isPaused && state.isPlaying) {
+                    state.timeRemaining--;
+                    document.getElementById('timer-display').innerText = `00:${String(state.timeRemaining).padStart(2, '0')}`;
+                    if (state.timeRemaining <= 0) {
+                        concludeMatch();
+                    }
+                }
+            }, 1000);
+
+            // Interface elements adjustments
+            if (mode === 'arcade') {
+                badgeMode.innerText = "Classic Arcade";
+                badgeMode.className = "bg-cyan-950/80 border border-cyan-500/40 px-3 py-1 rounded-full text-xs text-cyan-400 font-bold orbitron uppercase tracking-wider text-center";
+                windBadge.classList.add('hidden');
+            } else if (mode === 'time') {
+                badgeMode.innerText = "Time Attack";
+                badgeMode.className = "bg-pink-950/80 border border-pink-500/40 px-3 py-1 rounded-full text-xs text-pink-400 font-bold orbitron uppercase tracking-wider text-center";
+                windBadge.classList.add('hidden');
+            } else if (mode === 'wind') {
+                badgeMode.innerText = "Wind Challenge";
+                badgeMode.className = "bg-sky-950/80 border border-sky-500/40 px-3 py-1 rounded-full text-xs text-sky-400 font-bold orbitron uppercase tracking-wider text-center";
+                windBadge.classList.remove('hidden');
+                randomizeWind();
+            }
+
+            // Clear variables
+            particles = [];
+            
+            // Build canvas space & objects
+            resizeCanvas();
+            showToast("🏀 DRAW VECTOR LINE TO LAUNCH BALL!");
+            AudioSynth.playSwish();
+
+            requestAnimationFrame(mainLoop);
+        }
+
+        function togglePause() {
+            if (!state.isPlaying) return;
+            state.isPaused = !state.isPaused;
+            const pauseIcon = document.getElementById('pause-icon');
+
+            if (state.isPaused) {
+                screenPause.classList.remove('hidden');
+                pauseIcon.setAttribute('data-lucide', 'play');
+            } else {
+                screenPause.classList.add('hidden');
+                pauseIcon.setAttribute('data-lucide', 'pause');
+            }
+            lucide.createIcons();
+        }
+
+        function concludeMatch() {
+            state.isPlaying = false;
+            clearInterval(state.timerInterval);
+            AudioSynth.playBuzzer();
+
+            // Store high scores
+            let best = 0;
+            if (state.mode === 'arcade') {
+                if (state.score > state.bestArcade) {
+                    state.bestArcade = state.score;
+                    localStorage.setItem('hoop_arcade_best', state.score);
+                }
+                best = state.bestArcade;
+            } else if (state.mode === 'time') {
+                if (state.score > state.bestTime) {
+                    state.bestTime = state.score;
+                    localStorage.setItem('hoop_time_best', state.score);
+                }
+                best = state.bestTime;
+            } else if (state.mode === 'wind') {
+                if (state.score > state.bestWind) {
+                    state.bestWind = state.score;
+                    localStorage.setItem('hoop_wind_best', state.score);
+                }
+                best = state.bestWind;
+            }
+
+            document.getElementById('gameover-final-score').innerText = String(state.score).padStart(2, '0');
+            document.getElementById('gameover-high-score').innerText = String(best).padStart(2, '0');
+
+            screenPause.classList.add('hidden');
+            screenGameOver.classList.remove('hidden');
+        }
+
+        // Custom Toast Dialog banners
+        let toastTimeout = null;
+        function showToast(message) {
+            const toast = document.getElementById('toast-banner');
+            const toastMsg = document.getElementById('toast-message');
+            toastMsg.innerText = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
+            }, 3000);
+        }
+
+        // Setup baseline coordinates on boot
+        resizeCanvas();
+    </script>
+</body>
+</html>
