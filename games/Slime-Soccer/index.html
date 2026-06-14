@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super Physics Slime Soccer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for cool icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0b0f19;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
+        .mono-font {
+            font-family: 'Share Tech Mono', monospace;
+        }
+        canvas {
+            image-rendering: pixelated;
+        }
+        /* Hide scrollbars completely */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen text-white p-2">
+
+    <!-- Main Game Container -->
+    <div class="relative w-full max-w-5xl bg-slate-900 border-4 border-slate-700 rounded-2xl overflow-hidden shadow-2xl flex flex-col aspect-[16/10]">
+        
+        <!-- TOP HUD -->
+        <div class="flex items-center justify-between px-6 py-3 bg-slate-950/80 border-b-2 border-slate-800 z-10 select-none">
+            <!-- P1 Score -->
+            <div class="flex items-center space-x-3">
+                <div class="w-4 h-4 rounded-full bg-blue-500 animate-pulse"></div>
+                <div>
+                    <div class="text-xs text-slate-400 font-bold tracking-wider">PLAYER 1</div>
+                    <div id="p1-score" class="text-3xl font-black text-blue-400 mono-font">0</div>
+                </div>
+            </div>
+
+            <!-- Game Timer & Status -->
+            <div class="text-center">
+                <div id="match-timer" class="text-2xl font-bold text-yellow-400 mono-font tracking-widest">02:00</div>
+                <div id="current-powerup-text" class="text-xs text-purple-400 font-semibold h-4 uppercase tracking-wider"></div>
+            </div>
+
+            <!-- P2 / AI Score -->
+            <div class="flex items-center space-x-3 text-right">
+                <div>
+                    <div id="p2-label" class="text-xs text-slate-400 font-bold tracking-wider">CPU (MED)</div>
+                    <div id="p2-score" class="text-3xl font-black text-red-400 mono-font">0</div>
+                </div>
+                <div class="w-4 h-4 rounded-full bg-red-500 animate-pulse"></div>
+            </div>
+        </div>
+
+        <!-- STAGE CONTAINER (Canvas & Overlays) -->
+        <div class="relative flex-grow w-full h-full bg-slate-950">
+            <!-- CANVAS -->
+            <canvas id="gameCanvas" class="w-full h-full block bg-gradient-to-b from-sky-900 to-indigo-950"></canvas>
+
+            <!-- START / MENU OVERLAY -->
+            <div id="menu-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-6 z-20 transition-all duration-300">
+                <div class="text-center mb-6 animate-bounce">
+                    <span class="px-4 py-1 bg-yellow-500 text-slate-950 text-xs font-black tracking-widest rounded-full uppercase">SUPER SLIME LEAGUE</span>
+                    <h1 class="text-5xl md:text-6xl font-black bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent mt-2">PHYSICS SOCCER</h1>
+                </div>
+
+                <!-- Match Setup Box -->
+                <div class="w-full max-w-lg bg-slate-900/80 border border-slate-700 p-6 rounded-2xl shadow-xl flex flex-col space-y-4">
+                    <!-- Mode Selection -->
+                    <div>
+                        <label class="text-xs font-bold text-slate-400 tracking-wider uppercase">Game Mode</label>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <button id="mode-vs-ai" class="py-2.5 px-4 rounded-xl font-bold bg-blue-600 hover:bg-blue-500 border-2 border-blue-400 text-white transition-all flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-robot"></i> <span>Vs. AI</span>
+                            </button>
+                            <button id="mode-vs-local" class="py-2.5 px-4 rounded-xl font-bold bg-slate-800 hover:bg-slate-700 border-2 border-transparent text-slate-300 transition-all flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-gamepad"></i> <span>Local 2P</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- AI Difficulty & Stadium Controls -->
+                    <div id="difficulty-section" class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-400 tracking-wider uppercase">AI Difficulty</label>
+                            <select id="ai-difficulty" class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                                <option value="easy">Easy (Puppy)</option>
+                                <option value="medium" selected>Medium (Challenger)</option>
+                                <option value="hard">Hard (Unbeatable)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-400 tracking-wider uppercase">Theme/Field</label>
+                            <select id="stadium-theme" class="w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                                <option value="cyber">Neon Cyber</option>
+                                <option value="grass" selected>Classic Meadow</option>
+                                <option value="volcano">Magma Crater</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Start Button -->
+                    <button id="btn-start-game" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 font-extrabold text-lg text-slate-950 rounded-xl shadow-lg shadow-emerald-500/20 transform hover:-translate-y-0.5 active:translate-y-0 transition-all uppercase tracking-widest">
+                        Kick Off <i class="fa-solid fa-circle-play ml-1"></i>
+                    </button>
+                </div>
+
+                <!-- Simple Instructions Footer -->
+                <div class="mt-6 text-center text-xs text-slate-500 space-y-1">
+                    <p><kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">A</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">D</kbd> or <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">←</kbd> <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">→</kbd> to Move | <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">W</kbd> or <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">↑</kbd> to Jump</p>
+                    <p>Collect floating Star Power-ups for special features!</p>
+                </div>
+            </div>
+
+            <!-- IN-GAME NOTIFICATION OVERLAY (Goal, Countdown, etc.) -->
+            <div id="game-alert-overlay" class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center bg-transparent z-10">
+                <div id="alert-banner" class="scale-0 opacity-0 transition-all duration-300 transform flex flex-col items-center">
+                    <span id="alert-subtitle" class="text-md uppercase tracking-widest font-extrabold text-yellow-400 drop-shadow-md"></span>
+                    <h1 id="alert-title" class="text-7xl md:text-8xl font-black text-white italic drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)]"></h1>
+                </div>
+            </div>
+
+            <!-- PAUSE MENU OVERLAY -->
+            <div id="pause-overlay" class="hidden absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-6 z-15">
+                <h2 class="text-4xl font-extrabold text-white mb-6">Game Paused</h2>
+                <div class="flex flex-col space-y-3 w-48">
+                    <button id="btn-resume" class="py-3 px-6 bg-blue-600 hover:bg-blue-500 font-bold rounded-xl transition">Resume</button>
+                    <button id="btn-restart" class="py-3 px-6 bg-slate-700 hover:bg-slate-600 font-bold rounded-xl transition">Restart</button>
+                    <button id="btn-menu" class="py-3 px-6 bg-red-600 hover:bg-red-500 font-bold rounded-xl transition">Exit to Menu</button>
+                </div>
+            </div>
+
+            <!-- Pause Button Quick Trigger -->
+            <button id="btn-quick-pause" class="absolute top-4 left-4 w-10 h-10 rounded-full bg-slate-900/60 border border-slate-700/60 flex items-center justify-center text-slate-300 hover:bg-slate-800 hover:text-white z-10 transition">
+                <i class="fa-solid fa-pause"></i>
+            </button>
+        </div>
+
+        <!-- ON-SCREEN MOBILE TOUCH CONTROLS (Rendered responsively) -->
+        <div id="mobile-controls" class="hidden md:hidden grid grid-cols-2 justify-between items-center px-4 py-4 bg-slate-950 border-t border-slate-800 select-none">
+            <!-- Left Hand (Movement) -->
+            <div class="flex space-x-3">
+                <button id="touch-left" class="w-14 h-14 bg-slate-800 active:bg-blue-600 border border-slate-700 active:border-blue-400 rounded-xl flex items-center justify-center text-2xl transition-all">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <button id="touch-right" class="w-14 h-14 bg-slate-800 active:bg-blue-600 border border-slate-700 active:border-blue-400 rounded-xl flex items-center justify-center text-2xl transition-all">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+            <!-- Right Hand (Jump) -->
+            <div class="flex justify-end">
+                <button id="touch-jump" class="w-16 h-16 bg-blue-600 active:bg-blue-500 border-2 border-blue-400 rounded-full flex flex-col items-center justify-center shadow-lg active:scale-95 transition-all">
+                    <i class="fa-solid fa-chevron-up text-lg"></i>
+                    <span class="text-[10px] font-bold uppercase tracking-wider">JUMP</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Settings Info Box -->
+    <div class="mt-4 text-center text-xs text-slate-500 max-w-md">
+        <p>Built with canvas physics, procedural synth audio effects & particle physics.</p>
+        <p class="mt-1">P1 Keys: <kbd class="bg-slate-800 text-slate-300 px-1 py-0.5 rounded">A</kbd>/<kbd class="bg-slate-800 text-slate-300 px-1 py-0.5 rounded">D</kbd> or <kbd class="bg-slate-800 text-slate-300 px-1 py-0.5 rounded">←</kbd>/<kbd class="bg-slate-800 text-slate-300 px-1 py-0.5 rounded">→</kbd> Move, <kbd class="bg-slate-800 text-slate-300 px-1 py-0.5 rounded">W</kbd> or <kbd class="bg-slate-800 text-slate-300 px-1 py-0.5 rounded">↑</kbd> Jump</p>
+    </div>
+
+    <!-- AUDIO ENGINE & PHYSICS CONTROLS SCRIPT -->
+    <script>
+        // --- SOUND GENERATOR (Web Audio API) ---
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playBounce() {
+                this.init();
+                if (!this.ctx) return;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.1);
+
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+            playWhistle() {
+                this.init();
+                if (!this.ctx) return;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(1000, this.ctx.currentTime + 0.1);
+
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+            }
+            playKick() {
+                this.init();
+                if (!this.ctx) return;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.08);
+
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+            playGoal() {
+                this.init();
+                if (!this.ctx) return;
+                
+                // Whistle first
+                this.playWhistle();
+
+                // Build a simple synth explosion
+                let osc = this.ctx.createOscillator();
+                let noise = this.ctx.createOscillator(); // Sine acting as noise
+                let gain = this.ctx.createGain();
+                
+                osc.connect(gain);
+                noise.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.5);
+
+                noise.type = 'triangle';
+                noise.frequency.setValueAtTime(90, this.ctx.currentTime);
+                noise.frequency.setValueAtTime(20, this.ctx.currentTime + 0.3);
+
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.6);
+
+                osc.start();
+                noise.start();
+                osc.stop(this.ctx.currentTime + 0.6);
+                noise.stop(this.ctx.currentTime + 0.6);
+            }
+            playPowerup() {
+                this.init();
+                if (!this.ctx) return;
+                let osc = this.ctx.createOscillator();
+                let gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.35);
+
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+            }
+        }
+        const sfx = new SoundEngine();
+
+        // --- GAME ENVIRONMENT AND CONFIG ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Internal Game Resolution (Coordinates)
+        const BASE_WIDTH = 1000;
+        const BASE_HEIGHT = 600;
+
+        // Physics Constants
+        const GRAVITY = 0.5;
+        const FRICTION = 0.98;
+        const BOUNCINESS = 0.75; // Ball bounce factor
+
+        // State variables
+        let isVsAI = true;
+        let aiDifficulty = 'medium';
+        let stadiumTheme = 'grass';
+        let gameActive = false;
+        let isPaused = false;
+        let gameTimer = 120; // 2 minutes
+        let timerInterval = null;
+        let powerupTimer = 0;
+
+        // Scores
+        let p1Score = 0;
+        let p2Score = 0;
+
+        // Goal Boundaries
+        const GOAL_WIDTH = 100;
+        const GOAL_HEIGHT = 180;
+
+        // Custom Keyboard Handler
+        const keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.code] = true;
+            // Prevent scrolling on arrow keys & Space
+            if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+        });
+        window.addEventListener('keyup', e => {
+            keys[e.code] = false;
+        });
+
+        // Detect touch capabilities and show mobile HUD if needed
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (isTouchDevice) {
+            document.getElementById('mobile-controls').classList.remove('hidden');
+            document.getElementById('mobile-controls').classList.add('grid');
+        }
+
+        // Touch Control States
+        const touchState = { left: false, right: false, jump: false };
+        const setupTouchBtn = (id, key) => {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); touchState[key] = true; });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); touchState[key] = false; });
+        };
+        setupTouchBtn('touch-left', 'left');
+        setupTouchBtn('touch-right', 'right');
+        setupTouchBtn('touch-jump', 'jump');
+
+        // --- THEME SCHEMES ---
+        const themes = {
+            grass: {
+                sky: ['#1e3a8a', '#172554'], // Blue gradient
+                ground: '#15803d',           // Green grass
+                groundBorder: '#166534',
+                lineColor: 'rgba(255, 255, 255, 0.4)',
+                netColor: '#f1f5f9'
+            },
+            cyber: {
+                sky: ['#0f051d', '#1f0d3d'], // Dark Cyber Violet
+                ground: '#3b0764',           // Purple Ground
+                groundBorder: '#701a75',
+                lineColor: '#f43f5e',
+                netColor: '#06b6d4'
+            },
+            volcano: {
+                sky: ['#450a0a', '#180000'], // Deep Crimson/Black
+                ground: '#7f1d1d',           // Lava-baked rock
+                groundBorder: '#f97316',     // Lava Glow Line
+                lineColor: '#ea580c',
+                netColor: '#ef4444'
+            }
+        };
+
+        // --- CLASSES / ENTITIES ---
+
+        // Slime Class (Players)
+        class Slime {
+            constructor(x, y, radius, color, isP1) {
+                this.startX = x;
+                this.startY = y;
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = radius;
+                this.baseRadius = radius;
+                this.color = color;
+                this.isP1 = isP1;
+                this.isJumping = false;
+                
+                // Modifiers (affected by power-ups)
+                this.speedMultiplier = 1;
+                this.jumpMultiplier = 1;
+                this.sizeMultiplier = 1;
+
+                // Eye and Face animations
+                this.eyeXOffset = isP1 ? 15 : -15;
+                this.blinkTimer = 0;
+                this.isBlinking = false;
+            }
+
+            reset() {
+                this.x = this.startX;
+                this.y = this.startY;
+                this.vx = 0;
+                this.vy = 0;
+                this.isJumping = false;
+                this.speedMultiplier = 1;
+                this.jumpMultiplier = 1;
+                this.sizeMultiplier = 1;
+                this.radius = this.baseRadius;
+            }
+
+            update() {
+                // Apply modifiers
+                this.radius = this.baseRadius * this.sizeMultiplier;
+
+                // Controls for P1
+                if (this.isP1) {
+                    let moveX = 0;
+                    // In VS AI mode, Player 1 can use both WASD and Arrow Keys.
+                    // In Local 2P mode, Player 1 only uses WASD, freeing Arrow Keys for Player 2.
+                    if (keys['KeyA'] || (isVsAI && keys['ArrowLeft']) || touchState.left) moveX -= 1;
+                    if (keys['KeyD'] || (isVsAI && keys['ArrowRight']) || touchState.right) moveX += 1;
+                    
+                    this.vx = moveX * 6 * this.speedMultiplier;
+
+                    if ((keys['KeyW'] || (isVsAI && keys['ArrowUp']) || touchState.jump) && !this.isJumping) {
+                        this.vy = -12 * this.jumpMultiplier;
+                        this.isJumping = true;
+                        sfx.playKick();
+                    }
+                } 
+                // Controls for P2 (Human or AI)
+                else {
+                    if (!isVsAI) {
+                        let moveX = 0;
+                        if (keys['ArrowLeft']) moveX -= 1;
+                        if (keys['ArrowRight']) moveX += 1;
+                        
+                        this.vx = moveX * 6 * this.speedMultiplier;
+
+                        if (keys['ArrowUp'] && !this.isJumping) {
+                            this.vy = -12 * this.jumpMultiplier;
+                            this.isJumping = true;
+                            sfx.playKick();
+                        }
+                    } else {
+                        this.runAI();
+                    }
+                }
+
+                // Apply Physics
+                this.vy += GRAVITY;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Restrict movement boundaries (Player can only go to center line)
+                const pitchHeight = BASE_HEIGHT - 60; // ground offset
+                
+                // Floor Collision
+                if (this.y >= pitchHeight) {
+                    this.y = pitchHeight;
+                    this.vy = 0;
+                    this.isJumping = false;
+                }
+
+                // Horizontal Limits (Player cannot cross center or go out of bounds)
+                if (this.isP1) {
+                    // Left boundary (near Goal 1 net/wall)
+                    if (this.x - this.radius < GOAL_WIDTH) {
+                        this.x = GOAL_WIDTH + this.radius;
+                        this.vx = 0;
+                    }
+                    // Right boundary (P1 cannot cross middle)
+                    if (this.x + this.radius > BASE_WIDTH / 2) {
+                        this.x = BASE_WIDTH / 2 - this.radius;
+                        this.vx = 0;
+                    }
+                } else {
+                    // Left boundary (P2 cannot cross middle)
+                    if (this.x - this.radius < BASE_WIDTH / 2) {
+                        this.x = BASE_WIDTH / 2 + this.radius;
+                        this.vx = 0;
+                    }
+                    // Right boundary (near Goal 2 net/wall)
+                    if (this.x + this.radius > BASE_WIDTH - GOAL_WIDTH) {
+                        this.x = BASE_WIDTH - GOAL_WIDTH - this.radius;
+                        this.vx = 0;
+                    }
+                }
+
+                // Handle eye blinking mechanics
+                this.blinkTimer++;
+                if (this.blinkTimer > 180) { // Blink every ~3 seconds
+                    this.isBlinking = true;
+                    if (this.blinkTimer > 195) {
+                        this.isBlinking = false;
+                        this.blinkTimer = 0;
+                    }
+                }
+            }
+
+            // Artificial Intelligence logic
+            runAI() {
+                const ball = game.ball;
+                if (!ball) return;
+                // AI Speed settings based on selected difficulty
+                let speed = 4;
+                let reactionRange = 0.6; // lower = reacts later when ball is in own territory
+                let jumpPredictRange = 100;
+                
+                if (aiDifficulty === 'easy') {
+                    speed = 3;
+                    reactionRange = 0.45;
+                    jumpPredictRange = 70;
+                } else if (aiDifficulty === 'hard') {
+                    speed = 6.5;
+                    reactionRange = 0.85;
+                    jumpPredictRange = 150;
+                }
+
+                // Check if ball is in AI half
+                const inAIHalf = ball.x > (BASE_WIDTH / 2) * (1 - reactionRange);
+
+                if (inAIHalf) {
+                    // Try to position behind the ball relative to P1 goal (chase it back)
+                    let targetX = ball.x;
+                    
+                    // If ball is behind the AI, get behind the ball quickly
+                    if (ball.x > this.x && ball.y < BASE_HEIGHT - 120) {
+                        targetX = ball.x - 20;
+                    }
+
+                    if (this.x < targetX - 10) {
+                        this.vx = speed * this.speedMultiplier;
+                    } else if (this.x > targetX + 10) {
+                        this.vx = -speed * this.speedMultiplier;
+                    } else {
+                        this.vx = 0;
+                    }
+
+                    // Jump logic: ball is higher than AI and close
+                    const distToBallX = Math.abs(this.x - ball.x);
+                    if (distToBallX < jumpPredictRange && ball.y < this.y - 40 && !this.isJumping && ball.vy > -5) {
+                        // Small probability check for randomness in lower difficulty
+                        if (aiDifficulty !== 'easy' || Math.random() < 0.4) {
+                            this.vy = -12 * this.jumpMultiplier;
+                            this.isJumping = true;
+                        }
+                    }
+                } else {
+                    // Idle back to own sweet spot (center-right area)
+                    const sweetSpot = BASE_WIDTH * 0.75;
+                    if (this.x < sweetSpot - 10) {
+                        this.vx = speed * 0.6;
+                    } else if (this.x > sweetSpot + 10) {
+                        this.vx = -speed * 0.6;
+                    } else {
+                        this.vx = 0;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                // Draw Slime main semi-circle body
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, Math.PI, 0, false);
+                ctx.closePath();
+                
+                // Add linear sheen/gradient for nice volumetric appearance
+                let grad = ctx.createLinearGradient(this.x, this.y - this.radius, this.x, this.y);
+                grad.addColorStop(0, this.color);
+                grad.addColorStop(1, this.adjustBrightness(this.color, -30));
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                // Inner highlighting for glow look
+                ctx.strokeStyle = this.adjustBrightness(this.color, 40);
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Eyes & Face calculations
+                // Eye moves dynamically towards the ball slightly
+                const ball = game.ball;
+                const angle = ball ? Math.atan2(ball.y - (this.y - this.radius/2), ball.x - this.x) : (this.isP1 ? 0 : Math.PI);
+                const eyeX = this.x + (this.isP1 ? this.radius * 0.4 : -this.radius * 0.4) + Math.cos(angle) * 4;
+                const eyeY = this.y - this.radius * 0.5 + Math.sin(angle) * 2;
+                const eyeSize = this.radius * 0.18;
+
+                // Draw Eye White
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(eyeX, eyeY, eyeSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw Pupil
+                if (!this.isBlinking) {
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(eyeX + Math.cos(angle) * 2, eyeY + Math.sin(angle) * 2, eyeSize * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Blink line
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(eyeX - eyeSize, eyeY);
+                    ctx.lineTo(eyeX + eyeSize, eyeY);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            adjustBrightness(hex, percent) {
+                let num = parseInt(hex.replace("#",""), 16),
+                amt = Math.round(2.55 * percent),
+                R = (num >> 16) + amt,
+                G = (num >> 8 & 0x00FF) + amt,
+                B = (num & 0x0000FF) + amt;
+                return "#" + (0x1000000 + (R<255?R<0?0:R:255)*0x10000 + (G<255?G<0?0:G:255)*0x100 + (B<255?B<0?0:B:255)).toString(16).slice(1);
+            }
+        }
+
+        // Soccer Ball Class
+        class Ball {
+            constructor(x, y, radius) {
+                this.startX = x;
+                this.startY = y;
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = radius;
+                this.baseRadius = radius;
+                this.rotation = 0;
+                this.mass = 0.8;
+                this.sizeMultiplier = 1;
+
+                // Visual trails
+                this.trail = [];
+            }
+
+            reset() {
+                this.x = this.startX;
+                this.y = this.startY;
+                this.vx = 0;
+                this.vy = 0;
+                this.rotation = 0;
+                this.sizeMultiplier = 1;
+                this.radius = this.baseRadius;
+                this.trail = [];
+            }
+
+            update() {
+                // Apply Power-up scale changes
+                this.radius = this.baseRadius * this.sizeMultiplier;
+
+                // Basic Gravity & Physics
+                this.vy += GRAVITY;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Add to trail
+                this.trail.push({x: this.x, y: this.y});
+                if (this.trail.length > 8) this.trail.shift();
+
+                // Air friction
+                this.vx *= 0.993;
+                this.vy *= 0.993;
+
+                const pitchHeight = BASE_HEIGHT - 60;
+
+                // FLOOR COLLISION
+                if (this.y + this.radius >= pitchHeight) {
+                    this.y = pitchHeight - this.radius;
+                    this.vy = -this.vy * BOUNCINESS;
+                    this.vx *= FRICTION;
+                    if (Math.abs(this.vy) > 1.5) sfx.playBounce();
+                }
+
+                // CEILING BOUNDARY
+                if (this.y - this.radius <= 0) {
+                    this.y = this.radius;
+                    this.vy = -this.vy * BOUNCINESS;
+                    sfx.playBounce();
+                }
+
+                // WALL & OUT OF BOUNDS COLLISIONS (behind nets or off top of nets)
+                // Left goal frame hits
+                this.handleGoalCollisions(0, GOAL_WIDTH, true);
+                // Right goal frame hits
+                this.handleGoalCollisions(BASE_WIDTH - GOAL_WIDTH, BASE_WIDTH, false);
+
+                // Set Spin/Rotation rate based on horizontal velocity
+                this.rotation += this.vx * 0.05;
+            }
+
+            handleGoalCollisions(goalStartX, goalEndX, isLeftGoal) {
+                const pitchHeight = BASE_HEIGHT - 60;
+                const netTopY = pitchHeight - GOAL_HEIGHT;
+
+                // Goal Post Physics
+                // The main corner of the goal net can act as a rigid rebound circle
+                const postX = isLeftGoal ? goalEndX : goalStartX;
+                const postY = netTopY;
+                const distToPost = Math.hypot(this.x - postX, this.y - postY);
+
+                if (distToPost < this.radius + 6) { // Goalpost thickness
+                    sfx.playBounce();
+                    // Simple angle rebound from goal post corner
+                    const angle = Math.atan2(this.y - postY, this.x - postX);
+                    const speed = Math.hypot(this.vx, this.vy) || 5;
+                    this.vx = Math.cos(angle) * speed * 0.8;
+                    this.vy = Math.sin(angle) * speed * 0.8;
+                    // Move slightly away to prevent sticking
+                    this.x = postX + Math.cos(angle) * (this.radius + 8);
+                    this.y = postY + Math.sin(angle) * (this.radius + 8);
+                    return;
+                }
+
+                // Hit Net Horizontal Bar (Top boundary of the net)
+                if (this.y + this.radius >= netTopY && this.y - this.radius <= netTopY + 8) {
+                    const insideGoalX = isLeftGoal ? (this.x < goalEndX) : (this.x > goalStartX);
+                    if (insideGoalX) {
+                        this.y = netTopY - this.radius;
+                        this.vy = -this.vy * BOUNCINESS;
+                        sfx.playBounce();
+                    }
+                }
+
+                // Hit Back Net Boundary / Outer Left & Right Screens
+                if (isLeftGoal) {
+                    if (this.x - this.radius <= 0) {
+                        this.x = this.radius;
+                        this.vx = -this.vx * BOUNCINESS;
+                        sfx.playBounce();
+                    }
+                } else {
+                    if (this.x + this.radius >= BASE_WIDTH) {
+                        this.x = BASE_WIDTH - this.radius;
+                        this.vx = -this.vx * BOUNCINESS;
+                        sfx.playBounce();
+                    }
+                }
+            }
+
+            draw() {
+                // Draw Trail
+                ctx.save();
+                for (let i = 0; i < this.trail.length; i++) {
+                    let point = this.trail[i];
+                    let alpha = (i + 1) / this.trail.length * 0.25;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, this.radius * (0.4 + (i/this.trail.length)*0.6), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Draw Ball Body
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#334155';
+                ctx.stroke();
+
+                // Pentagons or Sports-patterns (Traditional Soccer design)
+                ctx.fillStyle = '#1e293b';
+                for (let i = 0; i < 5; i++) {
+                    ctx.rotate((Math.PI * 2) / 5);
+                    ctx.beginPath();
+                    // Draw mini polygon shapes around perimeter
+                    ctx.moveTo(0, -this.radius * 0.8);
+                    ctx.lineTo(this.radius * 0.2, -this.radius * 0.5);
+                    ctx.lineTo(-this.radius * 0.2, -this.radius * 0.5);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // Central Pentagon
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius * 0.35, 0, Math.PI * 2);
+                ctx.fillStyle = '#0f172a';
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // Particle System for Goal Explosions and Jumps
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.radius = Math.random() * 4 + 2;
+                this.color = color;
+                
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 8 + 3;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed - 2; // general upwards bias
+
+                this.life = 1.0;
+                this.decay = Math.random() * 0.03 + 0.015;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.2; // slight gravity
+                this.life -= this.decay;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Power-Up Item Class
+        class Powerup {
+            constructor() {
+                this.x = BASE_WIDTH / 2;
+                this.y = BASE_HEIGHT / 3;
+                this.radius = 24;
+                
+                // Randomly select power-up type
+                const types = ['GIANT_BALL', 'SPEED_BOOST', 'LOW_GRAVITY', 'SUPER_JUMP'];
+                this.type = types[Math.floor(Math.random() * types.length)];
+                
+                // Style configurations
+                this.color = '#a855f7'; // purple default
+                this.icon = '⚡';
+                this.label = '';
+
+                switch (this.type) {
+                    case 'GIANT_BALL':
+                        this.color = '#eab308'; // Yellow
+                        this.icon = '⚽';
+                        this.label = 'GIANT BALL!';
+                        break;
+                    case 'SPEED_BOOST':
+                        this.color = '#3b82f6'; // Blue
+                        this.icon = '⚡';
+                        this.label = 'SPEED BOOST!';
+                        break;
+                    case 'LOW_GRAVITY':
+                        this.color = '#10b981'; // Green
+                        this.icon = '☁️';
+                        this.label = 'LOW GRAVITY!';
+                        break;
+                    case 'SUPER_JUMP':
+                        this.color = '#f43f5e'; // Pink
+                        this.icon = '🚀';
+                        this.label = 'SUPER JUMP!';
+                        break;
+                }
+
+                this.bobOffset = 0;
+                this.life = 500; // frames
+            }
+
+            update() {
+                this.bobOffset += 0.05;
+                this.y = BASE_HEIGHT / 3 + Math.sin(this.bobOffset) * 15;
+                this.life--;
+            }
+
+            draw() {
+                ctx.save();
+                // Outer ring glowing pulsing effect
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Inner circle fill
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius - 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw Text Icon
+                ctx.shadowBlur = 0;
+                ctx.font = '22px Outfit';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.icon, this.x, this.y + 1);
+
+                ctx.restore();
+            }
+        }
+
+
+        // --- MAIN GAME CONTROLLER ---
+        class GameEngine {
+            constructor() {
+                this.p1 = null;
+                this.p2 = null;
+                this.ball = null;
+                this.particles = [];
+                this.powerup = null;
+                this.activePowerup = null;
+                this.powerupDuration = 300; // frames (~5s)
+                this.powerupTarget = null; // 'P1', 'P2' or 'BALL'
+
+                this.isCountdown = false;
+                this.countdownVal = 3;
+                this.countdownTimer = 0;
+
+                // Goals coordinates for drawing
+                this.goal1 = { x: 0, y: BASE_HEIGHT - 60 - GOAL_HEIGHT, w: GOAL_WIDTH, h: GOAL_HEIGHT };
+                this.goal2 = { x: BASE_WIDTH - GOAL_WIDTH, y: BASE_HEIGHT - 60 - GOAL_HEIGHT, w: GOAL_WIDTH, h: GOAL_HEIGHT };
+
+                // Stuck Ball Safety Check (increments when ball is static near goals)
+                this.stuckTimer = 0;
+            }
+
+            init() {
+                this.p1 = new Slime(250, BASE_HEIGHT - 60, 60, '#3b82f6', true); // Blue slime
+                this.p2 = new Slime(750, BASE_HEIGHT - 60, 60, '#ef4444', false); // Red slime
+                this.ball = new Ball(BASE_WIDTH / 2, 150, 24); // Soccer ball
+                this.particles = [];
+                this.powerup = null;
+                this.activePowerup = null;
+                this.stuckTimer = 0;
+
+                p1Score = 0;
+                p2Score = 0;
+                this.updateScores();
+
+                this.triggerCountdown("ROUND STARTED");
+            }
+
+            resetRound(winner) {
+                if (this.p1) this.p1.reset();
+                if (this.p2) this.p2.reset();
+                if (this.ball) this.ball.reset();
+                this.powerup = null;
+                this.activePowerup = null;
+                this.stuckTimer = 0;
+                document.getElementById('current-powerup-text').innerText = '';
+
+                if (winner === 'p1') {
+                    this.triggerCountdown("PLAYER 1 SCORED!");
+                } else if (winner === 'p2') {
+                    this.triggerCountdown(isVsAI ? "CPU SCORED!" : "PLAYER 2 SCORED!");
+                } else if (winner === 'stuck') {
+                    this.triggerCountdown("BALL UNSTUCK! KICK OFF");
+                } else {
+                    this.triggerCountdown("RESET ROUND");
+                }
+            }
+
+            triggerCountdown(message) {
+                sfx.playWhistle();
+                this.isCountdown = true;
+                this.countdownVal = 3;
+                this.countdownTimer = 0;
+
+                const banner = document.getElementById('alert-banner');
+                const subtitle = document.getElementById('alert-subtitle');
+                const title = document.getElementById('alert-title');
+
+                subtitle.innerText = message;
+                title.innerText = this.countdownVal;
+
+                banner.classList.remove('scale-0', 'opacity-0');
+                banner.classList.add('scale-100', 'opacity-100');
+            }
+
+            updateCountdown() {
+                if (!this.isCountdown) return;
+
+                this.countdownTimer++;
+                if (this.countdownTimer >= 40) { // roughly every 0.75 seconds
+                    this.countdownTimer = 0;
+                    this.countdownVal--;
+                    
+                    if (this.countdownVal > 0) {
+                        document.getElementById('alert-title').innerText = this.countdownVal;
+                        sfx.playBounce();
+                    } else if (this.countdownVal === 0) {
+                        document.getElementById('alert-title').innerText = "GO!";
+                        sfx.playWhistle();
+                    } else {
+                        // Countdown ended
+                        this.isCountdown = false;
+                        const banner = document.getElementById('alert-banner');
+                        banner.classList.add('scale-0', 'opacity-0');
+                        banner.classList.remove('scale-100', 'opacity-100');
+                    }
+                }
+            }
+
+            updateScores() {
+                document.getElementById('p1-score').innerText = p1Score;
+                document.getElementById('p2-score').innerText = p2Score;
+            }
+
+            handleCollisions() {
+                if (!this.p1 || !this.p2 || !this.ball) return;
+
+                // COLLISION: Player & Ball
+                // Slimes are represented as half-circles mathematically
+                this.checkSlimeBallCollision(this.p1);
+                this.checkSlimeBallCollision(this.p2);
+
+                // COLLISION: Ball enters Goal lines
+                const pitchHeight = BASE_HEIGHT - 60;
+                
+                // Left goal (P1 Goal line)
+                if (this.ball.x - this.ball.radius < GOAL_WIDTH && this.ball.y > pitchHeight - GOAL_HEIGHT) {
+                    // P2 Scores!
+                    p2Score++;
+                    this.triggerGoalExplosion(this.ball.x, this.ball.y, '#ef4444');
+                    this.updateScores();
+                    this.resetRound('p2');
+                }
+
+                // Right goal (P2 Goal line)
+                if (this.ball.x + this.ball.radius > BASE_WIDTH - GOAL_WIDTH && this.ball.y > pitchHeight - GOAL_HEIGHT) {
+                    // P1 Scores!
+                    p1Score++;
+                    this.triggerGoalExplosion(this.ball.x, this.ball.y, '#3b82f6');
+                    this.updateScores();
+                    this.resetRound('p1');
+                }
+
+                // COLLISION: Player & Power-Up
+                if (this.powerup) {
+                    const distToP1 = Math.hypot(this.p1.x - this.powerup.x, this.p1.y - this.powerup.y);
+                    const distToP2 = Math.hypot(this.p2.x - this.powerup.x, this.p2.y - this.powerup.y);
+
+                    if (distToP1 < this.p1.radius + this.powerup.radius) {
+                        this.applyPowerup(this.powerup.type, 'P1');
+                    } else if (distToP2 < this.p2.radius + this.powerup.radius) {
+                        this.applyPowerup(this.powerup.type, 'P2');
+                    }
+                }
+            }
+
+            checkSlimeBallCollision(slime) {
+                if (!this.ball) return;
+                // Slime bounding area is a circle but we only consider the top curved half.
+                // If ball is below the flat bottom of slime, restrict it.
+                if (this.ball.y > slime.y) return;
+
+                // Find closest point to slime center
+                const dx = this.ball.x - slime.x;
+                const dy = this.ball.y - slime.y;
+                const dist = Math.hypot(dx, dy);
+
+                // Circle collision detection with slime top shell
+                if (dist < (slime.radius + this.ball.radius)) {
+                    sfx.playKick();
+                    
+                    // Generate hit sparks
+                    this.triggerSparks(this.ball.x, this.ball.y, slime.color);
+
+                    // Rebound angle
+                    const angle = Math.atan2(dy, dx);
+                    
+                    // Separate ball and slime immediately so they don't stick
+                    this.ball.x = slime.x + Math.cos(angle) * (slime.radius + this.ball.radius);
+                    this.ball.y = slime.y + Math.sin(angle) * (slime.radius + this.ball.radius);
+
+                    // Calculate relative velocities
+                    const rX = this.ball.vx - slime.vx;
+                    const rY = this.ball.vy - slime.vy;
+
+                    // Resolve physics speeds
+                    const speed = Math.hypot(rX, rY);
+                    
+                    // Bounce away (add additional momentum based on player dash/jump vectors)
+                    this.ball.vx = Math.cos(angle) * (speed + 2) * 1.05;
+                    this.ball.vy = Math.sin(angle) * (speed + 2) * 1.05;
+
+                    // Clamp extreme high velocities
+                    const maxVel = 22;
+                    const currentVel = Math.hypot(this.ball.vx, this.ball.vy);
+                    if (currentVel > maxVel) {
+                        this.ball.vx = (this.ball.vx / currentVel) * maxVel;
+                        this.ball.vy = (this.ball.vy / currentVel) * maxVel;
+                    }
+                }
+            }
+
+            applyPowerup(type, target) {
+                if (!this.p1 || !this.p2 || !this.ball) return;
+                sfx.playPowerup();
+                this.activePowerup = type;
+                this.powerupTarget = target;
+                this.powerupDuration = 360; // 6 seconds active
+                this.powerup = null; // consume it
+
+                // Update text
+                const label = target === 'P1' ? 'P1' : (isVsAI ? 'CPU' : 'P2');
+                document.getElementById('current-powerup-text').innerText = `${label} ACTIVE: ${type.replace('_', ' ')}`;
+
+                // Apply adjustments
+                this.p1.reset();
+                this.p2.reset();
+
+                if (type === 'GIANT_BALL') {
+                    this.ball.sizeMultiplier = 1.9;
+                } else if (type === 'SPEED_BOOST') {
+                    const recipient = target === 'P1' ? this.p1 : this.p2;
+                    recipient.speedMultiplier = 1.6;
+                } else if (type === 'LOW_GRAVITY') {
+                    // Affects whole arena / ball
+                    this.ball.vy *= 0.5;
+                } else if (type === 'SUPER_JUMP') {
+                    const recipient = target === 'P1' ? this.p1 : this.p2;
+                    recipient.jumpMultiplier = 1.5;
+                }
+            }
+
+            updatePowerupStatus() {
+                if (!this.activePowerup) {
+                    // Random Power-Up Spawner
+                    if (Math.random() < 0.0015 && !this.powerup) {
+                        this.powerup = new Powerup();
+                    }
+                    if (this.powerup) {
+                        this.powerup.update();
+                        if (this.powerup.life <= 0) this.powerup = null;
+                    }
+                    return;
+                }
+
+                this.powerupDuration--;
+                if (this.powerupDuration <= 0) {
+                    // Revert everything
+                    this.activePowerup = null;
+                    if (this.ball) this.ball.sizeMultiplier = 1.0;
+                    if (this.p1) {
+                        this.p1.speedMultiplier = 1.0;
+                        this.p1.jumpMultiplier = 1.0;
+                    }
+                    if (this.p2) {
+                        this.p2.speedMultiplier = 1.0;
+                        this.p2.jumpMultiplier = 1.0;
+                    }
+                    document.getElementById('current-powerup-text').innerText = '';
+                }
+            }
+
+            // Checks if the ball is stuck on the goal nets or posts
+            checkStuckBall() {
+                if (!this.ball) return;
+
+                // Check if ball is physically within the left goal or right goal columns
+                const isNearLeftGoal = this.ball.x <= GOAL_WIDTH + 30;
+                const isNearRightGoal = this.ball.x >= BASE_WIDTH - GOAL_WIDTH - 30;
+                
+                // Ball is static or moving extremely slowly
+                const isSlow = Math.hypot(this.ball.vx, this.ball.vy) < 0.25;
+
+                if ((isNearLeftGoal || isNearRightGoal) && isSlow) {
+                    this.stuckTimer++;
+
+                    // Start showing a warning in the HUD after 5 seconds (300 frames)
+                    if (this.stuckTimer > 300) {
+                        const remainingSeconds = Math.ceil((600 - this.stuckTimer) / 60);
+                        if (remainingSeconds > 0) {
+                            document.getElementById('current-powerup-text').innerText = `⚠️ BALL STUCK! RESETTING IN ${remainingSeconds}s...`;
+                        }
+                    }
+
+                    // Reset the round after 10 seconds (600 frames at ~60fps)
+                    if (this.stuckTimer >= 600) {
+                        this.resetRound('stuck');
+                    }
+                } else {
+                    // Clear the warning text if ball becomes active again
+                    if (this.stuckTimer > 300 && !this.activePowerup) {
+                        document.getElementById('current-powerup-text').innerText = '';
+                    }
+                    this.stuckTimer = 0;
+                }
+            }
+
+            triggerGoalExplosion(x, y, color) {
+                sfx.playGoal();
+                for (let i = 0; i < 60; i++) {
+                    this.particles.push(new Particle(x, y, color));
+                }
+            }
+
+            triggerSparks(x, y, color) {
+                for (let i = 0; i < 8; i++) {
+                    this.particles.push(new Particle(x, y, color));
+                }
+            }
+
+            update() {
+                if (isPaused || !gameActive) return;
+
+                this.updateCountdown();
+
+                if (!this.isCountdown) {
+                    if (this.p1) this.p1.update();
+                    if (this.p2) this.p2.update();
+                    if (this.ball) this.ball.update();
+                    this.handleCollisions();
+                    this.updatePowerupStatus();
+                    this.checkStuckBall();
+                }
+
+                // Update Particles
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    this.particles[i].update();
+                    if (this.particles[i].life <= 0) {
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
+
+            draw() {
+                // Dynamic Aspect Ratio Auto Scaling Fits Base Coordinate Engine
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+                ctx.scale(canvas.width / BASE_WIDTH, canvas.height / BASE_HEIGHT);
+
+                // Background sky gradients
+                const themeData = themes[stadiumTheme];
+                let bgGrad = ctx.createLinearGradient(0, 0, 0, BASE_HEIGHT);
+                bgGrad.addColorStop(0, themeData.sky[0]);
+                bgGrad.addColorStop(1, themeData.sky[1]);
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, BASE_WIDTH, BASE_HEIGHT);
+
+                // Cyber Grid Overlay if Cyber theme is on
+                if (stadiumTheme === 'cyber') {
+                    ctx.strokeStyle = 'rgba(236, 72, 153, 0.08)';
+                    ctx.lineWidth = 1;
+                    for (let x = 0; x < BASE_WIDTH; x += 40) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, BASE_HEIGHT);
+                        ctx.stroke();
+                    }
+                    for (let y = 0; y < BASE_HEIGHT; y += 40) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, y);
+                        ctx.lineTo(BASE_WIDTH, y);
+                        ctx.stroke();
+                    }
+                }
+
+                // Drawing Soccer Field Lines / Markings
+                ctx.strokeStyle = themeData.lineColor;
+                ctx.lineWidth = 4;
+                
+                // Center Line
+                ctx.beginPath();
+                ctx.moveTo(BASE_WIDTH / 2, BASE_HEIGHT - 60);
+                ctx.lineTo(BASE_WIDTH / 2, BASE_HEIGHT - 120);
+                ctx.stroke();
+
+                // Center Circle (semi arc on pitch ground)
+                ctx.beginPath();
+                ctx.arc(BASE_WIDTH / 2, BASE_HEIGHT - 60, 80, Math.PI, 0, false);
+                ctx.stroke();
+
+                // Draw Goal Nets
+                this.drawGoalNet(this.goal1, true, themeData);
+                this.drawGoalNet(this.goal2, false, themeData);
+
+                // Draw Ground
+                ctx.fillStyle = themeData.ground;
+                ctx.fillRect(0, BASE_HEIGHT - 60, BASE_WIDTH, 60);
+                
+                // Top Grass highlight strip
+                ctx.fillStyle = themeData.groundBorder;
+                ctx.fillRect(0, BASE_HEIGHT - 60, BASE_WIDTH, 6);
+
+                // Draw Power-Up
+                if (this.powerup) {
+                    this.powerup.draw();
+                }
+
+                // Draw Players (if initialized)
+                if (this.p1) this.p1.draw();
+                if (this.p2) this.p2.draw();
+
+                // Draw Ball (if initialized)
+                if (this.ball) this.ball.draw();
+
+                // Draw Particles
+                this.particles.forEach(p => p.draw());
+
+                ctx.restore();
+            }
+
+            drawGoalNet(goal, isLeft, themeData) {
+                ctx.save();
+                ctx.strokeStyle = themeData.netColor;
+                ctx.lineWidth = 2.5;
+
+                // Simple diagonal cross pattern for arcade net appearance
+                const step = 20;
+                for (let x = goal.x; x <= goal.x + goal.w; x += step) {
+                    ctx.beginPath();
+                    if (isLeft) {
+                        ctx.moveTo(x, goal.y);
+                        ctx.lineTo(0, goal.y + (goal.w - (x - goal.x)) * (goal.h / goal.w));
+                    } else {
+                        ctx.moveTo(x, goal.y);
+                        ctx.lineTo(BASE_WIDTH, goal.y + (x - goal.x) * (goal.h / goal.w));
+                    }
+                    ctx.stroke();
+                }
+
+                // Solid outer rigid post frames
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                if (isLeft) {
+                    ctx.moveTo(0, goal.y);
+                    ctx.lineTo(goal.w, goal.y);
+                    ctx.lineTo(goal.w, goal.y + goal.h);
+                } else {
+                    ctx.moveTo(BASE_WIDTH, goal.y);
+                    ctx.lineTo(goal.x, goal.y);
+                    ctx.lineTo(goal.x, goal.y + goal.h);
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        const game = new GameEngine();
+
+        // --- SCREEN ADJUSTMENTS (RESPONSIVENESS) ---
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            // Set element dimensions to match parent container gracefully
+            canvas.width = width;
+            canvas.height = height;
+
+            game.draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- TIMER AND STATS MATCH LOOP ---
+        function startMatchTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            gameTimer = 120; // reset
+            updateTimerDisplay();
+
+            timerInterval = setInterval(() => {
+                if (!isPaused && gameActive && !game.isCountdown) {
+                    gameTimer--;
+                    updateTimerDisplay();
+
+                    if (gameTimer <= 0) {
+                        endMatch();
+                    }
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(gameTimer / 60);
+            const secs = gameTimer % 60;
+            document.getElementById('match-timer').innerText = 
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function endMatch() {
+            gameActive = false;
+            if (timerInterval) clearInterval(timerInterval);
+
+            // Determine Winner text
+            let winnerText = "TIE MATCH!";
+            let subtitle = "STALEMATE!";
+            
+            if (p1Score > p2Score) {
+                winnerText = "PLAYER 1 WINS!";
+                subtitle = "VICTORY ROYALE";
+            } else if (p2Score > p1Score) {
+                winnerText = isVsAI ? "CPU WINS!" : "PLAYER 2 WINS!";
+                subtitle = isVsAI ? "BETTER LUCK NEXT TIME" : "VICTORY ROYALE";
+            }
+
+            sfx.playWhistle();
+
+            // Display alert banner forever until exit
+            const banner = document.getElementById('alert-banner');
+            const subTitleEl = document.getElementById('alert-subtitle');
+            const titleEl = document.getElementById('alert-title');
+
+            subTitleEl.innerText = subtitle;
+            titleEl.innerText = winnerText;
+            
+            banner.classList.remove('scale-0', 'opacity-0');
+            banner.classList.add('scale-100', 'opacity-100');
+
+            setTimeout(() => {
+                // Exit back to menu after 5 seconds automatically
+                document.getElementById('menu-overlay').classList.remove('hidden');
+            }, 5000);
+        }
+
+        // --- GAME TICK LOOP ---
+        function loop() {
+            game.update();
+            game.draw();
+            requestAnimationFrame(loop);
+        }
+
+        // --- INTERACTIVE EVENT LISTENERS & SETTINGS ---
+        window.onload = function() {
+            resizeCanvas();
+            requestAnimationFrame(loop);
+        };
+
+        // UI Play mode selections
+        document.getElementById('mode-vs-ai').addEventListener('click', () => {
+            isVsAI = true;
+            document.getElementById('mode-vs-ai').className = "py-2.5 px-4 rounded-xl font-bold bg-blue-600 hover:bg-blue-500 border-2 border-blue-400 text-white transition-all flex items-center justify-center space-x-2";
+            document.getElementById('mode-vs-local').className = "py-2.5 px-4 rounded-xl font-bold bg-slate-800 hover:bg-slate-700 border-2 border-transparent text-slate-300 transition-all flex items-center justify-center space-x-2";
+            document.getElementById('difficulty-section').classList.remove('hidden');
+            document.getElementById('p2-label').innerText = "CPU (" + aiDifficulty.toUpperCase().substring(0, 3) + ")";
+        });
+
+        document.getElementById('mode-vs-local').addEventListener('click', () => {
+            isVsAI = false;
+            document.getElementById('mode-vs-local').className = "py-2.5 px-4 rounded-xl font-bold bg-red-600 hover:bg-red-500 border-2 border-red-400 text-white transition-all flex items-center justify-center space-x-2";
+            document.getElementById('mode-vs-ai').className = "py-2.5 px-4 rounded-xl font-bold bg-slate-800 hover:bg-slate-700 border-2 border-transparent text-slate-300 transition-all flex items-center justify-center space-x-2";
+            document.getElementById('difficulty-section').classList.add('hidden');
+            document.getElementById('p2-label').innerText = "PLAYER 2";
+        });
+
+        // Setup AI difficulty label
+        document.getElementById('ai-difficulty').addEventListener('change', (e) => {
+            aiDifficulty = e.target.value;
+            if (isVsAI) {
+                document.getElementById('p2-label').innerText = "CPU (" + aiDifficulty.toUpperCase().substring(0, 3) + ")";
+            }
+        });
+
+        // Setup Stadium Theme selectors
+        document.getElementById('stadium-theme').addEventListener('change', (e) => {
+            stadiumTheme = e.target.value;
+        });
+
+        // Start Game Kickoff action trigger
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+            sfx.init(); // Warm Audio Context on User gesture
+            document.getElementById('menu-overlay').classList.add('hidden');
+            
+            gameActive = true;
+            isPaused = false;
+            game.init();
+            startMatchTimer();
+            resizeCanvas();
+        });
+
+        // Pause / Controls triggers
+        const pauseOverlay = document.getElementById('pause-overlay');
+        function setPause(state) {
+            isPaused = state;
+            if (isPaused) {
+                pauseOverlay.classList.remove('hidden');
+            } else {
+                pauseOverlay.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('btn-quick-pause').addEventListener('click', () => {
+            if (gameActive) setPause(!isPaused);
+        });
+
+        document.getElementById('btn-resume').addEventListener('click', () => {
+            setPause(false);
+        });
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            setPause(false);
+            game.init();
+            startMatchTimer();
+        });
+
+        document.getElementById('btn-menu').addEventListener('click', () => {
+            setPause(false);
+            gameActive = false;
+            if (timerInterval) clearInterval(timerInterval);
+            document.getElementById('menu-overlay').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
