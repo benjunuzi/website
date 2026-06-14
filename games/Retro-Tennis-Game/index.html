@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Tennis Championship</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .digital-font {
+            font-family: 'Share Tech Mono', monospace;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-hidden selection:bg-emerald-500 selection:text-slate-900">
+
+    <!-- Header / Nav -->
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-4 py-2 shrink-0">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="bg-gradient-to-tr from-emerald-400 to-green-500 p-1.5 rounded-lg shadow-lg shadow-emerald-500/10">
+                    <svg class="w-5 h-5 text-slate-950" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 13v1c0 1.1.9 2 2 2v1.93zm6.9-2.53c-.26-.81-1-1.4-1.9-1.4h-1v-3c0-.55-.45-1-1-1h-6v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.4z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-sm md:text-base font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-green-300 bg-clip-text text-transparent">Grand Slam Tennis</h1>
+                    <p class="text-[10px] text-slate-400 leading-none">Retro Arcade Edition</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="soundToggle" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 hover:text-emerald-400" title="Toggle Sound">
+                    <i data-lucide="volume-2" class="w-4 h-4"></i>
+                </button>
+                <button id="rulesBtn" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300 hover:text-emerald-400" title="How to Play">
+                    <i data-lucide="help-circle" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Section -->
+    <main class="flex-grow max-w-5xl w-full mx-auto p-3 flex flex-col lg:flex-row items-center justify-center gap-4 overflow-hidden">
+        
+        <!-- Sidebar / Match Stats -->
+        <div class="w-full lg:w-64 flex flex-row lg:flex-col gap-2 shrink-0">
+            
+            <!-- Scoreboard -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex-grow flex flex-col justify-center gap-1.5 shadow-xl shadow-slate-950/50">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-1">
+                    <span class="text-[8px] uppercase tracking-wider font-semibold text-slate-400">Match Scoreboard</span>
+                    <span class="px-1.5 py-0.2 rounded text-[7px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold uppercase">Live</span>
+                </div>
+                
+                <!-- Player Row -->
+                <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                        <span class="font-bold text-slate-200">You</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <!-- Sets -->
+                        <div class="flex gap-1" id="playerSets">
+                            <span class="w-4 h-6 flex items-center justify-center rounded bg-slate-850 border border-slate-800 text-[10px] font-bold text-slate-400 digital-font">0</span>
+                        </div>
+                        <!-- Current Game Score -->
+                        <div id="playerGameScore" class="w-10 h-7 flex items-center justify-center rounded bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 text-xs font-bold digital-font">
+                            Love
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opponent Row -->
+                <div class="flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full bg-rose-500"></div>
+                        <span class="font-bold text-slate-200" id="opponentName">Ace-Bot</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <!-- Sets -->
+                        <div class="flex gap-1" id="opponentSets">
+                            <span class="w-4 h-6 flex items-center justify-center rounded bg-slate-850 border border-slate-800 text-[10px] font-bold text-slate-400 digital-font">0</span>
+                        </div>
+                        <!-- Current Game Score -->
+                        <div id="opponentGameScore" class="w-10 h-7 flex items-center justify-center rounded bg-slate-850 border border-slate-800 text-slate-300 text-xs font-bold digital-font">
+                            Love
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customization & Settings -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 flex-grow flex flex-col justify-center gap-1.5 shadow-xl shadow-slate-950/50">
+                <h3 class="text-[10px] font-semibold text-slate-300 flex items-center gap-1">
+                    <i data-lucide="sliders" class="w-3 h-3 text-emerald-400"></i> Settings
+                </h3>
+                
+                <!-- Difficulty Selection -->
+                <div class="flex flex-col gap-0.5">
+                    <label class="text-[8px] text-slate-400 font-medium">Opponent AI Level</label>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button onclick="setDifficulty('easy')" id="diff-easy" class="py-0.5 text-[8px] font-semibold rounded border border-slate-800 bg-slate-850 hover:bg-slate-800 transition-all text-slate-300">Club</button>
+                        <button onclick="setDifficulty('medium')" id="diff-medium" class="py-0.5 text-[8px] font-semibold rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 transition-all">Pro</button>
+                        <button onclick="setDifficulty('hard')" id="diff-hard" class="py-0.5 text-[8px] font-semibold rounded border border-slate-800 bg-slate-850 hover:bg-slate-800 transition-all text-slate-300">Legend</button>
+                    </div>
+                </div>
+
+                <!-- Court Theme Selection -->
+                <div class="flex flex-col gap-0.5">
+                    <label class="text-[8px] text-slate-400 font-medium">Court Surface</label>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button onclick="setTheme('grass')" id="theme-grass" class="py-0.5 text-[8px] font-semibold rounded border border-emerald-500/30 bg-emerald-950/30 text-emerald-400">Grass</button>
+                        <button onclick="setTheme('clay')" id="theme-clay" class="py-0.5 text-[8px] font-semibold rounded border border-slate-800 bg-slate-850 hover:bg-slate-850 text-slate-400">Clay</button>
+                        <button onclick="setTheme('hardcourt')" id="theme-hardcourt" class="py-0.5 text-[8px] font-semibold rounded border border-slate-800 bg-slate-850 hover:bg-slate-850 text-slate-400">Hard</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Game Court Frame -->
+        <div class="flex-grow flex flex-col items-center justify-center relative w-full h-full min-h-0">
+            <!-- Constrained to a tight max-width so the game is noticeably smaller on desktop and laptops -->
+            <div class="relative w-full max-w-sm sm:max-w-md md:max-w-lg aspect-[8/5] flex items-center justify-center bg-slate-900 border-2 border-slate-800 rounded-2xl overflow-hidden shadow-2xl shadow-emerald-500/5 p-0.5">
+                
+                <!-- Game Canvas -->
+                <canvas id="gameCanvas" class="w-full h-full object-contain cursor-none block shadow-lg rounded-xl"></canvas>
+
+                <!-- On-Screen Controls Overlay -->
+                <div id="screenOverlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center transition-all duration-300">
+                    <!-- Dynamic Content -->
+                    <div id="overlayContent" class="flex flex-col items-center gap-2 max-w-xs">
+                        <div class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                            <i data-lucide="play" class="w-5 h-5 fill-emerald-400" id="overlayIcon"></i>
+                        </div>
+                        <h2 id="overlayTitle" class="text-lg font-extrabold text-slate-100 tracking-tight">Ready to Serve?</h2>
+                        <p id="overlayDesc" class="text-[10px] text-slate-400 leading-relaxed">First to 6 games wins!</p>
+                        
+                        <button id="actionBtn" class="mt-1 w-full py-2 px-3 text-[11px] font-bold rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 text-slate-950 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-1.5">
+                            <span>Start Match</span>
+                            <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Score Toast Overlay -->
+                <div id="toastOverlay" class="pointer-events-none absolute top-4 left-1/2 transform -translate-x-1/2 bg-slate-900/90 border border-emerald-500/30 px-3 py-1 rounded-full shadow-lg opacity-0 transition-all duration-300 scale-90 flex items-center gap-1.5">
+                    <span id="toastText" class="text-[10px] font-bold text-emerald-400 tracking-wide uppercase">Point!</span>
+                </div>
+            </div>
+
+            <!-- Touch / Mobile Helper Bar -->
+            <div class="mt-1.5 text-center text-[9px] text-slate-500 flex items-center justify-center gap-1 shrink-0">
+                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                <span>Drag inside court or use Left/Right arrows to slide racket</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Rules Modal -->
+    <div id="rulesModal" class="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xs w-full p-4 relative shadow-2xl flex flex-col gap-2">
+            <button onclick="toggleRules()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-100">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <div class="flex items-center gap-2 border-b border-slate-800 pb-1.5">
+                <div class="bg-emerald-500/10 p-1 rounded-lg text-emerald-400">
+                    <i data-lucide="info" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-slate-100">Rules & Scoring</h3>
+                </div>
+            </div>
+            
+            <div class="space-y-1.5 text-[11px] text-slate-300">
+                <div class="p-2 rounded-lg bg-slate-850 border border-slate-800/60">
+                    <span class="font-bold text-emerald-400 block mb-0.5">Scoring Sequence</span>
+                    Love (0) → 15 → 30 → 40.
+                </div>
+                <div class="p-2 rounded-lg bg-slate-850 border border-slate-800/60">
+                    <span class="font-bold text-emerald-400 block mb-0.5">Deuce & Ad</span>
+                    At 40-40 (Deuce), you must win by two clear points.
+                </div>
+            </div>
+
+            <button onclick="toggleRules()" class="w-full py-1.5 font-semibold bg-slate-800 hover:bg-slate-700 rounded-lg transition-all text-slate-200 text-xs">Got it!</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900/60 bg-slate-950 px-4 py-1.5 text-center mt-auto shrink-0">
+        <p class="text-[8px] text-slate-500">
+            Grand Slam Tennis © 2026 Retro Arcade. Synthesized soundscapes with Web Audio API.
+        </p>
+    </footer>
+
+    <!-- Game Logic & Physics Engine -->
+    <script>
+        // Setup simple audio synthesizer using Web Audio API
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let soundEnabled = true;
+
+        function playSynthSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'hit_player') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'hit_opponent') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(330, now);
+                    osc.frequency.exponentialRampToValueAtTime(660, now + 0.1);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'wall') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(120, now + 0.08);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'score_win') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'score_lose') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'victory') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const noteOsc = audioCtx.createOscillator();
+                        const noteGain = audioCtx.createGain();
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(audioCtx.destination);
+                        noteOsc.type = 'sine';
+                        noteOsc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                        noteGain.gain.setValueAtTime(0.1, now + idx * 0.1);
+                        noteGain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.3);
+                        noteOsc.start(now + idx * 0.1);
+                        noteOsc.stop(now + idx * 0.1 + 0.35);
+                    });
+                }
+            } catch (e) {
+                console.warn("Audio context suspended until interaction.");
+            }
+        }
+
+        const soundToggle = document.getElementById('soundToggle');
+        soundToggle.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            if (soundEnabled) {
+                soundToggle.innerHTML = '<i data-lucide="volume-2" class="w-4 h-4 text-emerald-400"></i>';
+            } else {
+                soundToggle.innerHTML = '<i data-lucide="volume-x" class="w-4 h-4 text-slate-500"></i>';
+            }
+            lucide.createIcons();
+            playSynthSound('hit_player');
+        });
+
+        lucide.createIcons();
+
+        // Canvas Setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Match state
+        let gameRunning = false;
+        let isPaused = false;
+        let isServing = true;
+        let currentServer = 'player';
+
+        // Court Theme Colors
+        let themes = {
+            grass: {
+                bg: '#15803d',
+                border: '#166534',
+                lines: '#ffffff',
+                shadows: 'rgba(2, 44, 34, 0.2)'
+            },
+            clay: {
+                bg: '#c2410c',
+                border: '#9a3412',
+                lines: '#ffffff',
+                shadows: 'rgba(67, 20, 7, 0.25)'
+            },
+            hardcourt: {
+                bg: '#1d4ed8',
+                border: '#1e3a8a',
+                lines: '#ffffff',
+                shadows: 'rgba(17, 24, 39, 0.2)'
+            }
+        };
+        let currentTheme = 'grass';
+
+        // Difficulty Settings
+        let difficulties = {
+            easy: {
+                aiSpeed: 3.5,
+                aiErrorRate: 0.18,
+                ballBaseSpeed: 5,
+                ballSpeedInc: 0.15
+            },
+            medium: {
+                aiSpeed: 5.5,
+                aiErrorRate: 0.08,
+                ballBaseSpeed: 6.5,
+                ballSpeedInc: 0.2
+            },
+            hard: {
+                aiSpeed: 8,
+                aiErrorRate: 0.02,
+                ballBaseSpeed: 8,
+                ballSpeedInc: 0.25
+            }
+        };
+        let currentDifficulty = 'medium';
+
+        let playerPoints = 0;
+        let opponentPoints = 0;
+        let playerGames = 0;
+        let opponentGames = 0;
+
+        // Logical game dimensions
+        let courtWidth = 800;
+        let courtHeight = 500;
+
+        let paddleWidth = 100;
+        let paddleHeight = 12;
+
+        let player = {
+            x: courtWidth / 2 - paddleWidth / 2,
+            y: courtHeight - 35,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: '#34d399',
+            glow: 'rgba(52, 211, 153, 0.4)'
+        };
+
+        let opponent = {
+            x: courtWidth / 2 - paddleWidth / 2,
+            y: 25,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: '#f43f5e',
+            glow: 'rgba(244, 63, 94, 0.4)',
+            targetX: courtWidth / 2 - paddleWidth / 2
+        };
+
+        let ball = {
+            x: courtWidth / 2,
+            y: courtHeight / 2,
+            radius: 8,
+            vx: 4,
+            vy: -4,
+            speed: 6.5,
+            color: '#ccff00',
+            glow: 'rgba(204, 255, 0, 0.6)'
+        };
+
+        function resizeCanvas() {
+            canvas.width = courtWidth;
+            canvas.height = courtHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let keysPressed = {};
+        window.addEventListener('keydown', (e) => {
+            keysPressed[e.key] = true;
+            if (["ArrowLeft", "ArrowRight", "Space"].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            keysPressed[e.key] = false;
+        });
+
+        function updatePlayerPosition(clientX) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const mouseX = (clientX - rect.left) * scaleX;
+            player.x = mouseX - player.width / 2;
+            
+            if (player.x < 30) player.x = 30;
+            if (player.x + player.width > courtWidth - 30) player.x = courtWidth - 30 - player.width;
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            updatePlayerPosition(e.clientX);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                updatePlayerPosition(e.touches[0].clientX);
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (isServing && gameRunning) {
+                releaseServe();
+            }
+            if (e.touches.length > 0) {
+                updatePlayerPosition(e.touches[0].clientX);
+            }
+        });
+
+        function toggleRules() {
+            const modal = document.getElementById('rulesModal');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+        }
+        document.getElementById('rulesBtn').addEventListener('click', toggleRules);
+
+        function setDifficulty(level) {
+            currentDifficulty = level;
+            ['easy', 'medium', 'hard'].forEach(d => {
+                const btn = document.getElementById(`diff-${d}`);
+                if (d === level) {
+                    btn.className = "py-0.5 text-[8px] font-semibold rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 transition-all";
+                } else {
+                    btn.className = "py-0.5 text-[8px] font-semibold rounded border border-slate-800 bg-slate-850 hover:bg-slate-800 transition-all text-slate-300";
+                }
+            });
+            ball.speed = difficulties[level].ballBaseSpeed;
+        }
+
+        function setTheme(theme) {
+            currentTheme = theme;
+            ['grass', 'clay', 'hardcourt'].forEach(t => {
+                const btn = document.getElementById(`theme-${t}`);
+                if (t === theme) {
+                    btn.className = "py-0.5 text-[8px] font-semibold rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400";
+                } else {
+                    btn.className = "py-0.5 text-[8px] font-semibold rounded border border-slate-800 bg-slate-850 hover:bg-slate-850 text-slate-400";
+                }
+            });
+        }
+
+        function initServe() {
+            isServing = true;
+            ball.vx = 0;
+            ball.vy = 0;
+            
+            if (currentServer === 'player') {
+                ball.y = player.y - ball.radius - 2;
+                ball.x = player.x + player.width / 2;
+            } else {
+                ball.y = opponent.y + opponent.height + ball.radius + 2;
+                ball.x = opponent.x + opponent.width / 2;
+                setTimeout(() => {
+                    if (isServing && currentServer === 'opponent' && gameRunning) {
+                        releaseServe();
+                    }
+                }, 1200);
+            }
+        }
+
+        function releaseServe() {
+            isServing = false;
+            const diffParams = difficulties[currentDifficulty];
+            const directionY = currentServer === 'player' ? -1 : 1;
+            
+            const angleVariance = (Math.random() - 0.5) * 4; 
+            ball.vx = angleVariance;
+            ball.vy = directionY * diffParams.ballBaseSpeed;
+            ball.speed = diffParams.ballBaseSpeed;
+            
+            playSynthSound(currentServer === 'player' ? 'hit_player' : 'hit_opponent');
+        }
+
+        const overlay = document.getElementById('screenOverlay');
+        const actionBtn = document.getElementById('actionBtn');
+        const overlayTitle = document.getElementById('overlayTitle');
+        const overlayDesc = document.getElementById('overlayDesc');
+        const overlayIcon = document.getElementById('overlayIcon');
+
+        actionBtn.addEventListener('click', () => {
+            if (!gameRunning) {
+                resetMatch();
+                gameRunning = true;
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                initServe();
+            } else if (isPaused) {
+                isPaused = false;
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+            }
+        });
+
+        function triggerToast(message) {
+            const toast = document.getElementById('toastOverlay');
+            const toastTxt = document.getElementById('toastText');
+            toastTxt.innerText = message;
+            
+            toast.classList.remove('opacity-0', 'scale-90');
+            toast.classList.add('opacity-100', 'scale-100');
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'scale-100');
+                toast.classList.add('opacity-0', 'scale-90');
+            }, 1500);
+        }
+
+        function getTennisScoreString(points) {
+            switch(points) {
+                case 0: return 'Love';
+                case 1: return '15';
+                case 2: return '30';
+                case 3: return '40';
+                default: return 'Ad';
+            }
+        }
+
+        function updateScoreboardUI() {
+            const pScore = document.getElementById('playerGameScore');
+            const oScore = document.getElementById('opponentGameScore');
+            const pSets = document.getElementById('playerSets');
+            const oSets = document.getElementById('opponentSets');
+
+            if (playerPoints >= 3 && opponentPoints >= 3) {
+                if (playerPoints === opponentPoints) {
+                    pScore.innerText = '40';
+                    oScore.innerText = '40';
+                    pScore.className = oScore.className = "w-10 h-7 flex items-center justify-center rounded bg-yellow-950/40 border border-yellow-500/30 text-yellow-400 text-[10px] font-bold tracking-wider uppercase digital-font";
+                    pScore.innerText = 'Deuce';
+                    oScore.innerText = 'Deuce';
+                } else if (playerPoints > opponentPoints) {
+                    pScore.innerText = 'Ad';
+                    oScore.innerText = '40';
+                    pScore.className = "w-10 h-7 flex items-center justify-center rounded bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold digital-font";
+                    oScore.className = "w-10 h-7 flex items-center justify-center rounded bg-slate-850 border border-slate-800 text-slate-400 text-[10px] font-bold digital-font";
+                } else {
+                    pScore.innerText = '40';
+                    oScore.innerText = 'Ad';
+                    pScore.className = "w-10 h-7 flex items-center justify-center rounded bg-slate-850 border border-slate-800 text-slate-400 text-[10px] font-bold digital-font";
+                    oScore.className = "w-10 h-7 flex items-center justify-center rounded bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold digital-font";
+                }
+            } else {
+                pScore.innerText = getTennisScoreString(playerPoints);
+                oScore.innerText = getTennisScoreString(opponentPoints);
+                
+                pScore.className = "w-10 h-7 flex items-center justify-center rounded bg-emerald-950/50 border border-emerald-500/30 text-emerald-400 text-xs font-bold digital-font";
+                oScore.className = "w-10 h-7 flex items-center justify-center rounded bg-slate-850 border border-slate-800 text-slate-300 text-xs font-bold digital-font";
+            }
+
+            pSets.innerHTML = `<span class="px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold digital-font">${playerGames}</span>`;
+            oSets.innerHTML = `<span class="px-1 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] font-bold digital-font">${opponentGames}</span>`;
+        }
+
+        function winPoint(winner) {
+            if (winner === 'player') {
+                playerPoints++;
+                playSynthSound('score_win');
+                triggerToast('Point Player!');
+                
+                if (playerPoints >= 4 && (playerPoints - opponentPoints) >= 2) {
+                    playerGames++;
+                    playerPoints = 0;
+                    opponentPoints = 0;
+                    currentServer = 'opponent';
+                    triggerToast('Game Player!');
+                    
+                    if (playerGames >= 6) {
+                        endMatch('player');
+                        return;
+                    }
+                }
+            } else {
+                opponentPoints++;
+                playSynthSound('score_lose');
+                triggerToast('Point Ace-Bot!');
+                
+                if (opponentPoints >= 4 && (opponentPoints - playerPoints) >= 2) {
+                    opponentGames++;
+                    playerPoints = 0;
+                    opponentPoints = 0;
+                    currentServer = 'player';
+                    triggerToast('Game Ace-Bot!');
+                    
+                    if (opponentGames >= 6) {
+                        endMatch('opponent');
+                        return;
+                    }
+                }
+            }
+
+            updateScoreboardUI();
+            initServe();
+        }
+
+        function resetMatch() {
+            playerPoints = 0;
+            opponentPoints = 0;
+            playerGames = 0;
+            opponentGames = 0;
+            currentServer = 'player';
+            updateScoreboardUI();
+        }
+
+        function endMatch(winner) {
+            gameRunning = false;
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            
+            if (winner === 'player') {
+                playSynthSound('victory');
+                overlayIcon.setAttribute('data-lucide', 'trophy');
+                overlayIcon.className = "w-5 h-5 fill-yellow-400 text-yellow-400";
+                overlayTitle.innerText = "Match Point & Victory!";
+                overlayDesc.innerText = "Congratulations! You won on " + currentTheme.toUpperCase() + ".";
+                actionBtn.querySelector('span').innerText = "Play Again";
+            } else {
+                overlayIcon.setAttribute('data-lucide', 'frown');
+                overlayIcon.className = "w-5 h-5 text-rose-400";
+                overlayTitle.innerText = "Ace-Bot Wins!";
+                overlayDesc.innerText = "The bot won on difficulty " + currentDifficulty.toUpperCase() + ".";
+                actionBtn.querySelector('span').innerText = "Rematch!";
+            }
+            lucide.createIcons();
+        }
+
+        function drawCourt() {
+            const theme = themes[currentTheme];
+            
+            ctx.fillStyle = theme.bg;
+            ctx.fillRect(0, 0, courtWidth, courtHeight);
+
+            ctx.fillStyle = theme.shadows;
+            ctx.fillRect(15, 15, courtWidth - 30, courtHeight - 30);
+
+            // Doubles Side Lines
+            ctx.strokeStyle = theme.lines;
+            ctx.lineWidth = 4;
+            ctx.strokeRect(40, 30, courtWidth - 80, courtHeight - 60);
+
+            // Singles Side Lines
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(80, 30);
+            ctx.lineTo(80, courtHeight - 30);
+            ctx.moveTo(courtWidth - 80, 30);
+            ctx.lineTo(courtWidth - 80, courtHeight - 30);
+            ctx.stroke();
+
+            // Service Court
+            ctx.beginPath();
+            ctx.moveTo(80, courtHeight / 2 - 110);
+            ctx.lineTo(courtWidth - 80, courtHeight / 2 - 110);
+            ctx.moveTo(80, courtHeight / 2 + 110);
+            ctx.lineTo(courtWidth - 80, courtHeight / 2 + 110);
+            ctx.stroke();
+
+            // Vertical Center Line
+            ctx.beginPath();
+            ctx.moveTo(courtWidth / 2, courtHeight / 2 - 110);
+            ctx.lineTo(courtWidth / 2, courtHeight / 2 + 110);
+            ctx.stroke();
+
+            // Center Marks
+            ctx.beginPath();
+            ctx.moveTo(courtWidth / 2, 30);
+            ctx.lineTo(courtWidth / 2, 45);
+            ctx.moveTo(courtWidth / 2, courtHeight - 30);
+            ctx.lineTo(courtWidth / 2, courtHeight - 45);
+            ctx.stroke();
+
+            // Net representation
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(25, courtHeight / 2);
+            ctx.lineTo(courtWidth - 25, courtHeight / 2);
+            ctx.stroke();
+
+            // Net Mesh
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 1.5;
+            for (let i = 30; i < courtWidth - 30; i += 10) {
+                ctx.beginPath();
+                ctx.moveTo(i, courtHeight / 2 - 8);
+                ctx.lineTo(i, courtHeight / 2 + 8);
+                ctx.stroke();
+            }
+
+            // Net Posts
+            ctx.fillStyle = '#cbd5e1';
+            ctx.beginPath();
+            ctx.arc(25, courtHeight / 2, 6, 0, Math.PI * 2);
+            ctx.arc(courtWidth - 25, courtHeight / 2, 6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawPaddle(entity) {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.3)';
+            ctx.fillRect(entity.x + 3, entity.y + 4, entity.width, entity.height);
+
+            ctx.fillStyle = entity.color;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = entity.glow;
+            
+            ctx.beginPath();
+            ctx.roundRect(entity.x, entity.y, entity.width, entity.height, 6);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 1;
+            for (let i = entity.x + 10; i < entity.x + entity.width; i += 12) {
+                ctx.beginPath();
+                ctx.moveTo(i, entity.y);
+                ctx.lineTo(i, entity.y + entity.height);
+                ctx.stroke();
+            }
+        }
+
+        function drawBall() {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+            ctx.beginPath();
+            ctx.arc(ball.x + 3, ball.y + 4, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = ball.color;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = ball.glow;
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(ball.x - ball.radius / 2, ball.y, ball.radius / 1.5, -Math.PI / 3, Math.PI / 3);
+            ctx.stroke();
+        }
+
+        function drawServeInstructions() {
+            if (isServing && currentServer === 'player') {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = "bold 15px 'Plus Jakarta Sans', sans-serif";
+                ctx.textAlign = 'center';
+                ctx.fillText("TAP OR CLICK ANYWHERE TO SERVE", courtWidth / 2, courtHeight - 100);
+            }
+        }
+
+        function update() {
+            if (!gameRunning || isPaused) return;
+
+            if (isServing) {
+                if (currentServer === 'player') {
+                    ball.x = player.x + player.width / 2;
+                } else {
+                    ball.x = opponent.x + opponent.width / 2;
+                }
+                return;
+            }
+
+            const keyboardSpeed = 10;
+            if (keysPressed['ArrowLeft'] || keysPressed['Left']) {
+                player.x -= keyboardSpeed;
+                if (player.x < 30) player.x = 30;
+            }
+            if (keysPressed['ArrowRight'] || keysPressed['Right']) {
+                player.x += keyboardSpeed;
+                if (player.x + player.width > courtWidth - 30) player.x = courtWidth - 30 - player.width;
+            }
+
+            if (keysPressed[' '] || keysPressed['Spacebar']) {
+                if (isServing && currentServer === 'player') {
+                    releaseServe();
+                }
+            }
+
+            const diffParams = difficulties[currentDifficulty];
+
+            if (ball.vy < 0) {
+                if (Math.random() > diffParams.aiErrorRate) {
+                    opponent.targetX = ball.x - opponent.width / 2;
+                }
+            } else {
+                opponent.targetX = courtWidth / 2 - opponent.width / 2;
+            }
+
+            const aiDist = opponent.targetX - opponent.x;
+            if (Math.abs(aiDist) > 5) {
+                if (aiDist > 0) {
+                    opponent.x += Math.min(diffParams.aiSpeed, aiDist);
+                } else {
+                    opponent.x -= Math.min(diffParams.aiSpeed, Math.abs(aiDist));
+                }
+            }
+
+            if (opponent.x < 30) opponent.x = 30;
+            if (opponent.x + opponent.width > courtWidth - 30) opponent.x = courtWidth - 30 - opponent.width;
+
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            if (ball.x - ball.radius <= 40) {
+                ball.x = 40 + ball.radius;
+                ball.vx = -ball.vx;
+                playSynthSound('wall');
+            } else if (ball.x + ball.radius >= courtWidth - 40) {
+                ball.x = courtWidth - 40 - ball.radius;
+                ball.vx = -ball.vx;
+                playSynthSound('wall');
+            }
+
+            if (ball.y + ball.radius >= player.y && ball.y - ball.radius <= player.y + player.height) {
+                if (ball.x >= player.x && ball.x <= player.x + player.width) {
+                    const relativeIntersectX = (player.x + (player.width / 2)) - ball.x;
+                    const normalizedIntersectX = relativeIntersectX / (player.width / 2);
+                    const bounceAngle = normalizedIntersectX * (Math.PI / 3);
+
+                    ball.speed += diffParams.ballSpeedInc;
+                    ball.vx = -Math.sin(bounceAngle) * ball.speed;
+                    ball.vy = -Math.cos(bounceAngle) * ball.speed;
+                    ball.y = player.y - ball.radius;
+                    playSynthSound('hit_player');
+                }
+            }
+
+            if (ball.y - ball.radius <= opponent.y + opponent.height && ball.y + ball.radius >= opponent.y) {
+                if (ball.x >= opponent.x && ball.x <= opponent.x + opponent.width) {
+                    const relativeIntersectX = (opponent.x + (opponent.width / 2)) - ball.x;
+                    const normalizedIntersectX = relativeIntersectX / (opponent.width / 2);
+                    const bounceAngle = normalizedIntersectX * (Math.PI / 3);
+
+                    ball.speed += diffParams.ballSpeedInc;
+                    ball.vx = -Math.sin(bounceAngle) * ball.speed;
+                    ball.vy = Math.cos(bounceAngle) * ball.speed;
+                    ball.y = opponent.y + opponent.height + ball.radius;
+                    playSynthSound('hit_opponent');
+                }
+            }
+
+            if (ball.y - ball.radius < 0) {
+                winPoint('player');
+            } else if (ball.y + ball.radius > courtHeight) {
+                winPoint('opponent');
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, courtWidth, courtHeight);
+            drawCourt();
+            drawPaddle(player);
+            drawPaddle(opponent);
+            drawBall();
+            drawServeInstructions();
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        resetMatch();
+        loop();
+
+        canvas.addEventListener('click', () => {
+            if (isServing && currentServer === 'player' && gameRunning) {
+                releaseServe();
+            }
+        });
+    </script>
+</body>
+</html>
