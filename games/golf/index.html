@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zen Mini Golf</title>
+    <!-- Tailwind CSS for sleek UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons for vector symbols -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        canvas {
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 overflow-hidden font-sans">
+
+    <!-- Main Game Wrapper (Responsive heights to fit any screen) -->
+    <div class="w-full max-w-4xl bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden flex flex-col max-h-[96vh]">
+        
+        <!-- Header / HUD -->
+        <div id="game-header" class="p-3 sm:p-4 bg-slate-800/80 backdrop-blur border-b border-slate-700 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-500 text-slate-950 p-2 rounded-lg font-bold flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <i data-lucide="flag" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg tracking-wide text-emerald-400 leading-tight">Zen Mini Golf</h1>
+                    <p class="text-[10px] sm:text-xs text-slate-400" id="level-name">Level 1: The Warmup</p>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="flex items-center gap-4 sm:gap-6">
+                <div class="text-center">
+                    <p class="text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Par</p>
+                    <p class="text-sm sm:text-lg font-bold text-slate-200" id="hud-par">3</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Strokes</p>
+                    <p class="text-sm sm:text-lg font-bold text-emerald-400" id="hud-strokes">0</p>
+                </div>
+                <div class="text-center border-l border-slate-700 pl-4 sm:pl-6">
+                    <p class="text-[9px] sm:text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Total Score</p>
+                    <p class="text-sm sm:text-lg font-bold text-indigo-400" id="hud-total">0</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2">
+                <button id="btn-sound" class="p-2 bg-slate-700 hover:bg-slate-600 active:scale-95 transition rounded-lg text-slate-300" title="Toggle Sound">
+                    <i data-lucide="volume-2" class="w-4 h-4 sm:w-5 sm:h-5" id="sound-icon"></i>
+                </button>
+                <button id="btn-reset" class="p-2 bg-slate-700 hover:bg-slate-600 active:scale-95 transition rounded-lg text-slate-300" title="Restart Level">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Body: Responsive Screen Canvas Area -->
+        <div class="relative flex-1 bg-slate-950 flex items-center justify-center p-2 overflow-hidden min-h-0">
+            
+            <!-- Canvas Container (Dynamic size set by JavaScript to avoid layout spillover) -->
+            <div id="canvas-container" class="relative rounded-xl overflow-hidden border border-slate-800 shadow-inner bg-emerald-950">
+                <canvas id="gameCanvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+            </div>
+
+            <!-- Overlay Message Panels -->
+            <div id="overlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center text-center p-4 hidden z-10">
+                <div class="bg-slate-800 border border-slate-700 p-6 sm:p-8 rounded-2xl max-w-sm w-full shadow-2xl transform scale-95 transition-transform duration-300" id="overlay-card">
+                    <!-- Dynamic Header -->
+                    <div id="overlay-icon-container" class="mx-auto mb-4 w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center border border-emerald-500/30">
+                        <i data-lucide="trophy" class="w-7 h-7"></i>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-black text-slate-100 mb-1" id="overlay-title">Hole in One!</h2>
+                    <p class="text-xs sm:text-sm text-slate-400 mb-5" id="overlay-text">Fantastic shot!</p>
+                    
+                    <button id="overlay-btn" class="w-full py-2.5 sm:py-3 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold rounded-xl transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                        <span>Next Level</span>
+                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Instructions Footer -->
+        <div id="game-footer" class="p-2 sm:p-3 bg-slate-800/50 border-t border-slate-700/50 text-center text-[10px] sm:text-xs text-slate-400 flex flex-col sm:flex-row justify-between gap-1 px-4 sm:px-6 shrink-0">
+            <span class="flex items-center justify-center gap-1">
+                <i data-lucide="mouse-pointer" class="w-3 h-3"></i>
+                Drag backward from ball to aim, release to shoot.
+            </span>
+            <div class="flex items-center justify-center gap-3">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span> Sand slows</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-cyan-500 inline-block"></span> Water resets (+1 Stroke)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Space -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Canvas & Context Setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+
+        // Target virtual coordinate space for resolution-independent physics layout
+        const V_WIDTH = 800;
+        const V_HEIGHT = 600;
+
+        // Sound System (Web Audio API Synthesizer)
+        let isSoundEnabled = true;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (!isSoundEnabled) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'hit') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'bounce') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.08);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'water') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'cup') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.08);
+                osc.frequency.setValueAtTime(783.99, now + 0.16);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            }
+        }
+
+        // Toggle Sound Handler
+        const soundBtn = document.getElementById('btn-sound');
+        const soundIcon = document.getElementById('sound-icon');
+        soundBtn.addEventListener('click', () => {
+            isSoundEnabled = !isSoundEnabled;
+            if (isSoundEnabled) {
+                soundIcon.setAttribute('data-lucide', 'volume-2');
+                soundBtn.classList.remove('bg-rose-950/40', 'border-rose-800', 'text-rose-400');
+                soundBtn.classList.add('bg-slate-700', 'hover:bg-slate-600', 'text-slate-300');
+            } else {
+                soundIcon.setAttribute('data-lucide', 'volume-x');
+                soundBtn.classList.remove('bg-slate-700', 'hover:bg-slate-600', 'text-slate-300');
+                soundBtn.classList.add('bg-rose-950/40', 'border', 'border-rose-800', 'text-rose-400');
+            }
+            lucide.createIcons();
+        });
+
+        // Game Entities Setup
+        class Ball {
+            constructor(x, y) {
+                this.startX = x;
+                this.startY = y;
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = 10;
+                this.friction = 0.982;
+            }
+
+            resetToStart() {
+                this.x = this.startX;
+                this.y = this.startY;
+                this.vx = 0;
+                this.vy = 0;
+            }
+
+            update(hazards) {
+                let currentFriction = this.friction;
+
+                for (let hazard of hazards) {
+                    if (this.x > hazard.x && this.x < hazard.x + hazard.w &&
+                        this.y > hazard.y && this.y < hazard.y + hazard.h) {
+                        if (hazard.type === 'sand') {
+                            currentFriction = 0.82;
+                        } else if (hazard.type === 'water') {
+                            playSound('water');
+                            this.resetToStart();
+                            game.addStroke(1);
+                            createSplashEffect(this.x, this.y, '#06b6d4');
+                            return;
+                        }
+                    }
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                this.vx *= currentFriction;
+                this.vy *= currentFriction;
+
+                if (Math.hypot(this.vx, this.vy) < 0.15) {
+                    this.vx = 0;
+                    this.vy = 0;
+                }
+            }
+
+            draw() {
+                // Ball Shadow
+                ctx.beginPath();
+                ctx.arc(this.x + 2, this.y + 3, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+                ctx.fill();
+
+                // Ball Outer Body
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+
+                // Ball Highlight
+                ctx.beginPath();
+                ctx.arc(this.x - 2, this.y - 2, this.radius * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.fill();
+            }
+        }
+
+        class Hole {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 16;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#0f172a';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#cbd5e1';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x, this.y - 45);
+                ctx.strokeStyle = '#f8fafc';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - 45);
+                ctx.lineTo(this.x - 18, this.y - 37);
+                ctx.lineTo(this.x, this.y - 29);
+                ctx.closePath();
+                ctx.fillStyle = '#ef4444';
+                ctx.fill();
+            }
+        }
+
+        // Particle System
+        let particles = [];
+        function createSplashEffect(x, y, color) {
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6 - 2,
+                    radius: Math.random() * 4 + 2,
+                    color: color,
+                    alpha: 1,
+                    decay: Math.random() * 0.03 + 0.015
+                });
+            }
+        }
+
+        // LEVEL DATA DEFINITION
+        const LEVELS = [
+            {
+                name: "1. The Warmup",
+                par: 3,
+                ball: { x: 150, y: 300 },
+                hole: { x: 650, y: 300 },
+                obstacles: [],
+                hazards: []
+            },
+            {
+                name: "2. The Divide",
+                par: 3,
+                ball: { x: 120, y: 300 },
+                hole: { x: 680, y: 300 },
+                obstacles: [
+                    { x: 380, y: 150, w: 40, h: 300 }
+                ],
+                hazards: []
+            },
+            {
+                name: "3. Traps & Ridges",
+                par: 4,
+                ball: { x: 150, y: 150 },
+                hole: { x: 650, y: 450 },
+                obstacles: [
+                    { x: 300, y: 0, w: 30, h: 400 },
+                    { x: 470, y: 200, w: 30, h: 400 }
+                ],
+                hazards: [
+                    { type: 'sand', x: 150, y: 350, w: 120, h: 100 },
+                    { type: 'sand', x: 530, y: 150, w: 110, h: 120 }
+                ]
+            },
+            {
+                name: "4. The Water Hazard",
+                par: 4,
+                ball: { x: 120, y: 300 },
+                hole: { x: 680, y: 300 },
+                obstacles: [
+                    { x: 380, y: 50, w: 40, h: 150 },
+                    { x: 380, y: 400, w: 40, h: 150 }
+                ],
+                hazards: [
+                    { type: 'water', x: 300, y: 200, w: 200, h: 200 },
+                    { type: 'sand', x: 200, y: 150, w: 100, h: 300 },
+                    { type: 'sand', x: 500, y: 150, w: 100, h: 300 }
+                ]
+            },
+            {
+                name: "5. Championship Finale",
+                par: 5,
+                ball: { x: 100, y: 150 },
+                hole: { x: 700, y: 450 },
+                obstacles: [
+                    { x: 0, y: 280, w: 600, h: 40 },
+                    { x: 200, y: 120, w: 40, h: 160 },
+                    { x: 560, y: 320, w: 40, h: 280 }
+                ],
+                hazards: [
+                    { type: 'water', x: 600, y: 0, w: 200, h: 280 },
+                    { type: 'sand', x: 250, y: 320, w: 250, h: 150 }
+                ]
+            }
+        ];
+
+        class GameEngine {
+            constructor() {
+                this.currentLevelIdx = 0;
+                this.strokes = 0;
+                this.totalStrokes = 0;
+                this.ball = null;
+                this.hole = null;
+                this.obstacles = [];
+                this.hazards = [];
+                
+                this.dragStart = null;
+                this.dragCurrent = null;
+                this.isDragging = false;
+                this.maxPower = 180;
+                this.isTransitioning = false;
+            }
+
+            initLevel(idx) {
+                this.currentLevelIdx = idx;
+                const lvl = LEVELS[idx];
+                
+                this.ball = new Ball(lvl.ball.x, lvl.ball.y);
+                this.hole = new Hole(lvl.hole.x, lvl.hole.y);
+                this.obstacles = lvl.obstacles;
+                this.hazards = lvl.hazards;
+                this.strokes = 0;
+
+                document.getElementById('level-name').innerText = lvl.name;
+                document.getElementById('hud-par').innerText = lvl.par;
+                this.updateHUD();
+
+                this.isTransitioning = false;
+                this.hideOverlay();
+            }
+
+            addStroke(count = 1) {
+                this.strokes += count;
+                this.totalStrokes += count;
+                this.updateHUD();
+            }
+
+            updateHUD() {
+                document.getElementById('hud-strokes').innerText = this.strokes;
+                document.getElementById('hud-total').innerText = this.totalStrokes;
+            }
+
+            shoot(vx, vy) {
+                this.ball.vx = vx * 0.14;
+                this.ball.vy = vy * 0.14;
+                this.addStroke();
+                playSound('hit');
+                createSplashEffect(this.ball.x, this.ball.y, '#f8fafc');
+            }
+
+            checkCollisions() {
+                const b = this.ball;
+                const r = b.radius;
+
+                if (b.x - r < 0) {
+                    b.x = r;
+                    b.vx = -b.vx * 0.75;
+                    playSound('bounce');
+                }
+                if (b.x + r > V_WIDTH) {
+                    b.x = V_WIDTH - r;
+                    b.vx = -b.vx * 0.75;
+                    playSound('bounce');
+                }
+                if (b.y - r < 0) {
+                    b.y = r;
+                    b.vy = -b.vy * 0.75;
+                    playSound('bounce');
+                }
+                if (b.y + r > V_HEIGHT) {
+                    b.y = V_HEIGHT - r;
+                    b.vy = -b.vy * 0.75;
+                    playSound('bounce');
+                }
+
+                for (let o of this.obstacles) {
+                    let closestX = Math.max(o.x, Math.min(b.x, o.x + o.w));
+                    let closestY = Math.max(o.y, Math.min(b.y, o.y + o.h));
+                    
+                    let distanceX = b.x - closestX;
+                    let distanceY = b.y - closestY;
+                    let distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
+
+                    if (distanceSquared < r * r) {
+                        let distance = Math.sqrt(distanceSquared);
+                        let overlap = r - distance;
+                        let nx = distanceX / (distance || 1);
+                        let ny = distanceY / (distance || 1);
+
+                        if (distance === 0) {
+                            nx = 0; ny = -1; overlap = r;
+                        }
+
+                        b.x += nx * overlap;
+                        let dotProduct = b.vx * nx + b.vy * ny;
+                        b.vx = (b.vx - 2 * dotProduct * nx) * 0.75;
+                        b.vy = (b.vy - 2 * dotProduct * ny) * 0.75;
+                        playSound('bounce');
+                    }
+                }
+
+                let distToHole = Math.hypot(b.x - this.hole.x, b.y - this.hole.y);
+                if (distToHole < this.hole.radius + 2) {
+                    let speed = Math.hypot(b.vx, b.vy);
+                    if (speed < 4) {
+                        b.vx = 0;
+                        b.vy = 0;
+                        b.x = this.hole.x;
+                        b.y = this.hole.y;
+                        
+                        if (!this.isTransitioning) {
+                            this.onHoleComplete();
+                        }
+                    } else if (speed >= 4) {
+                        let nx = (b.x - this.hole.x) / distToHole;
+                        let ny = (b.y - this.hole.y) / distToHole;
+                        let dot = b.vx * nx + b.vy * ny;
+                        b.vx = (b.vx - 1.5 * dot * nx);
+                        b.vy = (b.vy - 1.5 * dot * ny);
+                        playSound('bounce');
+                    }
+                }
+            }
+
+            onHoleComplete() {
+                this.isTransitioning = true;
+                playSound('cup');
+                createSplashEffect(this.hole.x, this.hole.y, '#f59e0b');
+                
+                setTimeout(() => {
+                    const currentLvlObj = LEVELS[this.currentLevelIdx];
+                    const overlay = document.getElementById('overlay');
+                    const overlayCard = document.getElementById('overlay-card');
+                    const title = document.getElementById('overlay-title');
+                    const text = document.getElementById('overlay-text');
+                    const btn = document.getElementById('overlay-btn');
+                    const iconContainer = document.getElementById('overlay-icon-container');
+
+                    const isLastLevel = this.currentLevelIdx === LEVELS.length - 1;
+                    const relativeToPar = this.strokes - currentLvlObj.par;
+
+                    let evaluation = "";
+                    if (this.strokes === 1) {
+                        evaluation = "Ace! A perfect Hole-in-One!";
+                        iconContainer.innerHTML = `<i data-lucide="sparkles" class="w-8 h-8"></i>`;
+                        iconContainer.className = "mx-auto mb-4 w-14 h-14 bg-amber-500/10 text-amber-400 rounded-full flex items-center justify-center border border-amber-500/30";
+                    } else if (relativeToPar < 0) {
+                        evaluation = `Superb Under Par shot! (${this.strokes} strokes)`;
+                        iconContainer.innerHTML = `<i data-lucide="award" class="w-8 h-8"></i>`;
+                        iconContainer.className = "mx-auto mb-4 w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center border border-emerald-500/30";
+                    } else if (relativeToPar === 0) {
+                        evaluation = "Solid Play! Right on Par.";
+                        iconContainer.innerHTML = `<i data-lucide="check" class="w-8 h-8"></i>`;
+                        iconContainer.className = "mx-auto mb-4 w-14 h-14 bg-indigo-500/10 text-indigo-400 rounded-full flex items-center justify-center border border-indigo-500/30";
+                    } else {
+                        evaluation = `Completed in ${this.strokes} strokes. Let's aim lower next time!`;
+                        iconContainer.innerHTML = `<i data-lucide="flag" class="w-8 h-8"></i>`;
+                        iconContainer.className = "mx-auto mb-4 w-14 h-14 bg-slate-500/10 text-slate-400 rounded-full flex items-center justify-center border border-slate-500/30";
+                    }
+
+                    if (isLastLevel) {
+                        title.innerText = "Championship Won!";
+                        text.innerHTML = `Congratulations on completing all holes!<br><br><strong class="text-xl text-indigo-400">Total strokes: ${this.totalStrokes}</strong>`;
+                        btn.innerHTML = `<span>Play Again</span> <i data-lucide="rotate-ccw" class="w-5 h-5"></i>`;
+                        
+                        btn.onclick = () => {
+                            this.totalStrokes = 0;
+                            this.initLevel(0);
+                        };
+                    } else {
+                        title.innerText = `Hole ${this.currentLevelIdx + 1} Cleared!`;
+                        text.innerText = evaluation;
+                        btn.innerHTML = `<span>Next Hole</span> <i data-lucide="arrow-right" class="w-5 h-5"></i>`;
+                        
+                        btn.onclick = () => {
+                            this.initLevel(this.currentLevelIdx + 1);
+                        };
+                    }
+
+                    overlay.classList.remove('hidden');
+                    setTimeout(() => overlayCard.classList.remove('scale-95'), 50);
+                    lucide.createIcons();
+                }, 400);
+            }
+
+            hideOverlay() {
+                const overlay = document.getElementById('overlay');
+                const overlayCard = document.getElementById('overlay-card');
+                overlayCard.classList.add('scale-95');
+                overlay.classList.add('hidden');
+            }
+
+            update() {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.alpha -= p.decay;
+                    if (p.alpha <= 0) {
+                        particles.splice(i, 1);
+                    }
+                }
+
+                if (this.isTransitioning) return;
+
+                const isMoving = Math.hypot(this.ball.vx, this.ball.vy) > 0;
+                this.ball.update(this.hazards);
+                
+                if (isMoving) {
+                    this.checkCollisions();
+                }
+            }
+
+            draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                ctx.save();
+                ctx.scale(canvas.width / V_WIDTH, canvas.height / V_HEIGHT);
+
+                // Turf stripes
+                ctx.fillStyle = '#065f46';
+                ctx.fillRect(0, 0, V_WIDTH, V_HEIGHT);
+
+                ctx.fillStyle = '#047857';
+                for (let i = 0; i < V_WIDTH; i += 80) {
+                    ctx.fillRect(i, 0, 40, V_HEIGHT);
+                }
+
+                ctx.strokeStyle = 'rgba(16, 185, 129, 0.15)';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(2, 2, V_WIDTH - 4, V_HEIGHT - 4);
+
+                // Hazards
+                for (let h of this.hazards) {
+                    if (h.type === 'sand') {
+                        ctx.fillStyle = '#fef08a';
+                        drawRoundedRect(ctx, h.x, h.y, h.w, h.h, 12);
+                        ctx.fill();
+                        ctx.fillStyle = '#fde047';
+                        ctx.fillRect(h.x + h.w * 0.2, h.y + h.h * 0.3, 4, 4);
+                        ctx.fillRect(h.x + h.w * 0.7, h.y + h.h * 0.6, 5, 5);
+                    } else if (h.type === 'water') {
+                        ctx.fillStyle = '#06b6d4';
+                        drawRoundedRect(ctx, h.x, h.y, h.w, h.h, 12);
+                        ctx.fill();
+                        
+                        ctx.strokeStyle = '#22d3ee';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(h.x + 10, h.y + h.h * 0.5);
+                        ctx.bezierCurveTo(h.x + h.w * 0.3, h.y + h.h * 0.4, h.x + h.w * 0.6, h.y + h.h * 0.6, h.x + h.w - 10, h.y + h.h * 0.5);
+                        ctx.stroke();
+                    }
+                }
+
+                // Obstacles
+                for (let o of this.obstacles) {
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+                    ctx.fillRect(o.x + 3, o.y + 4, o.w, o.h);
+
+                    ctx.fillStyle = '#334155';
+                    ctx.fillRect(o.x, o.y, o.w, o.h);
+
+                    ctx.strokeStyle = '#475569';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(o.x, o.y, o.w, o.h);
+                }
+
+                this.hole.draw();
+                this.ball.draw();
+
+                // Slingshot Guideline Overlay
+                if (this.isDragging && this.dragStart && this.dragCurrent) {
+                    const dx = this.dragStart.x - this.dragCurrent.x;
+                    const dy = this.dragStart.y - this.dragCurrent.y;
+                    const dragDist = Math.hypot(dx, dy);
+
+                    if (dragDist > 10) {
+                        const angle = Math.atan2(dy, dx);
+                        const powerScale = Math.min(dragDist, this.maxPower) / this.maxPower;
+
+                        const arrowLen = 40 + powerScale * 120;
+                        const endX = this.ball.x + Math.cos(angle) * arrowLen;
+                        const endY = this.ball.y + Math.sin(angle) * arrowLen;
+
+                        const red = Math.floor(powerScale * 255);
+                        const green = Math.floor((1 - powerScale) * 200) + 55;
+                        const arrowColor = `rgb(${red}, ${green}, 0)`;
+
+                        ctx.save();
+                        ctx.strokeStyle = arrowColor;
+                        ctx.lineWidth = 3 + powerScale * 4;
+                        ctx.lineCap = 'round';
+                        ctx.setLineDash([8, 6]);
+                        ctx.beginPath();
+                        ctx.moveTo(this.ball.x, this.ball.y);
+                        ctx.lineTo(endX, endY);
+                        ctx.stroke();
+                        ctx.restore();
+
+                        ctx.save();
+                        ctx.translate(endX, endY);
+                        ctx.rotate(angle);
+                        ctx.fillStyle = arrowColor;
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(-12, -7);
+                        ctx.lineTo(-8, 0);
+                        ctx.lineTo(-12, 7);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.restore();
+
+                        ctx.beginPath();
+                        ctx.arc(this.dragStart.x, this.dragStart.y, 8, 0, Math.PI*2);
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                        ctx.fill();
+
+                        ctx.beginPath();
+                        ctx.moveTo(this.dragStart.x, this.dragStart.y);
+                        ctx.lineTo(this.dragCurrent.x, this.dragCurrent.y);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                }
+
+                // Render Active Particles
+                particles.forEach(p => {
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                ctx.restore();
+            }
+        }
+
+        function drawRoundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        const game = new GameEngine();
+
+        let scaleX = 1;
+        let scaleY = 1;
+
+        // Dynamic multi-axis layout scaling
+        function resizeCanvas() {
+            const header = document.getElementById('game-header');
+            const footer = document.getElementById('game-footer');
+            const parent = container.parentElement;
+
+            if (!parent) return;
+
+            // Gather heights of HUD components dynamically
+            const headerHeight = header ? header.getBoundingClientRect().height : 80;
+            const footerHeight = footer ? footer.getBoundingClientRect().height : 50;
+
+            // Reserve dynamic paddings and boundaries
+            const padding = window.innerWidth < 640 ? 16 : 32;
+            const maxW = Math.min(parent.clientWidth, 896); // limit game width maximum
+            const maxH = window.innerHeight - headerHeight - footerHeight - padding - 16; // strict viewport limit
+
+            // Scale to largest 4:3 canvas that fits perfectly inside bounds
+            let targetW = maxW;
+            let targetH = targetW * 0.75;
+
+            if (targetH > maxH) {
+                targetH = maxH;
+                targetW = targetH * (4/3);
+            }
+
+            // Lock physical styles of containers
+            container.style.width = `${targetW}px`;
+            container.style.height = `${targetH}px`;
+
+            // Calibrate internally
+            canvas.width = targetW;
+            canvas.height = targetH;
+
+            scaleX = V_WIDTH / targetW;
+            scaleY = V_HEIGHT / targetH;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function getVirtualCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function onPointerDown(e) {
+            if (game.isTransitioning) return;
+            
+            const isMoving = Math.hypot(game.ball.vx, game.ball.vy) > 0;
+            if (isMoving) return;
+
+            const pt = getVirtualCoords(e);
+            
+            const distToBall = Math.hypot(pt.x - game.ball.x, pt.y - game.ball.y);
+            if (distToBall < 45) {
+                game.isDragging = true;
+                game.dragStart = { x: game.ball.x, y: game.ball.y };
+                game.dragCurrent = pt;
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }
+        }
+
+        function onPointerMove(e) {
+            if (!game.isDragging) return;
+            if (e.cancelable) e.preventDefault();
+
+            game.dragCurrent = getVirtualCoords(e);
+        }
+
+        function onPointerUp(e) {
+            if (!game.isDragging) return;
+            game.isDragging = false;
+
+            const dx = game.dragStart.x - game.dragCurrent.x;
+            const dy = game.dragStart.y - game.dragCurrent.y;
+            const dragDist = Math.hypot(dx, dy);
+
+            if (dragDist > 12) {
+                const angle = Math.atan2(dy, dx);
+                const power = Math.min(dragDist, game.maxPower);
+                
+                const launchVX = Math.cos(angle) * power;
+                const launchVY = Math.sin(angle) * power;
+
+                game.shoot(launchVX, launchVY);
+            }
+
+            game.dragStart = null;
+            game.dragCurrent = null;
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+
+        canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+        window.addEventListener('touchmove', onPointerMove, { passive: false });
+        window.addEventListener('touchend', onPointerUp);
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            game.initLevel(game.currentLevelIdx);
+        });
+
+        function gameLoop() {
+            game.update();
+            game.draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = function () {
+            resizeCanvas();
+            game.initLevel(0);
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
