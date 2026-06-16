@@ -170,14 +170,23 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // Environment Variables configuration
+        // Environment Variables configuration (Uses active sandbox config OR falls back to your real database config when self-hosted!)
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            // Fallback for local testing if env is missing
-            apiKey: "dummy-key", projectId: "dummy-project" 
+            apiKey: "AIzaSyDyMbSVjBTVStyRXOEo38IeMcM4LWTdJ-I",
+            authDomain: "games-d836d.firebaseapp.com", 
+            databaseURL: "https://games-d836d-default-rtdb.firebaseio.com",
+            projectId: "games-d836d",
+            storageBucket: "games-d836d.firebasestorage.app",
+            messagingSenderId: "228157907811",
+            appId: "1:228157907811:web:c2a536b3b3bb6ade5e6956"
         };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-games-app';
+        
+        // Get primary appId and make sure it is safe for Firebase Realtime Database paths by replacing "." and other invalid characters
+        const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'games-d836d';
+        const appId = rawAppId.replace(/[.#$[\]]/g, '_'); 
+        
         const COLLECTION_NAME = 'forum_threads';
 
         // State Variables
@@ -225,7 +234,7 @@
             try {
                 const app = initializeApp(firebaseConfig);
                 const auth = getAuth(app);
-                db = getFirestore(app);
+                db = getDatabase(app);
 
                 // Authenticate
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -249,7 +258,7 @@
                 });
             } catch (err) {
                 console.error("Firebase init failed:", err);
-                loadingView.innerHTML = `<p class="text-red-500 font-bold text-lg">Error connecting to database.</p>`;
+                loadingView.innerHTML = `<p class="text-red-500 font-bold text-lg px-4">Error connecting to database. Please make sure your server allows connections to Firebase!</p>`;
             }
         };
 
@@ -293,19 +302,42 @@
             });
         };
 
-        // Database Listener
+        // Database Listener (Uses Realtime Database)
         const setupDatabaseListener = () => {
             if (!currentUser) return;
 
-            const threadsRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
+            const threadsRef = ref(db, `artifacts/${appId}/public/data/${COLLECTION_NAME}`);
             
-            onSnapshot(threadsRef, (snapshot) => {
+            onValue(threadsRef, (snapshot) => {
+                const data = snapshot.val();
                 const tempThreads = [];
-                snapshot.forEach(doc => {
-                    tempThreads.push({ id: doc.id, ...doc.data() });
-                });
+                
+                if (data) {
+                    for (let id in data) {
+                        const threadData = data[id];
+                        
+                        // Convert replies map to array
+                        const repliesArray = [];
+                        if (threadData.replies) {
+                            for (let replyId in threadData.replies) {
+                                repliesArray.push({
+                                    id: replyId,
+                                    ...threadData.replies[replyId]
+                                });
+                            }
+                            // Sort replies by creation date ascending
+                            repliesArray.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                        }
+                        
+                        tempThreads.push({
+                            id: id,
+                            ...threadData,
+                            replies: repliesArray
+                        });
+                    }
+                }
 
-                // Sort descending (newest first)
+                // Sort threads descending (newest first)
                 tempThreads.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 allThreads = tempThreads;
 
@@ -317,6 +349,7 @@
                 }
             }, (error) => {
                 console.error("Error fetching threads:", error);
+                loadingView.innerHTML = `<p class="text-red-500 font-bold text-lg px-4">Permission Error: Make sure your database allows public access!</p>`;
             });
         };
 
@@ -364,14 +397,14 @@
             stTitle.textContent = thread.title;
             stAuthor.textContent = thread.author;
             stDate.textContent = formatDate(thread.createdAt);
-            stContent.textContent = thread.content; // textContent handles escaping automatically
+            stContent.textContent = thread.content; 
             
             const replies = thread.replies || [];
             stReplyCount.textContent = replies.length;
             
             repliesContainer.innerHTML = '';
             if (replies.length === 0) {
-                repliesContainer.innerHTML = '<p class="text-sm text-gray-500 italic py-2">No replies yet. Be the first!</p>';
+                repliesContainer.innerHTML = '<p class="text-sm text-gray-500 italic py-2">No replies yet. Be the first to answer!</p>';
             } else {
                 replies.forEach(reply => {
                     const rDiv = document.createElement('div');
@@ -425,7 +458,6 @@
             newThreadError.textContent = '';
             
             modalCreateThread.classList.remove('hidden');
-            // Small timeout to allow display:block to apply before changing opacity for transition
             setTimeout(() => {
                 modalCreateThread.classList.remove('opacity-0');
                 modalCreateThread.children[0].classList.remove('scale-95');
@@ -439,7 +471,7 @@
             modalCreateThread.children[0].classList.add('scale-95');
             setTimeout(() => {
                 modalCreateThread.classList.add('hidden');
-            }, 300); // match duration
+            }, 300);
         };
 
         btnNewThread.onclick = openModal;
@@ -460,13 +492,14 @@
             btnSubmitThread.textContent = "Posting...";
 
             try {
-                const threadsRef = collection(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME);
-                await addDoc(threadsRef, {
+                const threadsRef = ref(db, `artifacts/${appId}/public/data/${COLLECTION_NAME}`);
+                const newThreadRef = push(threadsRef);
+                await set(newThreadRef, {
                     title: title,
                     content: content,
                     author: getUsername(),
                     createdAt: Date.now(),
-                    replies: []
+                    replies: {}
                 });
                 closeModal();
             } catch (err) {
@@ -492,20 +525,13 @@
             replyError.textContent = "";
 
             try {
-                // Find current thread data locally to append the new array
-                const thread = allThreads.find(t => t.id === currentViewedThreadId);
-                const currentReplies = thread.replies || [];
+                const repliesRef = ref(db, `artifacts/${appId}/public/data/${COLLECTION_NAME}/${currentViewedThreadId}/replies`);
+                const newReplyRef = push(repliesRef);
                 
-                const newReply = {
+                await set(newReplyRef, {
                     author: getUsername(),
                     content: content,
                     createdAt: Date.now()
-                };
-
-                const threadRef = doc(db, 'artifacts', appId, 'public', 'data', COLLECTION_NAME, currentViewedThreadId);
-                
-                await updateDoc(threadRef, {
-                    replies: [...currentReplies, newReply]
                 });
 
                 replyContentInput.value = '';
@@ -518,7 +544,7 @@
             }
         };
 
-        // Utility Function to escape HTML to prevent XSS manually
+        // Utility Function to escape HTML to prevent safety vulnerabilities
         const escapeHTML = (str) => {
             if (!str) return '';
             return str.replace(/[&<>'"]/g, 
