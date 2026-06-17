@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Echo - Minimalist Memory Game</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght=300;400;600;800&display=swap');
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #0b0f19;
+            touch-action: manipulation;
+        }
+
+        /* Pad Glowing Effects */
+        .pad-green {
+            background: radial-gradient(circle, #10b981 0%, #047857 100%);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+        .pad-green.active {
+            background: #34d399;
+            box-shadow: 0 0 40px #10b981, inset 0 0 20px #ffffff;
+            transform: scale(0.96);
+        }
+
+        .pad-red {
+            background: radial-gradient(circle, #ef4444 0%, #b91c1c 100%);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+        }
+        .pad-red.active {
+            background: #f87171;
+            box-shadow: 0 0 40px #ef4444, inset 0 0 20px #ffffff;
+            transform: scale(0.96);
+        }
+
+        .pad-yellow {
+            background: radial-gradient(circle, #f59e0b 0%, #b45309 100%);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+        .pad-yellow.active {
+            background: #fbbf24;
+            box-shadow: 0 0 40px #f59e0b, inset 0 0 20px #ffffff;
+            transform: scale(0.96);
+        }
+
+        .pad-blue {
+            background: radial-gradient(circle, #3b82f6 0%, #1d4ed8 100%);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+        }
+        .pad-blue.active {
+            background: #60a5fa;
+            box-shadow: 0 0 40px #3b82f6, inset 0 0 20px #ffffff;
+            transform: scale(0.96);
+        }
+
+        /* Inner Ring Overlay */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Pulsing ring for the play button */
+        .pulse-ring {
+            box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.5);
+            animation: pulse-teal 2s infinite;
+        }
+
+        @keyframes pulse-teal {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.5);
+            }
+            70% {
+                transform: scale(1.03);
+                box-shadow: 0 0 0 12px rgba(20, 184, 166, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(20, 184, 166, 0);
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen text-white p-4 overflow-hidden select-none">
+
+    <!-- Header Section -->
+    <header class="w-full max-w-md flex justify-between items-center mt-4">
+        <div class="flex flex-col">
+            <h1 class="text-3xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-blue-500">
+                COLOR ECHO
+            </h1>
+            <p class="text-xs text-gray-400 tracking-widest uppercase">Train Your Reflexes</p>
+        </div>
+        <button id="rulesBtn" class="p-2 text-gray-400 hover:text-white transition-colors duration-200" title="How to Play">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </button>
+    </header>
+
+    <!-- Score Board -->
+    <section class="w-full max-w-md flex justify-around items-center glass-panel rounded-2xl py-4 my-2 px-6">
+        <div class="text-center">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Score</p>
+            <p id="currentScore" class="text-4xl font-extrabold text-white transition-all duration-300">0</p>
+        </div>
+        <div class="h-8 w-px bg-gray-700"></div>
+        <div class="text-center">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Best Echo</p>
+            <p id="highScore" class="text-4xl font-extrabold text-teal-400">0</p>
+        </div>
+    </section>
+
+    <!-- Main Game Board -->
+    <main class="relative w-72 h-72 sm:w-80 sm:h-80 my-auto flex items-center justify-center">
+        <!-- Grid of Interactive Pads -->
+        <div class="grid grid-cols-2 gap-4 w-full h-full">
+            <div id="pad-0" class="pad-green rounded-[40px_16px_16px_16px] transition-all duration-150 cursor-pointer active:scale-95"></div>
+            <div id="pad-1" class="pad-red rounded-[16px_40px_16px_16px] transition-all duration-150 cursor-pointer active:scale-95"></div>
+            <div id="pad-2" class="pad-yellow rounded-[16px_16px_16px_40px] transition-all duration-150 cursor-pointer active:scale-95"></div>
+            <div id="pad-3" class="pad-blue rounded-[16px_16px_40px_16px] transition-all duration-150 cursor-pointer active:scale-95"></div>
+        </div>
+
+        <!-- Central Controller Disk / Interactive Play Button -->
+        <button id="centerCircle" class="absolute w-36 h-36 rounded-full glass-panel flex flex-col items-center justify-center shadow-2xl pulse-ring transition-all duration-300 cursor-pointer border border-teal-500/30 hover:border-teal-400/60 active:scale-95 focus:outline-none">
+            <div id="centerContent" class="text-center px-2 flex flex-col items-center justify-center">
+                <!-- Large Play Icon -->
+                <svg id="playIcon" class="h-12 w-12 text-teal-400 mb-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                </svg>
+                <p id="statusLabel" class="text-xs tracking-widest uppercase font-extrabold text-teal-400">PLAY</p>
+                <p id="stepCounter" class="hidden text-lg font-bold mt-0.5 text-gray-300">Ready</p>
+            </div>
+        </button>
+    </main>
+
+    <!-- Interactive Button Tray -->
+    <footer class="w-full max-w-md mb-6 flex flex-col gap-4">
+        <button id="actionBtn" class="w-full py-4 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 active:scale-98 transition-all duration-200 text-lg font-bold rounded-2xl shadow-lg shadow-teal-500/10 tracking-wide">
+            START GAME
+        </button>
+    </footer>
+
+    <!-- Rules Modal Overlay -->
+    <div id="rulesModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="glass-panel max-w-sm w-full rounded-3xl p-6 text-center shadow-2xl border border-gray-700">
+            <h3 class="text-2xl font-bold text-teal-400 mb-4">How To Play</h3>
+            <div class="text-left space-y-4 text-gray-300 text-sm leading-relaxed mb-6">
+                <div class="flex items-start gap-3">
+                    <span class="bg-teal-500/20 text-teal-400 w-6 h-6 rounded-full flex items-center justify-center font-bold flex-shrink-0 mt-0.5">1</span>
+                    <p>Watch and listen carefully to the flashing sequence initiated by the device.</p>
+                </div>
+                <div class="flex items-start gap-3">
+                    <span class="bg-teal-500/20 text-teal-400 w-6 h-6 rounded-full flex items-center justify-center font-bold flex-shrink-0 mt-0.5">2</span>
+                    <p>Echo the sequence back by tapping the colored pads in the exact same order.</p>
+                </div>
+                <div class="flex items-start gap-3">
+                    <span class="bg-teal-500/20 text-teal-400 w-6 h-6 rounded-full flex items-center justify-center font-bold flex-shrink-0 mt-0.5">3</span>
+                    <p>Each round, a new color is appended to the pattern. Try to get the longest sequence possible!</p>
+                </div>
+            </div>
+            <button id="closeRulesBtn" class="w-full py-3 bg-gray-800 hover:bg-gray-700 transition-colors duration-200 rounded-xl font-bold tracking-wide">
+                GOT IT
+            </button>
+        </div>
+    </div>
+
+    <!-- Script Section containing all logic -->
+    <script>
+        // Game State Variables
+        let sequence = [];
+        let playerSequence = [];
+        let score = 0;
+        let highScore = 0;
+        let isShowingSequence = false;
+        let gameActive = false;
+        let playbackDelay = 550; // Milliseconds between flashes
+
+        // Audio Synthesis Config via Web Audio API
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        // Frequencies mapped to pads (0: Green, 1: Red, 2: Yellow, 3: Blue)
+        const frequencies = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+
+        // DOM elements
+        const pads = [
+            document.getElementById('pad-0'),
+            document.getElementById('pad-1'),
+            document.getElementById('pad-2'),
+            document.getElementById('pad-3')
+        ];
+        const currentScoreEl = document.getElementById('currentScore');
+        const highScoreEl = document.getElementById('highScore');
+        
+        const centerCircle = document.getElementById('centerCircle');
+        const playIcon = document.getElementById('playIcon');
+        const statusLabel = document.getElementById('statusLabel');
+        const stepCounter = document.getElementById('stepCounter');
+        
+        const actionBtn = document.getElementById('actionBtn');
+        const rulesBtn = document.getElementById('rulesBtn');
+        const rulesModal = document.getElementById('rulesModal');
+        const closeRulesBtn = document.getElementById('closeRulesBtn');
+
+        // Setup audio context safely to prevent any browser blocks from crashing the game
+        function initAudio() {
+            if (!audioCtx) {
+                try {
+                    audioCtx = new AudioContextClass();
+                } catch (e) {
+                    console.warn("Web Audio API is not supported or was blocked by the browser policy:", e);
+                }
+            }
+        }
+
+        // Synthesize highly polished sine tones
+        function playTone(freq, duration) {
+            if (!audioCtx) return;
+            
+            try {
+                // Resume context if suspended (common browser security rule)
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                osc.type = 'sine';
+
+                // Clean exponential envelope fade-out to prevent clicks
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (error) {
+                console.warn("Could not play sound cue:", error);
+            }
+        }
+
+        // Synthesize Game Over tone sequence
+        function playGameOverTone() {
+            if (!audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                const tones = [220, 196, 174, 146]; // Descending pitches
+                tones.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.setValueAtTime(freq, now + (idx * 0.15));
+                    osc.type = 'triangle';
+                    gain.gain.setValueAtTime(0.2, now + (idx * 0.15));
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + (idx * 0.15) + 0.4);
+                    osc.start(now + (idx * 0.15));
+                    osc.stop(now + (idx * 0.15) + 0.4);
+                });
+            } catch (error) {
+                console.warn("Could not play game over tune:", error);
+            }
+        }
+
+        // Synthesize Level Up fanfare tone
+        function playLevelUpTone() {
+            if (!audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                const tones = [392.00, 523.25, 659.25]; // Ascending G4, C5, E5
+                tones.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.setValueAtTime(freq, now + (idx * 0.1));
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.15, now + (idx * 0.1));
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + (idx * 0.1) + 0.25);
+                    osc.start(now + (idx * 0.1));
+                    osc.stop(now + (idx * 0.1) + 0.25);
+                });
+            } catch (error) {
+                console.warn("Could not play success fanfare:", error);
+            }
+        }
+
+        // Trigger visual highlight and play audio tone for a specific pad
+        function flashPad(index, duration = 300) {
+            return new Promise((resolve) => {
+                pads[index].classList.add('active');
+                playTone(frequencies[index], duration / 1000);
+                
+                setTimeout(() => {
+                    pads[index].classList.remove('active');
+                    setTimeout(resolve, 80); // brief silent window after release
+                }, duration);
+            });
+        }
+
+        // Run through the current pattern step-by-step
+        async function displaySequence() {
+            isShowingSequence = true;
+            statusLabel.textContent = "Echoing";
+            statusLabel.classList.add('text-teal-400', 'animate-pulse');
+            statusLabel.classList.remove('text-amber-400');
+            stepCounter.textContent = "Watch";
+            
+            // Adjust delay slightly depending on how long the sequence is to keep pace exciting
+            const speed = Math.max(280, playbackDelay - (sequence.length * 20));
+
+            for (let i = 0; i < sequence.length; i++) {
+                await flashPad(sequence[i], speed);
+            }
+
+            isShowingSequence = false;
+            statusLabel.textContent = "Your Turn";
+            statusLabel.classList.remove('animate-pulse');
+            statusLabel.classList.add('text-amber-400');
+            stepCounter.textContent = `Repeat`;
+        }
+
+        // Generate next sequence and transition gameplay
+        function nextRound() {
+            playerSequence = [];
+            score = sequence.length;
+            currentScoreEl.textContent = score;
+            
+            // Append random step (0 to 3)
+            sequence.push(Math.floor(Math.random() * 4));
+
+            setTimeout(() => {
+                displaySequence();
+            }, 800);
+        }
+
+        // Handle physical/touch interactions on the pads
+        function handlePadPress(index) {
+            if (!gameActive || isShowingSequence) return;
+            initAudio();
+
+            flashPad(index, 200);
+            playerSequence.push(index);
+
+            // Verify input matching
+            const currentStep = playerSequence.length - 1;
+            if (playerSequence[currentStep] !== sequence[currentStep]) {
+                gameOver();
+                return;
+            }
+
+            // Completed current pattern successfully
+            if (playerSequence.length === sequence.length) {
+                if (score + 1 > highScore) {
+                    highScore = score + 1;
+                    highScoreEl.textContent = highScore;
+                }
+                playLevelUpTone();
+                nextRound();
+            }
+        }
+
+        // Reset and begin initial loop
+        function startGame() {
+            initAudio();
+            sequence = [];
+            playerSequence = [];
+            score = 0;
+            currentScoreEl.textContent = "0";
+            gameActive = true;
+            
+            // Setup central play button into status mode
+            centerCircle.classList.remove('pulse-ring', 'cursor-pointer');
+            centerCircle.classList.add('pointer-events-none');
+            playIcon.classList.add('hidden');
+            stepCounter.classList.remove('hidden');
+
+            actionBtn.disabled = true;
+            actionBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            actionBtn.textContent = "PLAYING...";
+
+            nextRound();
+        }
+
+        // Handle failure state gracefully
+        function gameOver() {
+            gameActive = false;
+            playGameOverTone();
+            
+            // Re-enable central play button with dynamic states
+            centerCircle.classList.add('pulse-ring', 'cursor-pointer');
+            centerCircle.classList.remove('pointer-events-none');
+            playIcon.classList.remove('hidden');
+            
+            statusLabel.textContent = "REPLAY";
+            statusLabel.classList.remove('text-teal-400', 'text-amber-400', 'animate-pulse');
+            statusLabel.classList.add('text-teal-400');
+            
+            stepCounter.classList.add('hidden');
+
+            actionBtn.disabled = false;
+            actionBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            actionBtn.textContent = "TRY AGAIN";
+            
+            // Visual shake feedback on whole main container
+            const mainContainer = document.querySelector('main');
+            mainContainer.classList.add('animate-bounce');
+            setTimeout(() => {
+                mainContainer.classList.remove('animate-bounce');
+            }, 600);
+        }
+
+        // Setup Event Listeners
+        pads.forEach((pad, index) => {
+            pad.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                handlePadPress(index);
+            });
+        });
+
+        // Start game handlers from both action button and center circle
+        actionBtn.addEventListener('click', () => {
+            if (!gameActive) startGame();
+        });
+
+        centerCircle.addEventListener('click', () => {
+            if (!gameActive) startGame();
+        });
+
+        // Rules modal triggers
+        rulesBtn.addEventListener('click', () => {
+            rulesModal.classList.remove('hidden');
+        });
+
+        closeRulesBtn.addEventListener('click', () => {
+            rulesModal.classList.add('hidden');
+        });
+
+        rulesModal.addEventListener('click', (e) => {
+            if (e.target === rulesModal) {
+                rulesModal.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
