@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cyber Dodgeball: Neon Arena 5v5</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #03000a;
+            touch-action: none;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Custom neon glowing effects */
+        .neon-border-blue {
+            box-shadow: 0 0 15px rgba(0, 191, 255, 0.6), inset 0 0 15px rgba(0, 191, 255, 0.3);
+            border: 2px solid #00bfff;
+        }
+        .neon-border-pink {
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.6), inset 0 0 15px rgba(255, 0, 127, 0.3);
+            border: 2px solid #ff007f;
+        }
+        .neon-text-blue {
+            text-shadow: 0 0 8px rgba(0, 191, 255, 0.8), 0 0 20px rgba(0, 191, 255, 0.5);
+        }
+        .neon-text-pink {
+            text-shadow: 0 0 8px rgba(255, 0, 127, 0.8), 0 0 20px rgba(255, 0, 127, 0.5);
+        }
+        .neon-text-green {
+            text-shadow: 0 0 8px rgba(57, 255, 20, 0.8);
+        }
+        /* Hide scrollbars */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen text-white select-none">
+
+    <!-- GAME CONTAINER -->
+    <div class="relative w-full max-w-5xl aspect-[4/3] md:aspect-[16/10] bg-[#0c051a] border-4 border-[#1f0f3d] rounded-2xl overflow-hidden flex flex-col shadow-2xl">
+        
+        <!-- TOP HUD -->
+        <div class="absolute top-0 left-0 right-0 h-16 bg-black/60 backdrop-blur-md border-b-2 border-[#1f0f3d] z-10 flex items-center justify-between px-6">
+            <!-- Player Stats -->
+            <div class="flex items-center space-x-4">
+                <div>
+                    <span class="text-xs text-cyan-400 uppercase tracking-widest block font-bold">YOUR HP</span>
+                    <div class="w-28 md:w-32 h-3 bg-gray-900 rounded-full overflow-hidden border border-cyan-500/30">
+                        <div id="hp-bar" class="h-full bg-gradient-to-r from-cyan-500 to-blue-600 transition-all duration-300" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="text-center px-3 border-l border-white/10">
+                    <span class="text-xs text-cyan-400 uppercase block font-bold">Balls</span>
+                    <span id="ball-count" class="orbitron text-xl font-black text-cyan-300">0 / 3</span>
+                </div>
+            </div>
+
+            <!-- Wave & Team VS Tracker -->
+            <div class="text-center">
+                <div id="wave-display" class="orbitron text-md md:text-xl font-bold tracking-wider text-pink-500 neon-text-pink">WAVE 1</div>
+                <div id="team-versus" class="text-xs md:text-sm font-bold tracking-wide text-gray-300 uppercase">
+                    Teammates: <span id="ally-count" class="text-cyan-400">5</span> VS Opponents: <span id="enemy-count" class="text-pink-400">5</span>
+                </div>
+            </div>
+
+            <!-- Score -->
+            <div class="text-right">
+                <span class="text-xs text-yellow-400 uppercase tracking-widest block font-bold">Score</span>
+                <span id="score-display" class="orbitron text-2xl font-black text-yellow-300">0000</span>
+            </div>
+        </div>
+
+        <!-- CANVAS -->
+        <canvas id="gameCanvas" class="w-full h-full block bg-radial-gradient"></canvas>
+
+        <!-- START SCREEN OVERLAY -->
+        <div id="start-screen" class="absolute inset-0 bg-black/90 z-20 flex flex-col items-center justify-center p-6 text-center">
+            <h1 class="orbitron text-5xl md:text-7xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-600 tracking-wider">
+                CYBER DODGEBALL
+            </h1>
+            <p class="text-pink-400 neon-text-pink orbitron text-md md:text-xl tracking-widest mb-4">5 VS 5 NEON ARENA CHAMPIONSHIP</p>
+            <p class="text-xs text-cyan-300 max-w-lg mb-8 uppercase tracking-widest font-bold">Coordinate with your AI squad, lock down the court, and dodge the oncoming barrage!</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mb-8 text-left text-sm text-gray-300">
+                <div class="bg-purple-950/20 p-4 rounded-xl border border-cyan-500/30">
+                    <h3 class="orbitron text-cyan-400 font-bold mb-2 flex items-center">
+                        <span class="mr-2">🕹️</span> CONTROLS (DESKTOP)
+                    </h3>
+                    <ul class="space-y-1 list-disc list-inside">
+                        <li><strong class="text-white">WASD / Arrow Keys:</strong> Move Player</li>
+                        <li><strong class="text-white">Mouse Movement:</strong> Aim Throw</li>
+                        <li><strong class="text-white">Left Click:</strong> Throw Dodgeball</li>
+                        <li><strong class="text-white">Spacebar:</strong> Attempt Team-Catch</li>
+                    </ul>
+                </div>
+                <div class="bg-purple-950/20 p-4 rounded-xl border border-pink-500/30">
+                    <h3 class="orbitron text-pink-400 font-bold mb-2 flex items-center">
+                        <span class="mr-2">📱</span> CONTROLS (MOBILE)
+                    </h3>
+                    <ul class="space-y-1 list-disc list-inside">
+                        <li><strong class="text-white">Left Side Touchpad:</strong> Move Player</li>
+                        <li><strong class="text-white">Tap Opponent Court:</strong> Throw Ball</li>
+                        <li><strong class="text-white">Right Button:</strong> Catch Ball</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button id="start-btn" class="orbitron px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 rounded-xl font-bold text-lg tracking-widest transition-all transform hover:scale-105 active:scale-95 neon-border-blue">
+                ENTER ARENA (5v5)
+            </button>
+        </div>
+
+        <!-- PAUSE / GAME OVER / UPGRADE OVERLAY -->
+        <div id="game-over-screen" class="absolute inset-0 bg-black/90 z-20 hidden flex flex-col items-center justify-center p-6 text-center">
+            <h2 id="end-title" class="orbitron text-4xl md:text-6xl font-extrabold text-red-500 neon-text-pink mb-2">DEFEAT</h2>
+            <p id="end-subtitle" class="text-gray-400 mb-8 max-w-md">You got knocked out by the neon barrages. Refit your energy cores and try again.</p>
+
+            <div class="bg-[#120626] p-6 rounded-2xl border-2 border-pink-500/30 max-w-sm w-full mb-8">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-gray-400">Waves Survived</span>
+                    <span id="end-waves" class="orbitron font-bold text-pink-400">1</span>
+                </div>
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-gray-400">Total Kills</span>
+                    <span id="end-kills" class="orbitron font-bold text-cyan-400">0</span>
+                </div>
+                <div class="flex justify-between items-center pt-3 border-t border-white/10">
+                    <span class="text-yellow-400 font-bold uppercase tracking-widest">Final Score</span>
+                    <span id="end-score" class="orbitron font-bold text-2xl text-yellow-300">0</span>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <button id="restart-btn" class="orbitron px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-700 hover:from-pink-500 hover:to-purple-600 rounded-xl font-bold tracking-widest transition-all transform hover:scale-105 active:scale-95 neon-border-pink">
+                    PLAY AGAIN
+                </button>
+            </div>
+        </div>
+
+        <!-- STAGE CLEARED OVERLAY -->
+        <div id="stage-cleared-screen" class="absolute inset-0 bg-black/90 z-20 hidden flex flex-col items-center justify-center p-6 text-center">
+            <h2 class="orbitron text-4xl md:text-6xl font-extrabold text-green-400 neon-text-green mb-2">WAVE CLEARED!</h2>
+            <p class="text-gray-300 mb-8 max-w-md">Choose a nano-upgrade for the next wave:</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mb-8">
+                <!-- Upgrade 1 -->
+                <button onclick="applyUpgrade('speed')" class="bg-[#120626] hover:bg-[#1a0936] p-4 rounded-xl border border-cyan-500/40 text-left transition-all hover:scale-105 group">
+                    <span class="text-2xl block mb-2">⚡</span>
+                    <h4 class="orbitron font-bold text-cyan-400 group-hover:text-cyan-300">Kinetic Boost</h4>
+                    <p class="text-xs text-gray-400 mt-1">Increases movement speed by 15%</p>
+                </button>
+                <!-- Upgrade 2 -->
+                <button onclick="applyUpgrade('catch')" class="bg-[#120626] hover:bg-[#1a0936] p-4 rounded-xl border border-pink-500/40 text-left transition-all hover:scale-105 group">
+                    <span class="text-2xl block mb-2">🧤</span>
+                    <h4 class="orbitron font-bold text-pink-400 group-hover:text-pink-300">Magnetic Catch</h4>
+                    <p class="text-xs text-gray-400 mt-1">Expands catch timing window and radius</p>
+                </button>
+                <!-- Upgrade 3 -->
+                <button onclick="applyUpgrade('power')" class="bg-[#120626] hover:bg-[#1a0936] p-4 rounded-xl border border-yellow-500/40 text-left transition-all hover:scale-105 group">
+                    <span class="text-2xl block mb-2">🔥</span>
+                    <h4 class="orbitron font-bold text-yellow-400 group-hover:text-yellow-300">Hyper Drive</h4>
+                    <p class="text-xs text-gray-400 mt-1">Balls travel 20% faster when thrown</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- ON-SCREEN MOBILE CONTROLS (Only visible on mobile) -->
+        <div id="mobile-controls" class="absolute bottom-4 left-4 right-4 z-10 flex justify-between items-end pointer-events-none opacity-0 md:opacity-100 transition-opacity duration-300">
+            <!-- Move Joystick Area -->
+            <div id="joystick-boundary" class="w-28 h-28 bg-white/5 border border-cyan-500/20 rounded-full flex items-center justify-center pointer-events-auto backdrop-blur-sm relative">
+                <div id="joystick-knob" class="w-10 h-10 bg-cyan-500 rounded-full absolute transition-all duration-75 shadow-[0_0_10px_#00bfff]"></div>
+                <span class="text-[9px] text-cyan-400/50 absolute top-2 font-bold pointer-events-none">MOVE</span>
+            </div>
+
+            <!-- Action Catch Button -->
+            <button id="catch-btn" class="w-20 h-20 bg-pink-500/20 active:bg-pink-500/50 border-2 border-pink-500/60 rounded-full flex flex-col items-center justify-center pointer-events-auto shadow-[0_0_15px_rgba(255,0,127,0.3)] select-none">
+                <span class="text-2xl">🧤</span>
+                <span class="orbitron text-[10px] font-bold text-pink-300">CATCH</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- AUDIO TOGGLE BUTTON -->
+    <div class="mt-4 flex gap-4">
+        <button id="mute-btn" class="bg-[#120626] border border-cyan-500/30 text-cyan-400 hover:bg-[#1a0936] rounded-lg px-4 py-2 text-xs flex items-center gap-2 cursor-pointer transition-colors">
+            <span id="mute-icon">🔊</span> Sounds Enabled
+        </button>
+        <div class="text-xs text-gray-500 flex items-center">
+            Tip: Keep your teammates active by letting them claim rolling balls too!
+        </div>
+    </div>
+
+    <!-- GAME CODE -->
+    <script>
+        // --- SOUND EFFECTS (Web Audio API Synthesizer) ---
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            play(type) {
+                if (this.muted) return;
+                this.init();
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+
+                const now = this.ctx.currentTime;
+                
+                switch (type) {
+                    case 'throw': {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(150, now);
+                        osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+                        gain.gain.setValueAtTime(0.15, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.15);
+                        break;
+                    }
+                    case 'hit': {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(120, now);
+                        osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+                        gain.gain.setValueAtTime(0.3, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.3);
+                        break;
+                    }
+                    case 'bounce': {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(300, now);
+                        osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
+                        gain.gain.setValueAtTime(0.1, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.08);
+                        break;
+                    }
+                    case 'catch': {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(400, now);
+                        osc.frequency.linearRampToValueAtTime(900, now + 0.1);
+                        osc.frequency.linearRampToValueAtTime(1200, now + 0.2);
+                        gain.gain.setValueAtTime(0.2, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.25);
+                        break;
+                    }
+                    case 'powerup': {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(400, now);
+                        osc.frequency.setValueAtTime(600, now + 0.08);
+                        osc.frequency.setValueAtTime(800, now + 0.16);
+                        gain.gain.setValueAtTime(0.1, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.3);
+                        break;
+                    }
+                    case 'win': {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(300, now);
+                        osc.frequency.exponentialRampToValueAtTime(600, now + 0.2);
+                        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.4);
+                        gain.gain.setValueAtTime(0.2, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.5);
+                        break;
+                    }
+                }
+            }
+        }
+
+        const sfx = new SoundEffects();
+
+        // Mute / Unmute
+        const muteBtn = document.getElementById('mute-btn');
+        const muteIcon = document.getElementById('mute-icon');
+        muteBtn.addEventListener('click', () => {
+            sfx.muted = !sfx.muted;
+            muteIcon.textContent = sfx.muted ? '🔇' : '🔊';
+            muteBtn.classList.toggle('opacity-60', sfx.muted);
+        });
+
+        // --- CORE GAME SETUP ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Dynamic Resize Handling
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game State Variables
+        let isPlaying = false;
+        let score = 0;
+        let kills = 0;
+        let wave = 1;
+        let scale = 1; // Used for coordinate scaling to support fluid widths
+
+        // Input Management
+        const keys = {};
+        let mouseX = 0;
+        let mouseY = 0;
+        let isMouseDown = false;
+
+        // Virtual Joystick State
+        let joystickActive = false;
+        let joystickStart = { x: 0, y: 0 };
+        let joystickCur = { x: 0, y: 0 };
+        let joyVector = { x: 0, y: 0 };
+
+        // Handle Keyboard Events
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key === ' ' || e.key.toLowerCase() === 'shift') {
+                triggerCatch();
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // Track Pointer (Mouse / Touch) for Aiming & Throwing
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            handleThrowAttempt(e);
+        });
+        canvas.addEventListener('mouseup', () => isMouseDown = false);
+
+        // Touch Interaction Support for Canvas (Direct Taps to Throw)
+        canvas.addEventListener('touchstart', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            mouseX = touch.clientX - rect.left;
+            mouseY = touch.clientY - rect.top;
+            
+            // Only count as throw action if it taps the top half (opponents court)
+            if (mouseY < canvas.height / 2) {
+                handleThrowAttempt(e);
+            }
+        }, { passive: false });
+
+        // Virtual Joystick Listeners (Mobile Interaction)
+        const joystickBoundary = document.getElementById('joystick-boundary');
+        const joystickKnob = document.getElementById('joystick-knob');
+        const catchBtn = document.getElementById('catch-btn');
+
+        // Check if user is on mobile
+        function detectMobile() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            document.getElementById('mobile-controls').style.opacity = isMobile ? '1' : '0';
+            return isMobile;
+        }
+        detectMobile();
+
+        joystickBoundary.addEventListener('touchstart', (e) => {
+            const rect = joystickBoundary.getBoundingClientRect();
+            joystickActive = true;
+            joystickStart = {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2
+            };
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!joystickActive) return;
+            const touch = Array.from(e.touches).find(t => t.target.closest('#joystick-boundary'));
+            if (!touch) return;
+
+            const rect = joystickBoundary.getBoundingClientRect();
+            const boundaryRadius = rect.width / 2;
+
+            let dx = touch.clientX - joystickStart.x;
+            let dy = touch.clientY - joystickStart.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > boundaryRadius) {
+                dx = (dx / dist) * boundaryRadius;
+                dy = (dy / dist) * boundaryRadius;
+            }
+
+            joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+            
+            // Normalize direction vector between -1 and 1
+            joyVector.x = dx / boundaryRadius;
+            joyVector.y = dy / boundaryRadius;
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (!joystickActive) return;
+            joystickActive = false;
+            joystickKnob.style.transform = 'translate(0px, 0px)';
+            joyVector = { x: 0, y: 0 };
+        });
+
+        catchBtn.addEventListener('touchstart', (e) => {
+            triggerCatch();
+            e.preventDefault();
+        }, { passive: false });
+
+
+        // --- ENTITY CLASSES ---
+
+        class Player {
+            constructor() {
+                this.x = 0;
+                this.y = 0;
+                this.radius = 18;
+                this.speed = 4.0;
+                this.maxHp = 100;
+                this.hp = 100;
+                this.balls = 1;
+                this.maxBalls = 3;
+                this.color = '#00ffff'; // Cyber Cyan
+                this.isPlayer = true;
+                
+                // Catch state dynamics
+                this.isCatching = false;
+                this.catchTimer = 0;
+                this.catchCooldown = 0;
+                this.catchWindow = 15; // Animation frames
+                this.catchRadius = 40;
+
+                // Hit flash feedback
+                this.hitFlash = 0;
+
+                // Upgrade Modifiers
+                this.speedModifier = 1.0;
+                this.powerModifier = 1.0;
+                this.catchModifier = 1.0;
+            }
+
+            reset() {
+                this.x = canvas.width / 2;
+                this.y = canvas.height * 0.8; // Bottom side of the court
+                this.hp = this.maxHp;
+                this.balls = 1;
+                this.isCatching = false;
+                this.catchTimer = 0;
+                this.catchCooldown = 0;
+                updateHUD();
+            }
+
+            update() {
+                // Movement control handling (Keyboard & Virtual Joystick)
+                let dx = 0;
+                let dy = 0;
+
+                if (joystickActive) {
+                    dx = joyVector.x;
+                    dy = joyVector.y;
+                } else {
+                    if (keys['w'] || keys['arrowup']) dy -= 1;
+                    if (keys['s'] || keys['arrowdown']) dy += 1;
+                    if (keys['a'] || keys['arrowleft']) dx -= 1;
+                    if (keys['d'] || keys['arrowright']) dx += 1;
+                }
+
+                // Apply movement vectors
+                if (dx !== 0 || dy !== 0) {
+                    const len = Math.sqrt(dx * dx + dy * dy);
+                    const currentSpeed = this.speed * this.speedModifier;
+                    this.x += (dx / len) * currentSpeed;
+                    this.y += (dy / len) * currentSpeed;
+                }
+
+                // Keep Player confined within their court side (Bottom half)
+                const margin = this.radius + 15;
+                const halfLine = canvas.height / 2 + margin;
+                
+                if (this.x < margin) this.x = margin;
+                if (this.x > canvas.width - margin) this.x = canvas.width - margin;
+                if (this.y < halfLine) this.y = halfLine;
+                if (this.y > canvas.height - margin) this.y = canvas.height - margin;
+
+                // Handle Catch Window timers
+                if (this.isCatching) {
+                    this.catchTimer--;
+                    if (this.catchTimer <= 0) {
+                        this.isCatching = false;
+                    }
+                }
+                if (this.catchCooldown > 0) {
+                    this.catchCooldown--;
+                }
+
+                // Reduce hit flash visual modifier
+                if (this.hitFlash > 0) this.hitFlash -= 0.1;
+            }
+
+            draw() {
+                // Glow tail/shadow
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius + 8, 0, Math.PI * 2);
+                ctx.fillStyle = this.isCatching ? 'rgba(255, 0, 127, 0.15)' : 'rgba(0, 255, 255, 0.15)';
+                ctx.fill();
+                ctx.restore();
+
+                // Draw Catch Bubble / Glove Radius when active
+                if (this.isCatching) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.catchRadius * this.catchModifier, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255, 0, 127, ${this.catchTimer / this.catchWindow})`;
+                    ctx.lineWidth = 4;
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#ff007f';
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // Core character drawing
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : this.color;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+
+                // Crown indicator showing YOU are the player
+                ctx.beginPath();
+                ctx.moveTo(this.x - 10, this.y - this.radius - 2);
+                ctx.lineTo(this.x - 5, this.y - this.radius - 8);
+                ctx.lineTo(this.x, this.y - this.radius - 4);
+                ctx.lineTo(this.x + 5, this.y - this.radius - 8);
+                ctx.lineTo(this.x + 10, this.y - this.radius - 2);
+                ctx.closePath();
+                ctx.fillStyle = '#ffa500';
+                ctx.fill();
+
+                // Eyes / Visor aiming at cursor direction
+                const angle = Math.atan2(mouseY - this.y, mouseX - this.x);
+                const visorDist = 5;
+                const vx = this.x + Math.cos(angle) * visorDist;
+                const vy = this.y + Math.sin(angle) * visorDist;
+
+                ctx.beginPath();
+                ctx.arc(vx, vy, 4, angle - Math.PI/3, angle + Math.PI/3);
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // Hands carrying balls
+                if (this.balls > 0) {
+                    ctx.beginPath();
+                    ctx.arc(this.x - 12, this.y + 4, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = '#00ffff'; // Glowing mini cyan ball
+                    ctx.fill();
+                }
+            }
+
+            takeDamage(amt) {
+                this.hp -= amt;
+                this.hitFlash = 1.0;
+                sfx.play('hit');
+                if (this.hp < 0) this.hp = 0;
+                updateHUD();
+                
+                // Add screen shake effect
+                screenShake = 12;
+
+                if (this.hp <= 0) {
+                    gameOver(false);
+                }
+            }
+        }
+
+        // --- AI TEAMMATE CLASS ---
+        class Teammate {
+            constructor(index) {
+                this.x = (canvas.width / 5) * (index + 0.5);
+                this.y = canvas.height * (0.65 + Math.random() * 0.2);
+                this.radius = 18;
+                this.speed = 3.2;
+                this.hp = 80;
+                this.maxHp = 80;
+                this.balls = 1;
+                this.color = '#3399ff'; // Cobalt Blue for ally bots
+                this.isPlayer = false;
+
+                this.targetX = this.x;
+                this.targetY = this.y;
+                this.moveTimer = 0;
+                this.throwTimer = Math.random() * 40 + 20; // Lower timer for faster initial throws
+                this.hitFlash = 0;
+            }
+
+            update() {
+                // Ball hunting & smart decision updates
+                if (this.balls === 0) {
+                    let targetBall = findClosestLooseBall(this.x, this.y, true); // True = bottom half
+                    if (targetBall) {
+                        this.targetX = targetBall.x;
+                        this.targetY = targetBall.y;
+                        this.moveTimer = 5; // Ultra fast search refresh
+                    } else {
+                        this.moveTimer--;
+                        if (this.moveTimer <= 0) {
+                            // No balls near, run defensively
+                            this.targetX = Math.random() * (canvas.width - 100) + 50;
+                            this.targetY = Math.random() * (canvas.height * 0.35) + (canvas.height * 0.55);
+                            this.moveTimer = Math.random() * 60 + 30;
+                        }
+                    }
+                } else {
+                    // Holding a ball, find strategic positioning
+                    this.moveTimer--;
+                    if (this.moveTimer <= 0) {
+                        this.targetX = Math.random() * (canvas.width - 100) + 50;
+                        this.targetY = Math.random() * (canvas.height * 0.3) + (canvas.height * 0.6);
+                        this.moveTimer = Math.random() * 80 + 40;
+                    }
+                }
+
+                // Move to targeted coordinate
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 5) {
+                    this.x += (dx / dist) * this.speed;
+                    this.y += (dy / dist) * this.speed;
+                }
+
+                // Restrict to allied court bounds
+                const margin = this.radius + 15;
+                const halfLine = canvas.height / 2 + margin;
+                if (this.x < margin) this.x = margin;
+                if (this.x > canvas.width - margin) this.x = canvas.width - margin;
+                if (this.y < halfLine) this.y = halfLine;
+                if (this.y > canvas.height - margin) this.y = canvas.height - margin;
+
+                // Handle throwing
+                if (this.balls > 0 && enemies.length > 0) {
+                    this.throwTimer--;
+                    if (this.throwTimer <= 0) {
+                        this.throwAtEnemy();
+                        
+                        // Dynamic frequency: The fewer active players left, the faster they throw!
+                        const activeCount = teammates.length + enemies.length + 1;
+                        this.throwTimer = Math.random() * 20 + 10 + activeCount * 6; // Drastically faster pacing
+                    }
+                }
+
+                if (this.hitFlash > 0) this.hitFlash -= 0.1;
+            }
+
+            throwAtEnemy() {
+                if (enemies.length === 0) return;
+                this.balls--;
+
+                // Target a random active enemy
+                const target = enemies[Math.floor(Math.random() * enemies.length)];
+                balls.push(new Ball(this.x, this.y, target.x, target.y, true, 0.9)); // True = player team thrown
+                sfx.play('throw');
+            }
+
+            takeDamage(amt) {
+                this.hp -= amt;
+                this.hitFlash = 1.0;
+                sfx.play('hit');
+                if (this.hp < 0) this.hp = 0;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : this.color;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+
+                // Mini Health Indicator
+                const barW = this.radius * 1.5;
+                const barH = 3;
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(this.x - barW/2, this.y - this.radius - 8, barW, barH);
+                ctx.fillStyle = '#00bfff';
+                ctx.fillRect(this.x - barW/2, this.y - this.radius - 8, barW * (this.hp / this.maxHp), barH);
+
+                // Goggles facing enemies
+                if (enemies.length > 0) {
+                    const firstEnemy = enemies[0];
+                    const angle = Math.atan2(firstEnemy.y - this.y, firstEnemy.x - this.x);
+                    const vx = this.x + Math.cos(angle) * 4;
+                    const vy = this.y + Math.sin(angle) * 4;
+                    ctx.beginPath();
+                    ctx.arc(vx, vy, 3, angle - Math.PI/3, angle + Math.PI/3);
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                if (this.balls > 0) {
+                    ctx.beginPath();
+                    ctx.arc(this.x - 10, this.y + 4, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#00bfff';
+                    ctx.fill();
+                }
+            }
+        }
+
+        class Enemy {
+            constructor(type, waveFactor, index) {
+                this.type = type; // 'regular', 'speedy', 'tank'
+                this.x = (canvas.width / 5) * (index + 0.5) + (Math.random() - 0.5) * 20;
+                this.y = Math.random() * (canvas.height * 0.25) + 60; // Spawn upper region
+                this.radius = type === 'tank' ? 24 : (type === 'speedy' ? 15 : 18);
+                this.color = type === 'tank' ? '#9933ff' : (type === 'speedy' ? '#ffcc00' : '#ff0055');
+                this.speed = (type === 'speedy' ? 4.5 : (type === 'tank' ? 1.8 : 2.8)) * (1 + waveFactor * 0.05);
+                this.hp = type === 'tank' ? 150 : (type === 'regular' ? 80 : 50);
+                this.maxHp = this.hp;
+                this.balls = 1;
+                
+                // Movement targeting
+                this.targetX = this.x;
+                this.targetY = this.y;
+                this.moveTimer = 0;
+
+                // Action loops
+                this.throwTimer = Math.random() * 40 + 20; // Quick reaction throw start
+                this.hitFlash = 0;
+            }
+
+            update() {
+                // smart navigation logic
+                if (this.balls === 0) {
+                    let targetBall = findClosestLooseBall(this.x, this.y, false); // False = top half
+                    if (targetBall) {
+                        this.targetX = targetBall.x;
+                        this.targetY = targetBall.y;
+                        this.moveTimer = 5; // Ultra fast path finding refresh
+                    } else {
+                        this.moveTimer--;
+                        if (this.moveTimer <= 0) {
+                            this.targetX = Math.random() * (canvas.width - 100) + 50;
+                            this.targetY = Math.random() * (canvas.height * 0.35) + 60; // Top half restriction
+                            this.moveTimer = Math.random() * 80 + 40;
+                        }
+                    }
+                } else {
+                    this.moveTimer--;
+                    if (this.moveTimer <= 0) {
+                        this.targetX = Math.random() * (canvas.width - 100) + 50;
+                        this.targetY = Math.random() * (canvas.height * 0.35) + 60;
+                        this.moveTimer = Math.random() * 80 + 40;
+                    }
+                }
+
+                // Move toward target location
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 5) {
+                    this.x += (dx / dist) * this.speed;
+                    this.y += (dy / dist) * this.speed;
+                }
+
+                // Ball throw execution logic
+                if (this.balls > 0) {
+                    this.throwTimer--;
+                    if (this.throwTimer <= 0) {
+                        this.throwBallAtPlayerTeam();
+                        
+                        // Dynamic frequency: The fewer active players left, the faster they throw!
+                        const activeCount = teammates.length + enemies.length + 1;
+                        this.throwTimer = Math.random() * 20 + 10 + activeCount * 5 - Math.min(10, wave);
+                    }
+                }
+
+                if (this.hitFlash > 0) this.hitFlash -= 0.1;
+            }
+
+            draw() {
+                // Under shadow
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius + 6, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 0, 85, 0.1)';
+                ctx.fill();
+                ctx.restore();
+
+                // Core Body
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+
+                // Health mini-meter
+                const barW = this.radius * 1.5;
+                const barH = 3;
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(this.x - barW/2, this.y - this.radius - 8, barW, barH);
+                ctx.fillStyle = '#ff0055';
+                ctx.fillRect(this.x - barW/2, this.y - this.radius - 8, barW * (this.hp / this.maxHp), barH);
+
+                // Visor pointing toward player
+                const angle = Math.atan2(player.y - this.y, player.x - this.x);
+                const vx = this.x + Math.cos(angle) * 4;
+                const vy = this.y + Math.sin(angle) * 4;
+                ctx.beginPath();
+                ctx.arc(vx, vy, 3, angle - Math.PI/3, angle + Math.PI/3);
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                if (this.balls > 0) {
+                    ctx.beginPath();
+                    ctx.arc(this.x + 10, this.y + 4, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ff007f';
+                    ctx.fill();
+                }
+            }
+
+            throwBallAtPlayerTeam() {
+                this.balls--;
+
+                // Decide whether to target the real Player or a Teammate
+                let target = player;
+                if (teammates.length > 0 && Math.random() > 0.4) {
+                    target = teammates[Math.floor(Math.random() * teammates.length)];
+                }
+
+                // Throw aimed with small randomization factor
+                const spreadX = (Math.random() - 0.5) * 60;
+                const spreadY = (Math.random() - 0.5) * 60;
+                
+                balls.push(new Ball(
+                    this.x, 
+                    this.y, 
+                    target.x + spreadX, 
+                    target.y + spreadY, 
+                    false, // False = enemy team thrown
+                    this.type === 'tank' ? 1.15 : (this.type === 'speedy' ? 0.75 : 0.95)
+                ));
+                sfx.play('throw');
+            }
+
+            takeDamage(amt) {
+                this.hp -= amt;
+                this.hitFlash = 1.0;
+                sfx.play('hit');
+                if (this.hp < 0) this.hp = 0;
+            }
+        }
+
+        class Ball {
+            constructor(startX, startY, targetX, targetY, isPlayerThrown, speedModifier = 1.0) {
+                this.x = startX;
+                this.y = startY;
+                this.radius = 9;
+                this.speed = 10 * speedModifier;
+                this.isPlayerThrown = isPlayerThrown; // True = user team, False = enemy team
+                this.isRolling = false; // Becomes idle/collectible after landing/bouncing
+                this.bounceCount = 0;
+                this.maxBounces = 2;
+                
+                // Color configuration
+                this.color = isPlayerThrown ? '#00bfff' : '#ff007f';
+
+                // Direction vector computation
+                const dx = targetX - startX;
+                const dy = targetY - startY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                this.vx = (dx / (dist || 1)) * this.speed;
+                this.vy = (dy / (dist || 1)) * this.speed;
+
+                // Particle Trail array
+                this.trail = [];
+            }
+
+            update() {
+                if (!this.isRolling) {
+                    // Update movement positions
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Push coordinates to visual trail tracker
+                    this.trail.push({ x: this.x, y: this.y });
+                    if (this.trail.length > 8) this.trail.shift();
+
+                    // Boundary walls collisions (Bounce physics)
+                    if (this.x < this.radius || this.x > canvas.width - this.radius) {
+                        this.vx = -this.vx;
+                        this.x = this.x < this.radius ? this.radius : canvas.width - this.radius;
+                        this.bounceCount++;
+                        sfx.play('bounce');
+                    }
+
+                    // Bottom/Top boundary bouncing conditions
+                    if (this.y < this.radius || this.y > canvas.height - this.radius) {
+                        this.vy = -this.vy;
+                        this.y = this.y < this.radius ? this.radius : canvas.height - this.radius;
+                        this.bounceCount++;
+                        sfx.play('bounce');
+                    }
+
+                    // Turn ball into an idle rolling item if limits are met
+                    if (this.bounceCount >= this.maxBounces) {
+                        this.settleToGround();
+                    }
+                } else {
+                    // De-accelerate rolling ball over time to standard rest state
+                    this.vx *= 0.95;
+                    this.vy *= 0.95;
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Boundary collision bounds during rolling rest state
+                    if (this.x < this.radius || this.x > canvas.width - this.radius) {
+                        this.vx = -this.vx;
+                        this.x = this.x < this.radius ? this.radius : canvas.width - this.radius;
+                    }
+                    if (this.y < this.radius || this.y > canvas.height - this.radius) {
+                        this.vy = -this.vy;
+                        this.y = this.y < this.radius ? this.radius : canvas.height - this.radius;
+                    }
+                }
+            }
+
+            draw() {
+                // Paint trail glow lines
+                if (!this.isRolling && this.trail.length > 1) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for (let i = 1; i < this.trail.length; i++) {
+                        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    }
+                    ctx.strokeStyle = this.isPlayerThrown ? 'rgba(0, 191, 255, 0.25)' : 'rgba(255, 0, 127, 0.25)';
+                    ctx.lineWidth = this.radius * 1.5;
+                    ctx.lineCap = 'round';
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // Core Ball drawing
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.isRolling ? '#ffa500' : this.color; // Orange color represent collectible state
+                ctx.shadowBlur = this.isRolling ? 5 : 12;
+                ctx.shadowColor = this.isRolling ? '#ffa500' : this.color;
+                ctx.fill();
+
+                // Highlight inner core
+                ctx.beginPath();
+                ctx.arc(this.x - 2, this.y - 2, 2, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+            }
+
+            settleToGround() {
+                this.isRolling = true;
+                this.isPlayerThrown = false;
+                // Add minor random velocity dispersion
+                const angle = Math.random() * Math.PI * 2;
+                const sp = Math.random() * 2 + 1;
+                this.vx = Math.cos(angle) * sp;
+                this.vy = Math.sin(angle) * sp;
+            }
+        }
+
+        class PowerUp {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 100) + 50;
+                // Spawn mostly centered or near player half
+                this.y = Math.random() * (canvas.height * 0.4) + (canvas.height * 0.5);
+                this.radius = 15;
+                this.types = ['shield', 'heal', 'ammo', 'frenzy'];
+                this.type = this.types[Math.floor(Math.random() * this.types.length)];
+                this.pulseTimer = 0;
+            }
+
+            update() {
+                this.pulseTimer += 0.05;
+            }
+
+            draw() {
+                const currentRadius = this.radius + Math.sin(this.pulseTimer) * 3;
+                let color = '#39ff14'; // Green default
+
+                if (this.type === 'shield') color = '#00ffff';
+                if (this.type === 'ammo') color = '#ffa500';
+                if (this.type === 'frenzy') color = '#ff00ff';
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = color;
+                ctx.stroke();
+
+                // Center visual indicator shape
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+
+        // --- INSTANCES & CONTAINERS ---
+        const player = new Player();
+        let teammates = [];
+        let enemies = [];
+        let balls = [];
+        let powerUps = [];
+        let screenShake = 0;
+
+        // --- UTILITY METHODS ---
+        // Helper to find closest loose ball in a specific half of the court
+        function findClosestLooseBall(fromX, fromY, checkAlliedHalf) {
+            let closest = null;
+            let minDist = Infinity;
+
+            for (let b of balls) {
+                if (b.isRolling) {
+                    // Check court constraints
+                    const inAlliedHalf = b.y > canvas.height / 2;
+                    if ((checkAlliedHalf && inAlliedHalf) || (!checkAlliedHalf && !inAlliedHalf)) {
+                        const dist = Math.sqrt((b.x - fromX)**2 + (b.y - fromY)**2);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closest = b;
+                        }
+                    }
+                }
+            }
+            return closest;
+        }
+
+
+        // --- INTERACTION RULES AND COLLISION DETECTION ---
+
+        function triggerCatch() {
+            if (player.catchCooldown > 0 || player.isCatching) return;
+            player.isCatching = true;
+            player.catchTimer = player.catchWindow;
+            player.catchCooldown = 40; // Frame cool down before attempting next Catch trigger
+        }
+
+        function handleThrowAttempt(e) {
+            if (!isPlaying) return;
+            if (player.balls > 0) {
+                player.balls--;
+                
+                // Track canvas cursor point coordinates
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                
+                const targetX = clientX - rect.left;
+                const targetY = clientY - rect.top;
+
+                balls.push(new Ball(
+                    player.x, 
+                    player.y, 
+                    targetX, 
+                    targetY, 
+                    true, // Player team thrown
+                    player.powerModifier
+                ));
+                
+                sfx.play('throw');
+                updateHUD();
+            }
+        }
+
+        function handleUpgrades(type) {
+            if (type === 'speed') {
+                player.speedModifier += 0.15;
+            } else if (type === 'catch') {
+                player.catchModifier += 0.20;
+                player.catchWindow += 5;
+            } else if (type === 'power') {
+                player.powerModifier += 0.20;
+            }
+        }
+
+        function spawnWave() {
+            enemies = [];
+            teammates = [];
+            powerUps = [];
+            
+            // Re-populate arenas with collectible dodgeballs (more balls for 5v5 action!)
+            balls = [];
+            for (let i = 0; i < 7; i++) {
+                const b = new Ball(
+                    Math.random() * (canvas.width - 100) + 50,
+                    canvas.height / 2 + (Math.random() - 0.5) * 100,
+                    0, 0, false
+                );
+                b.settleToGround();
+                balls.push(b);
+            }
+
+            // Spawn 4 AI teammates
+            for (let i = 0; i < 4; i++) {
+                teammates.push(new Teammate(i));
+            }
+
+            // Spawn 5 AI enemies
+            const waveFactor = wave - 1;
+            for (let i = 0; i < 5; i++) {
+                let type = 'regular';
+                if (i === 1 && wave >= 2) type = 'speedy';
+                if (i === 2 && wave >= 3) type = 'tank';
+                if (wave >= 4 && Math.random() > 0.6) type = 'speedy';
+                if (wave >= 5 && Math.random() > 0.7) type = 'tank';
+
+                enemies.push(new Enemy(type, waveFactor, i));
+            }
+
+            updateHUD();
+        }
+
+        function checkCollisions() {
+            const playerCatchRadius = player.catchRadius * player.catchModifier;
+
+            for (let bIndex = balls.length - 1; bIndex >= 0; bIndex--) {
+                const b = balls[bIndex];
+
+                // 1. ACTIVE BALLS INTERACTION CHECK
+                if (!b.isRolling) {
+                    
+                    // Case A: Enemy Team Thrown Ball VS Allied Side (Player or Teammates)
+                    if (!b.isPlayerThrown) {
+                        // Check hit against the Player
+                        const dx = b.x - player.x;
+                        const dy = b.y - player.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        // Catch Deflection Rule Match (Player Catch)
+                        if (player.isCatching && dist < playerCatchRadius + b.radius) {
+                            balls.splice(bIndex, 1);
+                            player.balls = Math.min(player.balls + 1, player.maxBalls);
+                            score += 150;
+                            sfx.play('catch');
+                            updateHUD();
+                            continue;
+                        }
+
+                        // Player damage collision
+                        if (dist < player.radius + b.radius) {
+                            player.takeDamage(20);
+                            b.settleToGround(); // Drop ball onto floor! No deletion!
+                            continue;
+                        }
+
+                        // Check hit against AI Teammates
+                        let teammateHit = false;
+                        for (let tIndex = teammates.length - 1; tIndex >= 0; tIndex--) {
+                            const t = teammates[tIndex];
+                            const tdx = b.x - t.x;
+                            const tdy = b.y - t.y;
+                            const tdist = Math.sqrt(tdx * tdx + tdy * tdy);
+
+                            if (tdist < t.radius + b.radius) {
+                                t.takeDamage(20);
+                                b.settleToGround(); // Drop ball onto floor! No deletion!
+                                teammateHit = true;
+
+                                if (t.hp <= 0) {
+                                    teammates.splice(tIndex, 1);
+                                }
+                                updateHUD();
+                                break;
+                            }
+                        }
+                        if (teammateHit) continue;
+                    }
+
+                    // Case B: Allied Team Thrown Ball VS Enemies
+                    if (b.isPlayerThrown) {
+                        let enemyHit = false;
+                        for (let eIndex = enemies.length - 1; eIndex >= 0; eIndex--) {
+                            const e = enemies[eIndex];
+                            const dx = b.x - e.x;
+                            const dy = b.y - e.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+
+                            if (dist < e.radius + b.radius) {
+                                e.takeDamage(35);
+                                b.settleToGround(); // Drop ball onto floor! No deletion!
+                                enemyHit = true;
+
+                                if (e.hp <= 0) {
+                                    enemies.splice(eIndex, 1);
+                                    kills++;
+                                    score += 500;
+                                    
+                                    // Drop bonus power-ups on opponent knockouts occasionally
+                                    if (Math.random() > 0.5) {
+                                        const p = new PowerUp();
+                                        p.x = e.x;
+                                        p.y = Math.max(canvas.height / 2 + 30, e.y); // Keep on allied half
+                                        powerUps.push(p);
+                                    }
+                                }
+
+                                updateHUD();
+                                break;
+                            }
+                        }
+                        if (enemyHit) continue;
+                    }
+
+                } 
+                // 2. IDLE / COLLECTIBLE ROLLING BALL CHECK
+                else {
+                    // Check if Player collects the ball
+                    const dx = b.x - player.x;
+                    const dy = b.y - player.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < player.radius + b.radius && player.balls < player.maxBalls) {
+                        balls.splice(bIndex, 1);
+                        player.balls++;
+                        sfx.play('bounce');
+                        updateHUD();
+                        continue;
+                    }
+
+                    // Check if Teammates collect the ball
+                    let teammateClaimed = false;
+                    for (let t of teammates) {
+                        if (t.balls < 1 && b.y > canvas.height / 2) {
+                            const tdx = b.x - t.x;
+                            const tdy = b.y - t.y;
+                            const tdist = Math.sqrt(tdx * tdx + tdy * tdy);
+                            if (tdist < t.radius + b.radius) {
+                                balls.splice(bIndex, 1);
+                                t.balls++;
+                                teammateClaimed = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (teammateClaimed) continue;
+
+                    // Check if Enemies collect the ball
+                    let enemyClaimed = false;
+                    for (let e of enemies) {
+                        if (e.balls < 1 && b.y < canvas.height / 2) {
+                            const edx = b.x - e.x;
+                            const edy = b.y - e.y;
+                            const edist = Math.sqrt(edx * edx + edy * edy);
+                            if (edist < e.radius + b.radius) {
+                                balls.splice(bIndex, 1);
+                                e.balls++;
+                                enemyClaimed = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (enemyClaimed) continue;
+                }
+            }
+
+            // 3. POWERUP INTERACTIONS CHECK
+            for (let pIndex = powerUps.length - 1; pIndex >= 0; pIndex--) {
+                const p = powerUps[pIndex];
+                const dx = p.x - player.x;
+                const dy = p.y - player.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < player.radius + p.radius) {
+                    powerUps.splice(pIndex, 1);
+                    sfx.play('powerup');
+                    applyPowerUpEffect(p.type);
+                }
+            }
+        }
+
+        function applyPowerUpEffect(type) {
+            if (type === 'shield') {
+                // Instantly absorb half health back
+                player.hp = Math.min(player.maxHp, player.hp + 25);
+            } else if (type === 'heal') {
+                player.hp = Math.min(player.maxHp, player.hp + 40);
+            } else if (type === 'ammo') {
+                player.balls = player.maxBalls;
+            } else if (type === 'frenzy') {
+                // Short frenzy upgrade boosting speed
+                const originalSpeed = player.speedModifier;
+                player.speedModifier *= 1.4;
+                setTimeout(() => {
+                    player.speedModifier = originalSpeed;
+                }, 5000);
+            }
+            updateHUD();
+        }
+
+        function updateHUD() {
+            document.getElementById('hp-bar').style.width = `${(player.hp / player.maxHp) * 100}%`;
+            document.getElementById('ball-count').textContent = `${player.balls} / ${player.maxBalls}`;
+            document.getElementById('score-display').textContent = score.toString().padStart(4, '0');
+            document.getElementById('wave-display').textContent = `WAVE ${wave}`;
+            
+            // Teammates: You (1) + teammates array length vs Enemies array length
+            const alliesCount = teammates.length + (player.hp > 0 ? 1 : 0);
+            document.getElementById('ally-count').textContent = alliesCount;
+            document.getElementById('enemy-count').textContent = enemies.length;
+        }
+
+
+        // --- COURT RENDERING PATHS ---
+
+        function drawCourt() {
+            // Hardwood metallic gridlines
+            ctx.save();
+            ctx.strokeStyle = 'rgba(54, 25, 107, 0.4)';
+            ctx.lineWidth = 1;
+            
+            // Vertical lines
+            const gridCols = 16;
+            for (let i = 0; i <= gridCols; i++) {
+                const gx = (canvas.width / gridCols) * i;
+                ctx.beginPath();
+                ctx.moveTo(gx, 0);
+                ctx.lineTo(gx, canvas.height);
+                ctx.stroke();
+            }
+
+            // Horizontal lines
+            const gridRows = 10;
+            for (let i = 0; i <= gridRows; i++) {
+                const gy = (canvas.height / gridRows) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, gy);
+                ctx.lineTo(canvas.width, gy);
+                ctx.stroke();
+            }
+
+            // Court Boundary Boundaries
+            ctx.strokeStyle = '#1f0f3d';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+            // Dividing Center line (The Dodgeball Halfline)
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.strokeStyle = '#ff007f';
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ff007f';
+            ctx.stroke();
+
+            // Center Ring Circle
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, 80, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 0, 127, 0.4)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+
+        // --- CORE GAME LOOP ---
+
+        function gameLoop(timestamp) {
+            if (!isPlaying) return;
+
+            // Clear Screen
+            ctx.fillStyle = '#060210';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Screen shaking controller
+            ctx.save();
+            if (screenShake > 0) {
+                const dx = (Math.random() - 0.5) * screenShake;
+                const dy = (Math.random() - 0.5) * screenShake;
+                ctx.translate(dx, dy);
+                screenShake *= 0.9;
+                if (screenShake < 0.5) screenShake = 0;
+            }
+
+            // Render Arena Features
+            drawCourt();
+
+            // --- STALL PREVENTION / DYNAMIC RESPAWNING ---
+            let alliedBalls = player.balls;
+            for (let t of teammates) alliedBalls += t.balls;
+            
+            let enemyBalls = 0;
+            for (let e of enemies) enemyBalls += e.balls;
+            
+            let looseAllied = 0;
+            let looseEnemy = 0;
+            
+            for (let b of balls) {
+                if (b.isRolling) {
+                    if (b.y > canvas.height / 2) looseAllied++;
+                    else looseEnemy++;
+                }
+            }
+
+            // If enemies run completely dry, slide an allied loose ball over or spawn a fresh target!
+            if (enemyBalls === 0 && looseEnemy === 0 && enemies.length > 0) {
+                let ballToPush = balls.find(b => b.isRolling && b.y > canvas.height / 2);
+                if (ballToPush) {
+                    ballToPush.y = canvas.height / 2 - 25; // Nudge it over the line!
+                    ballToPush.vy = -3;
+                } else {
+                    const b = new Ball(
+                        Math.random() * (canvas.width - 100) + 50,
+                        canvas.height / 2 - 40,
+                        0, 0, false
+                    );
+                    b.settleToGround();
+                    balls.push(b);
+                }
+            }
+
+            // Likewise for allies
+            if (alliedBalls === 0 && looseAllied === 0) {
+                let ballToPush = balls.find(b => b.isRolling && b.y < canvas.height / 2);
+                if (ballToPush) {
+                    ballToPush.y = canvas.height / 2 + 25; // Nudge it over the line!
+                    ballToPush.vy = 3;
+                } else {
+                    const b = new Ball(
+                        Math.random() * (canvas.width - 100) + 50,
+                        canvas.height / 2 + 40,
+                        0, 0, false
+                    );
+                    b.settleToGround();
+                    balls.push(b);
+                }
+            }
+
+            // Handle Power-ups updates and draws
+            for (let p of powerUps) {
+                p.update();
+                p.draw();
+            }
+
+            // Handle Player updates and draws
+            player.update();
+            player.draw();
+
+            // Handle Teammates updates and draws
+            for (let t of teammates) {
+                t.update();
+                t.draw();
+            }
+
+            // Handle Enemies updates and draws
+            for (let e of enemies) {
+                e.update();
+                e.draw();
+            }
+
+            // Handle Balls updates and draws
+            for (let b of balls) {
+                b.update();
+                b.draw();
+            }
+
+            // Manage collision ticks
+            checkCollisions();
+
+            ctx.restore();
+
+            // Check Win condition (Cleared Wave)
+            if (enemies.length === 0) {
+                waveCleared();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+
+        // --- SCENE / SCREEN MANAGEMENT CONTROLS ---
+
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-over-screen').classList.add('hidden');
+            document.getElementById('stage-cleared-screen').classList.add('hidden');
+            
+            sfx.init();
+
+            // Reset scores on full play resets
+            score = 0;
+            kills = 0;
+            wave = 1;
+
+            player.reset();
+            spawnWave();
+
+            isPlaying = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function waveCleared() {
+            isPlaying = false;
+            sfx.play('win');
+            
+            // Pop stage cleared menu upgrade choices
+            document.getElementById('stage-cleared-screen').classList.remove('hidden');
+        }
+
+        function applyUpgrade(type) {
+            handleUpgrades(type);
+            wave++;
+            
+            // Close upgrade popups and spawn next level
+            document.getElementById('stage-cleared-screen').classList.add('hidden');
+            spawnWave();
+            isPlaying = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver(victory) {
+            isPlaying = false;
+            
+            const gameOverScreen = document.getElementById('game-over-screen');
+            const title = document.getElementById('end-title');
+            const subtitle = document.getElementById('end-subtitle');
+
+            title.textContent = 'GAME OVER';
+            subtitle.textContent = 'Your energy shields were overloaded. Coordinate with your team and strike again!';
+
+            document.getElementById('end-waves').textContent = wave;
+            document.getElementById('end-kills').textContent = kills;
+            document.getElementById('end-score').textContent = score;
+
+            gameOverScreen.classList.remove('hidden');
+        }
+
+
+        // --- EVENT BUTTON BINDINGS ---
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+
+    </script>
+</body>
+</html>
