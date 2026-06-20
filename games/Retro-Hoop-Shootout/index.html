@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Hoop Shootout</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for retro sports styling -->
+    <link href="https://fonts.googleapis.com/css2?family=Graduate&family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .retro-title {
+            font-family: 'Graduate', serif;
+        }
+        .retro-digital {
+            font-family: 'Press Start 2P', monospace;
+        }
+        /* Custom scrollbar for leaderboard/stats if needed */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #f97316;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Top Navigation / Status Header -->
+    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 py-3 px-4 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <!-- Retro Logo Icon -->
+                <div class="bg-gradient-to-tr from-amber-500 to-orange-600 p-2 rounded-xl shadow-lg shadow-orange-500/20">
+                    <svg class="w-6 h-6 text-white animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+                        <path d="M6.2 6.2c2.4 2.4 3.8 5.8 3.8 9.8M17.8 6.2c-2.4 2.4-3.8 5.8-3.8 9.8" stroke-width="2" stroke-linecap="round"></path>
+                        <path d="M2 12h20M12 2v20" stroke-width="2" stroke-dasharray="3 3"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-400 bg-clip-text text-transparent retro-title">
+                        HOOP SHOOTOUT
+                    </h1>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Physics Arcade</p>
+                </div>
+            </div>
+
+            <!-- Header Quick Stats -->
+            <div class="flex items-center space-x-4">
+                <div class="text-right">
+                    <p class="text-xs text-slate-400">High Score</p>
+                    <p class="text-sm font-bold text-amber-400 retro-digital" id="header-best-score">00</p>
+                </div>
+                <button id="btn-how-to-play" class="bg-slate-800 hover:bg-slate-700 p-2 rounded-lg transition" title="Instructions">
+                    <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </button>
+                <button id="btn-sound-toggle" class="bg-slate-800 hover:bg-slate-700 p-2 rounded-lg transition" title="Toggle Sound">
+                    <svg id="sound-icon-on" class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+                    </svg>
+                    <svg id="sound-icon-off" class="w-5 h-5 text-slate-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-grow max-w-4xl w-full mx-auto p-4 flex flex-col md:flex-row gap-6 items-stretch justify-center">
+        
+        <!-- Left Column: Gameplay Viewport -->
+        <div class="flex-grow flex flex-col items-center bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden relative shadow-2xl h-[480px] sm:h-[550px] md:h-auto md:min-h-[500px] w-full">
+            
+            <!-- In-game Head-Up Display (HUD) -->
+            <div class="absolute top-0 left-0 right-0 p-4 flex justify-between items-start pointer-events-none z-10">
+                <!-- Score & Streak -->
+                <div class="flex flex-col gap-2">
+                    <div class="bg-slate-950/80 border border-slate-800/80 backdrop-blur-md rounded-xl p-3 flex items-center gap-3">
+                        <div>
+                            <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase" id="hud-score-label">Score</p>
+                            <p class="text-2xl font-black text-white retro-digital leading-none" id="hud-score">0</p>
+                        </div>
+                        <div class="h-8 w-px bg-slate-800"></div>
+                        <div id="streak-badge" class="transition-all scale-0">
+                            <p class="text-[10px] text-orange-400 font-bold tracking-widest uppercase animate-pulse">Streak</p>
+                            <p class="text-xl font-black text-orange-500 retro-digital leading-none flex items-center">
+                                <span id="hud-streak">0</span>x
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game Status: Timer & Shot counter -->
+                <div class="bg-slate-950/80 border border-slate-800/80 backdrop-blur-md rounded-xl p-3 flex gap-4 text-center">
+                    <div>
+                        <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase" id="hud-timer-label">Time</p>
+                        <p class="text-xl font-bold text-amber-500 retro-digital leading-none min-w-[60px]" id="hud-timer">60s</p>
+                    </div>
+                    <div class="h-8 w-px bg-slate-800"></div>
+                    <div>
+                        <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase" id="hud-balls-label">Balls</p>
+                        <div class="flex items-center gap-1 mt-1 justify-center min-w-[70px]" id="hud-balls-rack">
+                            <!-- SVG balls indicating shots left -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Celebratory Popup Indicator (Swish, Perfect, etc.) -->
+            <div id="announcer-text" class="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-0 transition-all duration-300 scale-50 z-20 text-center">
+                <span id="announcer-msg" class="text-4xl md:text-5xl font-extrabold text-orange-400 tracking-wider uppercase bg-slate-950/90 border-2 border-orange-500/50 px-6 py-2 rounded-2xl shadow-2xl shadow-orange-500/30 font-serif rotate-[-3deg] inline-block">
+                    SWISH!
+                </span>
+            </div>
+
+            <!-- Start Game / Game Over Overlays -->
+            <div id="game-overlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col justify-center items-center p-6 text-center z-30 transition-opacity duration-300 overflow-y-auto">
+                <!-- Welcome State -->
+                <div id="overlay-welcome" class="space-y-4 max-w-sm my-auto">
+                    <div class="w-16 h-16 bg-gradient-to-tr from-orange-500 to-amber-500 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-orange-500/30 animate-pulse">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-black text-white uppercase tracking-tight retro-title">Shootout Ready</h2>
+                        <p class="text-slate-400 text-xs mt-1">Select your Game Mode and Difficulty, then drag backward from the ball to shoot!</p>
+                    </div>
+
+                    <!-- Game Mode Selector -->
+                    <div class="space-y-2">
+                        <p class="text-left text-[10px] text-slate-400 uppercase tracking-wider font-extrabold">1. Choose Game Mode</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button class="mode-btn py-2 px-3 text-[11px] font-bold rounded-lg border bg-orange-600/30 border-orange-500 text-orange-300 transition text-center" data-mode="classic">
+                                <span class="block font-black uppercase text-xs">Classic</span>
+                                <span class="text-[9px] font-normal opacity-80">60s Shootout</span>
+                            </button>
+                            <button class="mode-btn py-2 px-3 text-[11px] font-bold rounded-lg border bg-slate-900 border-slate-700 hover:border-orange-500 transition text-center" data-mode="moving">
+                                <span class="block font-black uppercase text-xs">Moving Hoop</span>
+                                <span class="text-[9px] font-normal opacity-80">Always Moving</span>
+                            </button>
+                            <button class="mode-btn py-2 px-3 text-[11px] font-bold rounded-lg border bg-slate-900 border-slate-700 hover:border-orange-500 transition text-center" data-mode="death">
+                                <span class="block font-black uppercase text-xs">Death Round</span>
+                                <span class="text-[9px] font-normal opacity-80">1 Miss = Out</span>
+                            </button>
+                            <button class="mode-btn py-2 px-3 text-[11px] font-bold rounded-lg border bg-slate-900 border-slate-700 hover:border-orange-500 transition text-center" data-mode="3point">
+                                <span class="block font-black uppercase text-xs">3pt Contest</span>
+                                <span class="text-[9px] font-normal opacity-80">25 Shots & Money Balls</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Difficulty settings -->
+                    <div class="space-y-2">
+                        <p class="text-left text-[10px] text-slate-400 uppercase tracking-wider font-extrabold">2. Select Difficulty</p>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="difficulty-btn py-2 px-3 text-xs font-bold rounded-lg border bg-slate-900 border-slate-700 hover:border-orange-500 transition" data-diff="easy">Easy</button>
+                            <button class="difficulty-btn py-2 px-3 text-xs font-bold rounded-lg border bg-orange-600/30 border-orange-500 text-orange-300 hover:bg-orange-600/50 transition" data-diff="medium">Normal</button>
+                            <button class="difficulty-btn py-2 px-3 text-xs font-bold rounded-lg border bg-slate-900 border-slate-700 hover:border-orange-500 transition" data-diff="hard">Pro</button>
+                        </div>
+                    </div>
+
+                    <button id="btn-start-game" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-slate-950 font-black py-3.5 px-6 rounded-xl shadow-lg shadow-orange-500/30 transition transform hover:-translate-y-0.5 active:translate-y-0 uppercase tracking-wider text-sm">
+                        Start Shooting
+                    </button>
+                </div>
+
+                <!-- Game Over State (Hidden at start) -->
+                <div id="overlay-gameover" class="space-y-5 max-w-sm hidden my-auto">
+                    <div id="gameover-title-badge" class="inline-block bg-red-500/20 text-red-400 border border-red-500/30 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-wider">
+                        Buzzer Beater! Game Over
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-white tracking-tight retro-title">FINAL SCORE</h2>
+                        <p class="text-6xl font-black text-orange-500 mt-2 retro-digital" id="end-score">0</p>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex justify-between items-center text-center gap-2">
+                        <div class="flex-grow text-center">
+                            <p class="text-[10px] text-slate-400 uppercase">Max Streak</p>
+                            <p class="text-lg font-bold text-amber-400" id="end-max-streak">0x</p>
+                        </div>
+                        <div class="h-8 w-px bg-slate-800"></div>
+                        <div class="flex-grow text-center">
+                            <p class="text-[10px] text-slate-400 uppercase">Efficiency</p>
+                            <p class="text-lg font-bold text-emerald-400" id="end-sunk-ratio">0/0</p>
+                        </div>
+                        <div class="h-8 w-px bg-slate-800 hidden" id="end-extra-divider"></div>
+                        <div class="flex-grow text-center hidden" id="end-extra-box">
+                            <p class="text-[10px] text-slate-400 uppercase" id="end-extra-label">Survival</p>
+                            <p class="text-lg font-bold text-cyan-400" id="end-extra-value">0s</p>
+                        </div>
+                    </div>
+                    <button id="btn-restart-game" class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-black py-4 px-6 rounded-xl shadow-lg shadow-emerald-500/30 transition transform hover:-translate-y-0.5 active:translate-y-0 uppercase tracking-wider text-sm">
+                        Play Again
+                    </button>
+                </div>
+            </div>
+
+            <!-- Interactive Physics Canvas -->
+            <canvas id="game-canvas" class="w-full h-full block cursor-crosshair"></canvas>
+            
+            <!-- Aim Guide Overlay Text (visible when aiming) -->
+            <div id="touch-indicator" class="absolute bottom-16 left-1/2 transform -translate-x-1/2 text-center pointer-events-none text-slate-500 text-xs font-semibold animate-pulse">
+                Click/Drag back on the ball to aim & shoot!
+            </div>
+        </div>
+
+        <!-- Right Column: Settings & High Scores -->
+        <div class="w-full md:w-80 flex flex-col gap-6">
+            
+            <!-- Game Mode Details -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-widest border-b border-slate-800 pb-2">Court Settings</h3>
+                
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Game Mode:</span>
+                        <span id="info-mode" class="text-amber-400 font-bold uppercase">Classic</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Selected Level:</span>
+                        <span id="info-difficulty" class="text-orange-400 font-bold uppercase">Normal</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Moving Basket:</span>
+                        <span id="info-moving" class="text-slate-200">Yes (After 3 pts)</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Money Balls:</span>
+                        <span id="info-money-balls" class="text-slate-200">Disabled</span>
+                    </div>
+                </div>
+
+                <!-- Live stats during play -->
+                <div class="bg-slate-950 rounded-xl p-3 border border-slate-800 flex justify-around text-center text-xs">
+                    <div>
+                        <span class="block text-slate-500 uppercase text-[10px]">Clean Swishes</span>
+                        <span class="text-emerald-400 font-bold text-base" id="stat-swishes">0</span>
+                    </div>
+                    <div class="w-px bg-slate-800"></div>
+                    <div>
+                        <span class="block text-slate-500 uppercase text-[10px]">Money Balls Sunk</span>
+                        <span class="text-yellow-400 font-bold text-base" id="stat-moneyballs">0</span>
+                    </div>
+                </div>
+
+                <!-- Quit Button inside Court Settings -->
+                <button id="btn-quit-game" class="w-full bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-500/30 font-bold py-2.5 px-4 rounded-xl transition text-xs uppercase tracking-wider hidden shadow-md shadow-red-950/20">
+                    Quit to Menu
+                </button>
+            </div>
+
+            <!-- Local Achievements & Leaderboard Mock -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl flex-grow flex flex-col">
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-widest border-b border-slate-800 pb-2">Arena Leaderboard</h3>
+                
+                <div class="space-y-2 flex-grow overflow-y-auto max-h-[180px] pr-1" id="leaderboard-list">
+                    <!-- Leaderboard populated dynamically -->
+                </div>
+
+                <!-- Reset scores button -->
+                <button id="btn-clear-scores" class="text-slate-500 hover:text-red-400 text-xs text-center w-full pt-2 border-t border-slate-800 transition">
+                    Clear Personal Records
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 py-4 px-4 border-t border-slate-900 text-center text-xs text-slate-500">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>© 2026 Retro Hoop Shootout. Built for fast sports physics gameplay.</p>
+            <div class="flex gap-4">
+                <span class="text-slate-400">Interactive Canvas Engine</span>
+                <span class="text-orange-500/50">|</span>
+                <span class="text-slate-400">Web Audio Synth Support</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Instructions Modal (Hidden by default) -->
+    <div id="modal-how-to" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 relative shadow-2xl space-y-4">
+            <h3 class="text-xl font-bold text-white retro-title">HOW TO PLAY</h3>
+            <button id="btn-close-how-to" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <ul class="space-y-3 text-slate-300 text-sm">
+                <li class="flex items-start gap-3">
+                    <span class="bg-orange-500/20 text-orange-400 rounded-full w-6 h-6 flex items-center justify-center font-bold flex-shrink-0">1</span>
+                    <p>Click/Touch and drag backwards starting from the basketball to establish launch force and angle.</p>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="bg-orange-500/20 text-orange-400 rounded-full w-6 h-6 flex items-center justify-center font-bold flex-shrink-0">2</span>
+                    <p>Observe the dotted trajectory path. It simulates physics to assist with calculations!</p>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="bg-orange-500/20 text-orange-400 rounded-full w-6 h-6 flex items-center justify-center font-bold flex-shrink-0">3</span>
+                    <p>Let go to fire! Clean "Swish" nets give <strong>double score multiplier</strong>.</p>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="bg-orange-500/20 text-orange-400 rounded-full w-6 h-6 flex items-center justify-center font-bold flex-shrink-0">4</span>
+                    <p><strong>Game Modes:</strong> Choose Classic, constant Moving Hoop, Sudden Death, or the 25-shot 3-Point Contest!</p>
+                </li>
+            </ul>
+            <button id="btn-close-how-to-ok" class="w-full bg-slate-800 hover:bg-slate-700 font-bold py-2.5 rounded-xl transition">
+                Got it, Coach!
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript Game logic -->
+    <script>
+        // --- SOUND SYNTHESIS SYSTEM ---
+        const SoundFX = {
+            ctx: null,
+            enabled: true,
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+
+            play(type) {
+                if (!this.enabled) return;
+                this.init();
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+
+                switch(type) {
+                    case 'bounce':
+                        this.createTone(220, 110, 0.15, 'triangle', 0.2);
+                        break;
+                    case 'rim':
+                        this.createTone(680, 440, 0.1, 'sine', 0.3);
+                        this.createTone(880, 600, 0.12, 'square', 0.05);
+                        break;
+                    case 'swish':
+                        this.createNoiseSweep(1000, 200, 0.2, 0.3);
+                        break;
+                    case 'cheer':
+                        this.createNoiseSweep(300, 600, 0.8, 0.15);
+                        this.createTone(440, 330, 0.4, 'sine', 0.15);
+                        break;
+                    case 'buzzer':
+                        this.createTone(150, 150, 1.0, 'sawtooth', 0.25);
+                        break;
+                    case 'drag':
+                        this.createTone(800, 600, 0.02, 'sine', 0.1);
+                        break;
+                    case 'money_ball_fire':
+                        this.createTone(400, 1200, 0.15, 'sine', 0.15);
+                        break;
+                    case 'money_ball_swish':
+                        this.createTone(1200, 1600, 0.25, 'sine', 0.2);
+                        this.createNoiseSweep(1500, 400, 0.3, 0.3);
+                        break;
+                }
+            },
+
+            createTone(startFreq, endFreq, duration, type, volume) {
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(startFreq, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(endFreq, this.ctx.currentTime + duration);
+                    
+                    gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (e) {}
+            },
+
+            createNoiseSweep(startFreq, endFreq, duration, volume) {
+                try {
+                    const bufferSize = this.ctx.sampleRate * duration;
+                    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    
+                    const noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
+
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.Q.value = 4;
+                    filter.frequency.setValueAtTime(startFreq, this.ctx.currentTime);
+                    filter.frequency.exponentialRampToValueAtTime(endFreq, this.ctx.currentTime + duration);
+
+                    const gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    noise.start();
+                } catch(e) {}
+            }
+        };
+
+        // --- GAME PHYSICS & CANVAS ENGINE ---
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Physics Configuration
+        let gravity = 0.35;
+        const bounceDamping = 0.72; // Elasticity of ball
+        const backboardDamping = 0.55;
+
+        // Interactive States
+        let gameActive = false;
+        let score = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let ballsSunk = 0;
+        let ballsFired = 0;
+        let timeLeft = 60;
+        let gameTimer = null;
+        let selectedDifficulty = 'medium';
+        let selectedMode = 'classic'; // 'classic', 'moving', 'death', '3point'
+        let highScores = [];
+
+        // Stats tracking
+        let cleanSwishesCount = 0;
+        let moneyBallsCount = 0;
+
+        // Ball State
+        const ball = {
+            x: 60,
+            y: 300,
+            vx: 0,
+            vy: 0,
+            radius: 24,
+            isFlying: false,
+            isAiming: false,
+            isMoneyBall: false, // Double value golden money ball indicator
+            lastAimX: 60,
+            lastAimY: 300,
+            touchStartX: 0,
+            touchStartY: 0,
+            hasCollidedBoard: false,
+            hasCollidedRim: false,
+            scoreTested: false,
+            trail: [] // Array of {x, y, alpha} to render particle smoke
+        };
+
+        // Backboard & Hoop State
+        const hoop = {
+            boardX: 680,
+            boardY: 160,
+            boardWidth: 15,
+            boardHeight: 120,
+            
+            rimX1: 580,
+            rimY1: 220,
+            rimX2: 665,
+            rimY2: 220,
+            rimRadius: 5,
+            
+            moving: false,
+            moveDir: 1, // 1 is down, -1 is up
+            moveSpeed: 1.5,
+            minY: 100,
+            maxY: 300,
+
+            update(canvasWidth) {
+                this.boardX = canvasWidth - 120;
+                
+                if (this.moving && gameActive) {
+                    this.boardY += this.moveSpeed * this.moveDir;
+                    if (this.boardY > this.maxY || this.boardY < this.minY) {
+                        this.moveDir *= -1;
+                    }
+                }
+                
+                this.rimY1 = this.boardY + 60;
+                this.rimY2 = this.boardY + 60;
+                this.rimX1 = this.boardX - 95;
+                this.rimX2 = this.boardX - 10;
+            }
+        };
+
+        // Particles System
+        let particles = [];
+        function createConfetti(x, y, color, count = 20) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8 - 4,
+                    radius: Math.random() * 4 + 2,
+                    color: color,
+                    alpha: 1,
+                    decay: Math.random() * 0.02 + 0.01
+                });
+            }
+        }
+
+        // --- ADAPTIVE CANVAS VIEWPORT ---
+        function resizeCanvas() {
+            const containerWidth = canvas.parentElement.clientWidth;
+            const containerHeight = Math.max(450, canvas.parentElement.clientHeight || 500);
+            
+            canvas.width = containerWidth;
+            canvas.height = containerHeight;
+
+            if (!ball.isFlying) {
+                resetBallPosition();
+            }
+            hoop.update(canvas.width);
+        }
+
+        function resetBallPosition() {
+            // Ball position set on the left side of screen and higher up
+            ball.x = 60;
+            ball.y = canvas.height - 220;
+            ball.vx = 0;
+            ball.vy = 0;
+            ball.isFlying = false;
+            ball.isAiming = false;
+            ball.hasCollidedBoard = false;
+            ball.hasCollidedRim = false;
+            ball.scoreTested = false;
+            ball.trail = [];
+
+            // In 3-point shootout, every 5th ball is a special money ball
+            if (selectedMode === '3point') {
+                ball.isMoneyBall = ((ballsFired + 1) % 5 === 0);
+            } else {
+                ball.isMoneyBall = false;
+            }
+        }
+
+        // --- PHYSICS CALCULATION ---
+        function updatePhysics() {
+            if (ball.isFlying) {
+                ball.trail.push({ x: ball.x, y: ball.y, alpha: 1.0 });
+                if (ball.trail.length > 12) ball.trail.shift();
+
+                ball.vy += gravity;
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+
+                // Ceiling/Side boundary collisions
+                if (ball.x - ball.radius < 0) {
+                    ball.x = ball.radius;
+                    ball.vx *= -bounceDamping;
+                    SoundFX.play('bounce');
+                }
+                if (ball.y - ball.radius < 0) {
+                    ball.y = ball.radius;
+                    ball.vy *= -bounceDamping;
+                    SoundFX.play('bounce');
+                }
+
+                // Bounce Floor (Court Ground)
+                if (ball.y + ball.radius > canvas.height - 50) {
+                    ball.y = canvas.height - 50 - ball.radius;
+                    ball.vy *= -bounceDamping;
+                    ball.vx *= 0.95;
+                    SoundFX.play('bounce');
+                    
+                    if (Math.abs(ball.vy) < 0.8 && Math.abs(ball.vx) < 0.8) {
+                        handleMiss();
+                    }
+                }
+
+                // Out of bounds reload guard
+                if (ball.x - ball.radius > canvas.width || ball.x + ball.radius < 0) {
+                    handleMiss();
+                }
+
+                // Backboard Collision Logic
+                const bx1 = hoop.boardX;
+                const bx2 = hoop.boardX + hoop.boardWidth;
+                const by1 = hoop.boardY;
+                const by2 = hoop.boardY + hoop.boardHeight;
+
+                if (ball.x + ball.radius > bx1 && ball.x - ball.radius < bx2 &&
+                    ball.y + ball.radius > by1 && ball.y - ball.radius < by2) {
+                    
+                    if (ball.x < bx1 && ball.vx > 0) {
+                        ball.x = bx1 - ball.radius;
+                        ball.vx *= -backboardDamping;
+                        ball.hasCollidedBoard = true;
+                        SoundFX.play('rim');
+                        createConfetti(ball.x, ball.y, '#f59e0b', 5);
+                    } else if (ball.x > bx2 && ball.vx < 0) {
+                        ball.x = bx2 + ball.radius;
+                        ball.vx *= -backboardDamping;
+                        ball.hasCollidedBoard = true;
+                        SoundFX.play('rim');
+                        createConfetti(ball.x, ball.y, '#f59e0b', 5);
+                    }
+                }
+
+                checkRimPointCollision(hoop.rimX1, hoop.rimY1);
+                checkRimPointCollision(hoop.rimX2, hoop.rimY2);
+
+                // Net Score/Goal logic
+                if (!ball.scoreTested && ball.vy > 0 && 
+                    ball.x > hoop.rimX1 && ball.x < hoop.rimX2 &&
+                    ball.y + ball.radius >= hoop.rimY1 && ball.y - ball.radius <= hoop.rimY1) {
+                    
+                    triggerScore();
+                }
+            }
+
+            // Update Particle FX
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+                p.alpha -= p.decay;
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            hoop.update(canvas.width);
+        }
+
+        function checkRimPointCollision(rimX, rimY) {
+            const dx = ball.x - rimX;
+            const dy = ball.y - rimY;
+            const dist = Math.hypot(dx, dy);
+            
+            if (dist < ball.radius + hoop.rimRadius) {
+                const angle = Math.atan2(dy, dx);
+                
+                ball.x = rimX + (ball.radius + hoop.rimRadius) * Math.cos(angle);
+                ball.y = rimY + (ball.radius + hoop.rimRadius) * Math.sin(angle);
+                
+                const normalX = Math.cos(angle);
+                const normalY = Math.sin(angle);
+                const dot = ball.vx * normalX + ball.vy * normalY;
+                
+                ball.vx = (ball.vx - 2 * dot * normalX) * bounceDamping;
+                ball.vy = (ball.vy - 2 * dot * normalY) * bounceDamping;
+                
+                ball.hasCollidedRim = true;
+                SoundFX.play('rim');
+                createConfetti(rimX, rimY, '#ef4444', 6);
+            }
+        }
+
+        // --- SCORE & WIN/LOSS CONDITIONS ---
+        function triggerScore() {
+            ball.scoreTested = true;
+            ballsSunk++;
+            
+            let isSwish = !ball.hasCollidedBoard && !ball.hasCollidedRim;
+            let addedScore = 1;
+
+            if (ball.isMoneyBall) {
+                moneyBallsCount++;
+                addedScore = isSwish ? 4 : 2;
+                streak++;
+                triggerAnnouncer(isSwish ? "MONEY SWISH! +4" : "MONEY BALL! +2");
+                SoundFX.play('money_ball_swish');
+                createConfetti((hoop.rimX1 + hoop.rimX2)/2, hoop.rimY1 + 10, '#f59e0b', 35);
+            } else {
+                if (isSwish) {
+                    streak++;
+                    addedScore = 2 * streak;
+                    cleanSwishesCount++;
+                    triggerAnnouncer("SWISH! " + (streak > 1 ? `x${streak}` : ''));
+                    SoundFX.play('swish');
+                    createConfetti((hoop.rimX1 + hoop.rimX2)/2, hoop.rimY1 + 10, '#10b981', 30);
+                } else {
+                    streak = 0;
+                    addedScore = 1;
+                    triggerAnnouncer(ball.hasCollidedBoard ? "BANK SHOT!" : "SUNK!");
+                    SoundFX.play('bounce');
+                    createConfetti((hoop.rimX1 + hoop.rimX2)/2, hoop.rimY1 + 10, '#f97316', 15);
+                }
+            }
+
+            if (streak > maxStreak) maxStreak = streak;
+
+            score += addedScore;
+            updateHUD();
+
+            if (streak >= 3 || isSwish) {
+                SoundFX.play('cheer');
+            }
+
+            // Dynamic moving configuration for Classic mode
+            if (selectedMode === 'classic' && score >= 3) {
+                hoop.moving = true;
+            }
+
+            // Check if 3-point shootout game end has been reached
+            if (selectedMode === '3point' && ballsFired >= 25) {
+                setTimeout(endGame, 1000);
+            } else {
+                setTimeout(resetBallPosition, 800);
+            }
+        }
+
+        function handleMiss() {
+            ball.scoreTested = true;
+            streak = 0;
+            updateHUD();
+
+            if (selectedMode === 'death') {
+                // Instantly end game on single miss!
+                setTimeout(endGame, 400);
+                return;
+            }
+
+            if (selectedMode === '3point' && ballsFired >= 25) {
+                setTimeout(endGame, 1000);
+            } else {
+                resetBallPosition();
+            }
+        }
+
+        function triggerAnnouncer(text) {
+            const el = document.getElementById('announcer-text');
+            const msg = document.getElementById('announcer-msg');
+            msg.innerText = text;
+            
+            el.classList.remove('opacity-0', 'scale-50');
+            el.classList.add('opacity-100', 'scale-100');
+            
+            setTimeout(() => {
+                el.classList.add('opacity-0', 'scale-50');
+                el.classList.remove('opacity-100', 'scale-100');
+            }, 1200);
+        }
+
+        // --- DRAWING AND GRAPHICS RENDER ---
+        function drawCourt() {
+            // Draw floor wood court styling lines
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+
+            // Floor border/paint line
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - 50);
+            ctx.lineTo(canvas.width, canvas.height - 50);
+            ctx.stroke();
+
+            // Basketball hoop support structures
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(hoop.boardX + hoop.boardWidth, hoop.boardY + 80);
+            ctx.lineTo(canvas.width, hoop.boardY + 120);
+            ctx.stroke();
+
+            // Backboard Outer Glass Box
+            ctx.fillStyle = '#0f172a';
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 4;
+            ctx.fillRect(hoop.boardX, hoop.boardY, hoop.boardWidth, hoop.boardHeight);
+            ctx.strokeRect(hoop.boardX, hoop.boardY, hoop.boardWidth, hoop.boardHeight);
+
+            // Backboard Inner Box
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(hoop.boardX, hoop.boardY + 40, hoop.boardWidth, 40);
+
+            // Draw Net Strands
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 2;
+            const netLevels = 4;
+            const netLeft = hoop.rimX1;
+            const netRight = hoop.rimX2;
+            const netY = hoop.rimY1;
+
+            for (let i = 0; i <= netLevels; i++) {
+                const ratio = i / netLevels;
+                const currentY = netY + ratio * 45;
+                const inset = ratio * 15;
+                const currLeft = netLeft + inset;
+                const currRight = netRight - inset;
+
+                ctx.beginPath();
+                ctx.moveTo(currLeft, currentY);
+                ctx.lineTo(currRight, currentY);
+                ctx.stroke();
+            }
+
+            const columns = 6;
+            for (let col = 0; col < columns; col++) {
+                const cRatio = col / (columns - 1);
+                const startX = netLeft + cRatio * (netRight - netLeft);
+                ctx.beginPath();
+                ctx.moveTo(startX, netY);
+                ctx.lineTo(netLeft + 15 + cRatio * (netRight - netLeft - 30), netY + 45);
+                ctx.stroke();
+            }
+
+            // Draw Basket Rim
+            ctx.strokeStyle = '#ea580c';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(hoop.rimX1, hoop.rimY1);
+            ctx.lineTo(hoop.rimX2, hoop.rimY2);
+            ctx.stroke();
+
+            // Draw Rim Tip point indicators
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(hoop.rimX1, hoop.rimY1, hoop.rimRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(hoop.rimX2, hoop.rimY2, hoop.rimRadius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawBall() {
+            // Motion Trail Particles
+            ball.trail.forEach((pos, idx) => {
+                const alpha = (idx / ball.trail.length) * 0.35;
+                ctx.fillStyle = ball.isMoneyBall ? `rgba(234, 179, 8, ${alpha})` : `rgba(249, 115, 22, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, ball.radius * 0.9, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.save();
+            ctx.translate(ball.x, ball.y);
+
+            const rotation = (ball.vx * 0.02) * (ball.isFlying ? 1 : 0);
+            ctx.rotate(rotation);
+
+            // Ball Design and Shading
+            const grad = ctx.createRadialGradient(-3, -3, 2, 0, 0, ball.radius);
+            
+            if (ball.isMoneyBall) {
+                // Shiny Metallic Golden Basketball
+                grad.addColorStop(0, '#fef08a'); // Bright gold highlight
+                grad.addColorStop(0.5, '#eab308'); // Core gold
+                grad.addColorStop(1, '#854d0e'); // Deep shadow gold
+                ctx.fillStyle = grad;
+            } else {
+                // Classic Orange Basketball
+                grad.addColorStop(0, '#fdba74');
+                grad.addColorStop(0.4, '#f97316');
+                grad.addColorStop(1, '#ea580c');
+                ctx.fillStyle = grad;
+            }
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw basketball seams
+            ctx.strokeStyle = ball.isMoneyBall ? '#451a03' : '#7c2d12';
+            ctx.lineWidth = 2.5;
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(-ball.radius, 0);
+            ctx.lineTo(ball.radius, 0);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, -ball.radius);
+            ctx.lineTo(0, ball.radius);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(-ball.radius, 0, ball.radius * 0.9, -Math.PI/3, Math.PI/3);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(ball.radius, 0, ball.radius * 0.9, Math.PI - Math.PI/3, Math.PI + Math.PI/3);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawTrajectory() {
+            if (!ball.isAiming) return;
+
+            const dragVectorX = ball.lastAimX - ball.x;
+            const dragVectorY = ball.lastAimY - ball.y;
+
+            const maxDrag = 150;
+            const dragDist = Math.hypot(dragVectorX, dragVectorY);
+            let launchVx = dragVectorX * 0.16;
+            let launchVy = dragVectorY * 0.16;
+
+            if (dragDist > maxDrag) {
+                const angle = Math.atan2(dragVectorY, dragVectorX);
+                finalVx = Math.cos(angle) * maxDrag * 0.16;
+                finalVy = Math.sin(angle) * maxDrag * 0.16;
+            }
+
+            let tempX = ball.x;
+            let tempY = ball.y;
+            let tempVy = launchVy;
+            let tempVx = launchVx;
+
+            ctx.strokeStyle = ball.isMoneyBall ? 'rgba(234, 179, 8, 0.8)' : 'rgba(245, 158, 11, 0.7)';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 8]);
+            ctx.beginPath();
+            ctx.moveTo(tempX, tempY);
+
+            for (let i = 0; i < 35; i++) {
+                tempVy += gravity;
+                tempX += tempVx;
+                tempY += tempVy;
+
+                if (tempY > canvas.height - 50) break;
+                ctx.lineTo(tempX, tempY);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ball.x, ball.y);
+            ctx.lineTo(ball.lastAimX, ball.lastAimY);
+            ctx.stroke();
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        // --- CORE GAME LOOP ---
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            bgGrad.addColorStop(0, '#0f172a');
+            bgGrad.addColorStop(0.5, '#1e1b4b');
+            bgGrad.addColorStop(1, '#020617');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawCourt();
+            drawTrajectory();
+            drawBall();
+            drawParticles();
+
+            updatePhysics();
+
+            requestAnimationFrame(render);
+        }
+
+        // --- INTERACTIVE EVENT CONTROLS ---
+        function initControls() {
+            canvas.addEventListener('mousedown', handlePointerDown);
+            window.addEventListener('mousemove', handlePointerMove);
+            window.addEventListener('mouseup', handlePointerUp);
+
+            canvas.addEventListener('touchstart', (e) => {
+                const t = e.touches[0];
+                handlePointerDown({ clientX: t.clientX, clientY: t.clientY });
+            }, { passive: true });
+            
+            window.addEventListener('touchmove', (e) => {
+                const t = e.touches[0];
+                handlePointerMove({ clientX: t.clientX, clientY: t.clientY });
+            }, { passive: true });
+
+            window.addEventListener('touchend', handlePointerUp);
+        }
+
+        function handlePointerDown(e) {
+            if (!gameActive || ball.isFlying) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            const dist = Math.hypot(clickX - ball.x, clickY - ball.y);
+            if (dist < ball.radius * 2) {
+                ball.isAiming = true;
+                ball.lastAimX = clickX;
+                ball.lastAimY = clickY;
+                ball.touchStartX = clickX;
+                ball.touchStartY = clickY;
+                
+                document.getElementById('touch-indicator').classList.add('hidden');
+                SoundFX.play(ball.isMoneyBall ? 'money_ball_fire' : 'drag');
+            }
+        }
+
+        function handlePointerMove(e) {
+            if (!ball.isAiming) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            ball.lastAimX = mouseX;
+            ball.lastAimY = mouseY;
+        }
+
+        function handlePointerUp() {
+            if (!ball.isAiming) return;
+            ball.isAiming = false;
+
+            const dragVectorX = ball.lastAimX - ball.x;
+            const dragVectorY = ball.lastAimY - ball.y;
+
+            const maxDrag = 150;
+            const dragDist = Math.hypot(dragVectorX, dragVectorY);
+            
+            let finalVx = dragVectorX * 0.16;
+            let finalVy = dragVectorY * 0.16;
+
+            if (dragDist > maxDrag) {
+                const angle = Math.atan2(dragVectorY, dragVectorX);
+                finalVx = Math.cos(angle) * maxDrag * 0.16;
+                finalVy = Math.sin(angle) * maxDrag * 0.16;
+            }
+
+            if (dragDist > 10) {
+                ball.vx = finalVx;
+                ball.vy = finalVy;
+                ball.isFlying = true;
+                ballsFired++;
+                
+                renderBallsRack();
+            } else {
+                resetBallPosition();
+            }
+        }
+
+        // --- MODE SELECTION AND DIFFICULTIES ---
+        function setGameMode(mode) {
+            selectedMode = mode;
+
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                if (btn.dataset.mode === mode) {
+                    btn.classList.add('bg-orange-600/30', 'border-orange-500', 'text-orange-300');
+                    btn.classList.remove('bg-slate-900', 'border-slate-700');
+                } else {
+                    btn.classList.remove('bg-orange-600/30', 'border-orange-500', 'text-orange-300');
+                    btn.classList.add('bg-slate-900', 'border-slate-700');
+                }
+            });
+
+            // Adjust layout labels based on active mode
+            const infoMode = document.getElementById('info-mode');
+            const infoMoney = document.getElementById('info-money-balls');
+            const hudScoreLabel = document.getElementById('hud-score-label');
+            const hudTimerLabel = document.getElementById('hud-timer-label');
+            const hudBallsLabel = document.getElementById('hud-balls-label');
+
+            infoMode.innerText = mode === 'classic' ? 'Classic' : (mode === 'moving' ? 'Moving' : (mode === 'death' ? 'Death' : '3-Point'));
+            infoMoney.innerText = mode === '3point' ? 'Enabled (Every 5th)' : 'Disabled';
+
+            if (mode === 'death') {
+                hudScoreLabel.innerText = 'Sunk';
+                hudTimerLabel.innerText = 'Time';
+                hudBallsLabel.innerText = 'Lives';
+            } else if (mode === '3point') {
+                hudScoreLabel.innerText = 'Points';
+                hudTimerLabel.innerText = 'Timer';
+                hudBallsLabel.innerText = 'Shot';
+            } else {
+                hudScoreLabel.innerText = 'Score';
+                hudTimerLabel.innerText = 'Time';
+                hudBallsLabel.innerText = 'Balls';
+            }
+        }
+
+        function setDifficulty(diff) {
+            selectedDifficulty = diff;
+            
+            if (diff === 'easy') {
+                gravity = 0.30;
+                hoop.moveSpeed = 1.2;
+            } else if (diff === 'medium') {
+                gravity = 0.35;
+                hoop.moveSpeed = 1.8;
+            } else if (diff === 'hard') {
+                gravity = 0.40;
+                hoop.moveSpeed = 2.8;
+            }
+
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                if (btn.dataset.diff === diff) {
+                    btn.classList.add('bg-orange-600/30', 'border-orange-500', 'text-orange-300');
+                    btn.classList.remove('bg-slate-900', 'border-slate-700');
+                } else {
+                    btn.classList.remove('bg-orange-600/30', 'border-orange-500', 'text-orange-300');
+                    btn.classList.add('bg-slate-900', 'border-slate-700');
+                }
+            });
+
+            document.getElementById('info-difficulty').innerText = diff;
+            updateMovingHoopOption();
+        }
+
+        function updateMovingHoopOption() {
+            const infoMoving = document.getElementById('info-moving');
+            if (selectedMode === 'moving') {
+                hoop.moving = true;
+                infoMoving.innerText = "Continuous";
+            } else if (selectedMode === 'classic') {
+                hoop.moving = (score >= 3);
+                infoMoving.innerText = "Starts at 3 pts";
+            } else if (selectedMode === '3point') {
+                hoop.moving = (selectedDifficulty === 'hard');
+                infoMoving.innerText = selectedDifficulty === 'hard' ? "Constant (Pro)" : "No (Normal)";
+            } else { // death round
+                hoop.moving = true;
+                infoMoving.innerText = "Constant";
+            }
+        }
+
+        // --- HUD / STATISTICS UPDATES ---
+        function updateHUD() {
+            document.getElementById('hud-score').innerText = score;
+            document.getElementById('hud-streak').innerText = streak;
+
+            const streakBadge = document.getElementById('streak-badge');
+            if (streak > 0) {
+                streakBadge.classList.remove('scale-0');
+                streakBadge.classList.add('scale-100');
+            } else {
+                streakBadge.classList.remove('scale-100');
+                streakBadge.classList.add('scale-0');
+            }
+
+            document.getElementById('stat-swishes').innerText = cleanSwishesCount;
+            document.getElementById('stat-moneyballs').innerText = moneyBallsCount;
+        }
+
+        function renderBallsRack() {
+            const rack = document.getElementById('hud-balls-rack');
+            rack.innerHTML = '';
+            
+            if (selectedMode === 'death') {
+                rack.innerHTML = `
+                    <span class="text-red-500 text-lg animate-pulse">❤️</span>
+                    <span class="text-[10px] text-red-400 font-bold ml-1 uppercase">1 Shot</span>
+                `;
+                return;
+            }
+
+            if (selectedMode === '3point') {
+                rack.innerHTML = `
+                    <span class="text-xs font-mono font-bold text-amber-400">${ballsFired}/25</span>
+                `;
+                return;
+            }
+
+            const totalToRender = 5;
+            for (let i = 0; i < totalToRender; i++) {
+                const svgBall = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svgBall.setAttribute("viewBox", "0 0 24 24");
+                svgBall.setAttribute("class", `w-4 h-4 ${i < (5 - (ballsFired % 5)) ? 'text-orange-500 fill-orange-500/20' : 'text-slate-700 fill-transparent'} transition`);
+                svgBall.innerHTML = `
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"></circle>
+                    <path d="M6 6c3 3 3 9 0 12M18 6c-3 3-3 9 0 12" stroke="currentColor" stroke-width="1.5"></path>
+                `;
+                rack.appendChild(svgBall);
+            }
+        }
+
+        // --- GAME SESSION ACTIONS ---
+        function startGame() {
+            gameActive = true;
+            score = 0;
+            streak = 0;
+            maxStreak = 0;
+            ballsSunk = 0;
+            ballsFired = 0;
+            cleanSwishesCount = 0;
+            moneyBallsCount = 0;
+
+            if (selectedMode === '3point') {
+                timeLeft = 70;
+            } else {
+                timeLeft = 60;
+            }
+
+            setDifficulty(selectedDifficulty);
+            updateMovingHoopOption();
+            resetBallPosition();
+            updateHUD();
+            renderBallsRack();
+
+            // Hide overlay UI and show Quit Button
+            document.getElementById('game-overlay').classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('overlay-welcome').classList.add('hidden');
+            document.getElementById('overlay-gameover').classList.add('hidden');
+            document.getElementById('touch-indicator').classList.remove('hidden');
+            document.getElementById('btn-quit-game').classList.remove('hidden');
+
+            if (gameTimer) clearInterval(gameTimer);
+
+            if (selectedMode === 'death') {
+                timeLeft = 0;
+                document.getElementById('hud-timer').innerText = `0s`;
+                
+                gameTimer = setInterval(() => {
+                    timeLeft++;
+                    document.getElementById('hud-timer').innerText = `${timeLeft}s`;
+                }, 1000);
+            } else {
+                document.getElementById('hud-timer').innerText = `${timeLeft}s`;
+                
+                gameTimer = setInterval(() => {
+                    timeLeft--;
+                    document.getElementById('hud-timer').innerText = `${timeLeft}s`;
+
+                    if (timeLeft <= 5 && timeLeft > 0) {
+                        SoundFX.play('rim');
+                    }
+
+                    if (timeLeft <= 0) {
+                        endGame();
+                    }
+                }, 1000);
+            }
+
+            SoundFX.play('swish');
+        }
+
+        // Quit Game and Return to Main Selection Screen
+        function quitGame() {
+            gameActive = false;
+            clearInterval(gameTimer);
+            SoundFX.play('buzzer');
+
+            // Hide Quit Button
+            document.getElementById('btn-quit-game').classList.add('hidden');
+
+            // Reset ball position and HUD indicators
+            resetBallPosition();
+            score = 0;
+            streak = 0;
+            updateHUD();
+
+            // Display welcome screen overlay immediately
+            document.getElementById('game-overlay').classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('overlay-welcome').classList.remove('hidden');
+            document.getElementById('overlay-gameover').classList.add('hidden');
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameTimer);
+            SoundFX.play('buzzer');
+
+            // Hide Quit Button
+            document.getElementById('btn-quit-game').classList.add('hidden');
+
+            // Format Gameover statistics cards
+            document.getElementById('end-score').innerText = score;
+            document.getElementById('end-max-streak').innerText = `${maxStreak}x`;
+            document.getElementById('end-sunk-ratio').innerText = `${ballsSunk}/${ballsFired}`;
+
+            const extraBox = document.getElementById('end-extra-box');
+            const extraDivider = document.getElementById('end-extra-divider');
+            const extraLabel = document.getElementById('end-extra-label');
+            const extraValue = document.getElementById('end-extra-value');
+            const titleBadge = document.getElementById('gameover-title-badge');
+
+            if (selectedMode === 'death') {
+                titleBadge.innerText = "SUFFERED AN ACCIDENTAL CLANK!";
+                extraBox.classList.remove('hidden');
+                extraDivider.classList.remove('hidden');
+                extraLabel.innerText = "TIME SURVIVED";
+                extraValue.innerText = `${timeLeft}s`;
+            } else if (selectedMode === '3point') {
+                titleBadge.innerText = "3-POINT CONTEST COMPLETED!";
+                extraBox.classList.remove('hidden');
+                extraDivider.classList.remove('hidden');
+                extraLabel.innerText = "MONEY BALLS";
+                extraValue.innerText = `${moneyBallsCount}/5`;
+            } else {
+                titleBadge.innerText = "BUZZER BEATER! GAME OVER";
+                extraBox.classList.add('hidden');
+                extraDivider.classList.add('hidden');
+            }
+
+            saveHighScore(score);
+
+            document.getElementById('game-overlay').classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('overlay-gameover').classList.remove('hidden');
+        }
+
+        // --- LOCAL LEADERBOARD SYSTEM ---
+        function saveHighScore(newScore) {
+            const dateStr = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            highScores.push({
+                score: newScore,
+                date: dateStr,
+                diff: selectedDifficulty,
+                mode: selectedMode
+            });
+
+            highScores.sort((a, b) => b.score - a.score);
+            highScores = highScores.slice(0, 5);
+
+            localStorage.setItem('hoop_shootout_scores_v2', JSON.stringify(highScores));
+            renderLeaderboard();
+        }
+
+        function loadLeaderboard() {
+            const saved = localStorage.getItem('hoop_shootout_scores_v2');
+            if (saved) {
+                highScores = JSON.parse(saved);
+            } else {
+                // RESET LEADERBOARD TO 0: Initialized to an empty array instead of displaying mock values
+                highScores = [];
+            }
+            renderLeaderboard();
+        }
+
+        function renderLeaderboard() {
+            const list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
+
+            if (highScores.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No shootout attempts yet. Shoot to register!</p>`;
+                document.getElementById('header-best-score').innerText = '00';
+                return;
+            }
+
+            document.getElementById('header-best-score').innerText = highScores[0].score;
+
+            highScores.forEach((record, index) => {
+                const item = document.createElement('div');
+                item.className = `flex items-center justify-between p-2 rounded-xl text-xs ${index === 0 ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-slate-950/40 border border-slate-900'}`;
+                
+                const modeLabel = record.mode === 'classic' ? 'Classic' : (record.mode === 'moving' ? 'Moving' : (record.mode === 'death' ? 'Death' : '3-Point'));
+                
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="font-bold text-slate-500">${index + 1}</span>
+                        <div>
+                            <p class="font-extrabold text-slate-200">Player</p>
+                            <p class="text-[9px] text-slate-500">${record.date} • <span class="capitalize text-orange-400/80">${record.diff}</span> • <span class="text-amber-400">${modeLabel}</span></p>
+                        </div>
+                    </div>
+                    <span class="font-black text-slate-100 font-mono text-sm">${record.score} pts</span>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // --- WINDOWS LOAD AND SYSTEM INITIALIZATION ---
+        window.onload = function() {
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            initControls();
+
+            document.getElementById('btn-start-game').addEventListener('click', startGame);
+            document.getElementById('btn-restart-game').addEventListener('click', startGame);
+            
+            // Handle the active Quit Button
+            document.getElementById('btn-quit-game').addEventListener('click', quitGame);
+
+            // Mode Selector triggers
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const mode = e.currentTarget.dataset.mode;
+                    setGameMode(mode);
+                    setDifficulty(selectedDifficulty);
+                });
+            });
+
+            // Difficulty switches click
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    setDifficulty(e.target.dataset.diff);
+                });
+            });
+
+            // Help Modal handlers
+            const howToModal = document.getElementById('modal-how-to');
+            document.getElementById('btn-how-to-play').addEventListener('click', () => {
+                howToModal.classList.remove('hidden');
+            });
+            document.getElementById('btn-close-how-to').addEventListener('click', () => {
+                howToModal.classList.add('hidden');
+            });
+            document.getElementById('btn-close-how-to-ok').addEventListener('click', () => {
+                howToModal.classList.add('hidden');
+            });
+
+            // Sound Toggle controller
+            document.getElementById('btn-sound-toggle').addEventListener('click', () => {
+                SoundFX.enabled = !SoundFX.enabled;
+                document.getElementById('sound-icon-on').classList.toggle('hidden', !SoundFX.enabled);
+                document.getElementById('sound-icon-off').classList.toggle('hidden', SoundFX.enabled);
+            });
+
+            document.getElementById('btn-clear-scores').addEventListener('click', () => {
+                highScores = [];
+                localStorage.removeItem('hoop_shootout_scores_v2');
+                renderLeaderboard();
+            });
+
+            loadLeaderboard();
+            setGameMode('classic');
+            setDifficulty('medium');
+
+            render();
+        };
+    </script>
+</body>
+</html>
