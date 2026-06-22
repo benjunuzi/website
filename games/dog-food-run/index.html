@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dog Food Run</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: #101820;
+            color: #f8fafc;
+            font-family: Arial, Helvetica, sans-serif;
+            user-select: none;
+            touch-action: none;
+        }
+
+        body {
+            display: grid;
+            place-items: center;
+        }
+
+        .shell {
+            position: relative;
+            width: min(100vw, 1050px);
+            height: min(100vh, 640px);
+            background: #73d2de;
+            overflow: hidden;
+            border: 4px solid #0f172a;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: #73d2de;
+        }
+
+        .hud {
+            position: absolute;
+            inset: 12px 12px auto 12px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 38px;
+            padding: 8px 12px;
+            border: 2px solid #0f172a;
+            border-radius: 8px;
+            background: rgba(248, 250, 252, 0.88);
+            color: #0f172a;
+            font-weight: 800;
+            box-shadow: 0 4px 0 rgba(15, 23, 42, 0.22);
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.58);
+            text-align: center;
+        }
+
+        .panel {
+            width: min(560px, 100%);
+            padding: 24px;
+            border: 3px solid #0f172a;
+            border-radius: 8px;
+            background: #fff7d6;
+            color: #0f172a;
+            box-shadow: 0 10px 0 rgba(15, 23, 42, 0.35);
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: clamp(2rem, 7vw, 4.25rem);
+            line-height: 0.95;
+            color: #c2410c;
+        }
+
+        .subtitle {
+            margin: 0 auto 18px;
+            max-width: 38rem;
+            font-size: clamp(1rem, 2.6vw, 1.2rem);
+            line-height: 1.45;
+            font-weight: 700;
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        button {
+            min-width: 150px;
+            border: 3px solid #0f172a;
+            border-radius: 8px;
+            padding: 12px 16px;
+            background: #fbbf24;
+            color: #0f172a;
+            font-size: 1rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #92400e;
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #92400e;
+        }
+
+        .touch-controls {
+            position: absolute;
+            inset: auto 12px 14px 12px;
+            z-index: 2;
+            display: none;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .touch-group {
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .touch-btn {
+            width: 62px;
+            min-width: 62px;
+            height: 54px;
+            padding: 0;
+            border-radius: 8px;
+            background: rgba(248, 250, 252, 0.86);
+            box-shadow: 0 4px 0 rgba(15, 23, 42, 0.35);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 760px), (pointer: coarse) {
+            .shell {
+                width: 100vw;
+                height: 100vh;
+                border: 0;
+            }
+
+            .touch-controls {
+                display: flex;
+            }
+
+            .hud {
+                inset: max(10px, env(safe-area-inset-top)) 10px auto 10px;
+            }
+
+            .pill {
+                min-height: 34px;
+                padding: 7px 9px;
+                font-size: 0.88rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <canvas id="game" width="1050" height="640" aria-label="Dog Food Run game"></canvas>
+
+        <div class="hud">
+            <div class="pill">Food: <span id="foodCount">0</span></div>
+            <div class="pill">Lives: <span id="livesCount">3</span></div>
+            <div class="pill">Best: <span id="bestCount">0</span></div>
+        </div>
+
+        <div class="touch-controls" aria-hidden="true">
+            <div class="touch-group">
+                <button class="touch-btn" data-hold="left">Left</button>
+                <button class="touch-btn" data-hold="right">Right</button>
+            </div>
+            <div class="touch-group">
+                <button class="touch-btn" data-action="jump">Jump</button>
+            </div>
+        </div>
+
+        <div id="menu" class="overlay">
+            <div class="panel">
+                <h1>Dog Food Run</h1>
+                <p class="subtitle">Run, jump, grab snacks, and dodge the people and obstacles trying to stop your hungry dog.</p>
+                <p><strong>Controls:</strong> Arrow keys or A/D to move, Space/W/Up to jump.</p>
+                <div class="button-row">
+                    <button id="startBtn">Start Game</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="gameOver" class="overlay hidden">
+            <div class="panel">
+                <h1 id="endTitle">Game Over</h1>
+                <p class="subtitle" id="endText">You found 0 snacks.</p>
+                <div class="button-row">
+                    <button id="retryBtn">Play Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("game");
+        const ctx = canvas.getContext("2d");
+        const foodCount = document.getElementById("foodCount");
+        const livesCount = document.getElementById("livesCount");
+        const bestCount = document.getElementById("bestCount");
+        const menu = document.getElementById("menu");
+        const gameOver = document.getElementById("gameOver");
+        const endTitle = document.getElementById("endTitle");
+        const endText = document.getElementById("endText");
+        const startBtn = document.getElementById("startBtn");
+        const retryBtn = document.getElementById("retryBtn");
+
+        const WORLD_WIDTH = 4800;
+        const GROUND = 550;
+        const GRAVITY = 0.72;
+        const FRICTION = 0.82;
+        const keys = new Set();
+        const touchHold = { left: false, right: false };
+        let state = "menu";
+        let cameraX = 0;
+        let lastTime = 0;
+        let best = Number(localStorage.getItem("dog-food-run-best") || 0);
+
+        const level = {
+            platforms: [
+                { x: 0, y: GROUND, w: WORLD_WIDTH, h: 90 },
+                { x: 440, y: 440, w: 210, h: 28 },
+                { x: 820, y: 360, w: 220, h: 28 },
+                { x: 1240, y: 455, w: 260, h: 28 },
+                { x: 1700, y: 390, w: 220, h: 28 },
+                { x: 2140, y: 315, w: 240, h: 28 },
+                { x: 2580, y: 430, w: 300, h: 28 },
+                { x: 3160, y: 350, w: 230, h: 28 },
+                { x: 3640, y: 440, w: 250, h: 28 },
+                { x: 4140, y: 335, w: 230, h: 28 }
+            ],
+            obstacles: [
+                { x: 690, y: GROUND - 38, w: 46, h: 38, kind: "cone" },
+                { x: 1090, y: GROUND - 54, w: 56, h: 54, kind: "trash" },
+                { x: 1540, y: GROUND - 44, w: 72, h: 44, kind: "fence" },
+                { x: 2450, y: GROUND - 54, w: 56, h: 54, kind: "trash" },
+                { x: 2990, y: GROUND - 38, w: 46, h: 38, kind: "cone" },
+                { x: 3450, y: GROUND - 44, w: 72, h: 44, kind: "fence" },
+                { x: 3970, y: GROUND - 54, w: 56, h: 54, kind: "trash" }
+            ],
+            people: [
+                { x: 930, y: GROUND - 78, w: 38, h: 78, min: 760, max: 1170, speed: 1.25, dir: 1 },
+                { x: 1900, y: GROUND - 78, w: 38, h: 78, min: 1680, max: 2120, speed: 1.5, dir: -1 },
+                { x: 2760, y: GROUND - 78, w: 38, h: 78, min: 2520, max: 3040, speed: 1.65, dir: 1 },
+                { x: 3720, y: GROUND - 78, w: 38, h: 78, min: 3500, max: 4000, speed: 1.85, dir: -1 }
+            ],
+            food: [],
+            finish: { x: 4620, y: GROUND - 170, w: 44, h: 170 }
+        };
+
+        const player = {
+            x: 90,
+            y: GROUND - 66,
+            w: 78,
+            h: 50,
+            vx: 0,
+            vy: 0,
+            onGround: false,
+            invincible: 0,
+            food: 0,
+            lives: 3,
+            facing: 1
+        };
+
+        function makeFood() {
+            const spots = [
+                [320, 505], [520, 395], [890, 315], [1330, 410], [1780, 345],
+                [2250, 270], [2650, 385], [2850, 385], [3260, 305], [3760, 395],
+                [4240, 290], [4520, 505]
+            ];
+            level.food = spots.map(([x, y], i) => ({ x, y, r: 15, eaten: false, bob: i * 0.7 }));
+        }
+
+        function resetGame() {
+            player.x = 90;
+            player.y = GROUND - 66;
+            player.vx = 0;
+            player.vy = 0;
+            player.onGround = false;
+            player.invincible = 0;
+            player.food = 0;
+            player.lives = 3;
+            player.facing = 1;
+            cameraX = 0;
+            makeFood();
+            updateHud();
+        }
+
+        function updateHud() {
+            foodCount.textContent = player.food;
+            livesCount.textContent = player.lives;
+            bestCount.textContent = best;
+        }
+
+        function startGame() {
+            resetGame();
+            state = "playing";
+            menu.classList.add("hidden");
+            gameOver.classList.add("hidden");
+        }
+
+        function finishGame() {
+            state = "ended";
+            best = Math.max(best, player.food);
+            localStorage.setItem("dog-food-run-best", String(best));
+            updateHud();
+            endTitle.textContent = "Snack Victory!";
+            endText.textContent = `You made it home with ${player.food} food ${player.food === 1 ? "snack" : "snacks"}.`;
+            gameOver.classList.remove("hidden");
+        }
+
+        function loseLife() {
+            if (player.invincible > 0 || state !== "playing") return;
+            player.lives -= 1;
+            updateHud();
+            player.invincible = 110;
+            player.vx = -8 * player.facing;
+            player.vy = -10;
+
+            if (player.lives <= 0) {
+                state = "ended";
+                best = Math.max(best, player.food);
+                localStorage.setItem("dog-food-run-best", String(best));
+                updateHud();
+                endTitle.textContent = "Game Over";
+                endText.textContent = `The people caught the dog after ${player.food} food ${player.food === 1 ? "snack" : "snacks"}.`;
+                gameOver.classList.remove("hidden");
+            }
+        }
+
+        function rectsOverlap(a, b) {
+            return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+        }
+
+        function jump() {
+            if (state === "menu") {
+                startGame();
+                return;
+            }
+            if (player.onGround && state === "playing") {
+                player.vy = -16.5;
+                player.onGround = false;
+            }
+        }
+
+        function update() {
+            const left = keys.has("ArrowLeft") || keys.has("KeyA") || touchHold.left;
+            const right = keys.has("ArrowRight") || keys.has("KeyD") || touchHold.right;
+            const accel = player.onGround ? 1.05 : 0.66;
+
+            if (left) {
+                player.vx -= accel;
+                player.facing = -1;
+            }
+            if (right) {
+                player.vx += accel;
+                player.facing = 1;
+            }
+            if (!left && !right && player.onGround) {
+                player.vx *= FRICTION;
+            }
+
+            player.vx = Math.max(-8, Math.min(8, player.vx));
+            player.vy += GRAVITY;
+            player.x += player.vx;
+            player.y += player.vy;
+            player.onGround = false;
+
+            for (const platform of level.platforms) {
+                const wasAbove = player.y + player.h - player.vy <= platform.y;
+                if (rectsOverlap(player, platform) && player.vy >= 0 && wasAbove) {
+                    player.y = platform.y - player.h;
+                    player.vy = 0;
+                    player.onGround = true;
+                }
+            }
+
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.w > WORLD_WIDTH) player.x = WORLD_WIDTH - player.w;
+            if (player.y > canvas.height + 200) loseLife();
+            if (player.invincible > 0) player.invincible -= 1;
+
+            for (const person of level.people) {
+                person.x += person.speed * person.dir;
+                if (person.x < person.min || person.x > person.max) person.dir *= -1;
+                if (rectsOverlap(player, person)) loseLife();
+            }
+
+            for (const obstacle of level.obstacles) {
+                if (rectsOverlap(player, obstacle)) loseLife();
+            }
+
+            for (const food of level.food) {
+                if (food.eaten) continue;
+                const cx = food.x + food.r;
+                const cy = food.y + Math.sin(performance.now() / 260 + food.bob) * 5;
+                const closestX = Math.max(player.x, Math.min(cx, player.x + player.w));
+                const closestY = Math.max(player.y, Math.min(cy, player.y + player.h));
+                const dx = cx - closestX;
+                const dy = cy - closestY;
+                if (dx * dx + dy * dy < food.r * food.r) {
+                    food.eaten = true;
+                    player.food += 1;
+                    updateHud();
+                }
+            }
+
+            if (rectsOverlap(player, level.finish)) {
+                finishGame();
+            }
+
+            cameraX = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, player.x - canvas.width * 0.36));
+        }
+
+        function drawSky() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, "#7dd3fc");
+            gradient.addColorStop(0.72, "#bbf7d0");
+            gradient.addColorStop(1, "#fef3c7");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
+            for (let x = -100; x < canvas.width + 260; x += 360) {
+                const drift = (cameraX * 0.18) % 360;
+                drawCloud(x - drift, 90, 1);
+                drawCloud(x + 170 - drift, 175, 0.7);
+            }
+
+            ctx.fillStyle = "#6ee7b7";
+            for (let x = -80; x < canvas.width + 160; x += 170) {
+                const hillX = x - (cameraX * 0.35) % 170;
+                ctx.beginPath();
+                ctx.arc(hillX, GROUND + 22, 92, Math.PI, 0);
+                ctx.fill();
+            }
+        }
+
+        function drawCloud(x, y, s) {
+            ctx.beginPath();
+            ctx.arc(x, y, 24 * s, 0, Math.PI * 2);
+            ctx.arc(x + 30 * s, y - 13 * s, 30 * s, 0, Math.PI * 2);
+            ctx.arc(x + 68 * s, y, 26 * s, 0, Math.PI * 2);
+            ctx.arc(x + 38 * s, y + 12 * s, 24 * s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawPlatform(p) {
+            ctx.fillStyle = "#7c2d12";
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.fillStyle = "#16a34a";
+            ctx.fillRect(p.x, p.y, p.w, 10);
+            ctx.fillStyle = "#92400e";
+            for (let x = p.x + 8; x < p.x + p.w; x += 34) {
+                ctx.fillRect(x, p.y + 18, 12, 5);
+            }
+        }
+
+        function drawFood(food) {
+            if (food.eaten) return;
+            const y = food.y + Math.sin(performance.now() / 260 + food.bob) * 5;
+            ctx.fillStyle = "#f59e0b";
+            ctx.beginPath();
+            ctx.arc(food.x + food.r, y, food.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#78350f";
+            ctx.beginPath();
+            ctx.arc(food.x + food.r - 5, y - 3, 3, 0, Math.PI * 2);
+            ctx.arc(food.x + food.r + 4, y + 4, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawObstacle(o) {
+            if (o.kind === "cone") {
+                ctx.fillStyle = "#f97316";
+                ctx.beginPath();
+                ctx.moveTo(o.x + o.w / 2, o.y);
+                ctx.lineTo(o.x + o.w, o.y + o.h);
+                ctx.lineTo(o.x, o.y + o.h);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = "#fff7ed";
+                ctx.fillRect(o.x + 10, o.y + 22, o.w - 20, 6);
+            } else if (o.kind === "trash") {
+                ctx.fillStyle = "#475569";
+                ctx.fillRect(o.x + 8, o.y + 10, o.w - 16, o.h - 10);
+                ctx.fillStyle = "#94a3b8";
+                ctx.fillRect(o.x + 3, o.y, o.w - 6, 12);
+            } else {
+                ctx.fillStyle = "#a16207";
+                ctx.fillRect(o.x, o.y + 8, o.w, 12);
+                ctx.fillRect(o.x, o.y + 26, o.w, 12);
+                ctx.fillRect(o.x + 8, o.y, 10, o.h);
+                ctx.fillRect(o.x + o.w - 18, o.y, 10, o.h);
+            }
+        }
+
+        function drawPerson(p) {
+            ctx.save();
+            ctx.translate(p.x + p.w / 2, p.y);
+            ctx.scale(p.dir, 1);
+            ctx.fillStyle = "#f8c9a8";
+            ctx.beginPath();
+            ctx.arc(0, 13, 13, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#2563eb";
+            ctx.fillRect(-13, 27, 26, 34);
+            ctx.fillStyle = "#111827";
+            ctx.fillRect(-13, 61, 9, 18);
+            ctx.fillRect(4, 61, 9, 18);
+            ctx.fillStyle = "#f97316";
+            ctx.fillRect(8, 34, 24, 7);
+            ctx.restore();
+        }
+
+        function drawDog() {
+            const blink = player.invincible > 0 && Math.floor(player.invincible / 8) % 2 === 0;
+            if (blink) return;
+
+            ctx.save();
+            ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+            ctx.scale(player.facing, 1);
+
+            ctx.fillStyle = "#a16207";
+            ctx.fillRect(-28, -10, 48, 28);
+            ctx.fillStyle = "#92400e";
+            ctx.fillRect(7, -24, 26, 28);
+            ctx.fillStyle = "#78350f";
+            ctx.beginPath();
+            ctx.ellipse(5, -24, 9, 17, 0.35, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#451a03";
+            ctx.fillRect(-25, 16, 8, 16);
+            ctx.fillRect(8, 16, 8, 16);
+            ctx.strokeStyle = "#92400e";
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.moveTo(-28, -4);
+            ctx.quadraticCurveTo(-46, -21, -34, -31);
+            ctx.stroke();
+            ctx.fillStyle = "#111827";
+            ctx.beginPath();
+            ctx.arc(26, -12, 3, 0, Math.PI * 2);
+            ctx.arc(34, -4, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#ef4444";
+            ctx.fillRect(15, 6, 17, 5);
+            ctx.restore();
+        }
+
+        function drawFinish() {
+            const f = level.finish;
+            ctx.fillStyle = "#8b5cf6";
+            ctx.fillRect(f.x, f.y, f.w, f.h);
+            ctx.fillStyle = "#f8fafc";
+            ctx.fillRect(f.x + f.w, f.y + 12, 92, 48);
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "bold 18px Arial";
+            ctx.fillText("HOME", f.x + f.w + 17, f.y + 43);
+        }
+
+        function render() {
+            drawSky();
+            ctx.save();
+            ctx.translate(-cameraX, 0);
+            level.platforms.forEach(drawPlatform);
+            drawFinish();
+            level.food.forEach(drawFood);
+            level.obstacles.forEach(drawObstacle);
+            level.people.forEach(drawPerson);
+            drawDog();
+            ctx.restore();
+        }
+
+        function loop(time) {
+            const elapsed = time - lastTime;
+            lastTime = time;
+            if (state === "playing" && elapsed < 80) update();
+            render();
+            requestAnimationFrame(loop);
+        }
+
+        window.addEventListener("keydown", (event) => {
+            if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyA", "KeyD", "KeyW"].includes(event.code)) {
+                event.preventDefault();
+            }
+            keys.add(event.code);
+            if (["ArrowUp", "Space", "KeyW"].includes(event.code)) jump();
+        });
+
+        window.addEventListener("keyup", (event) => {
+            keys.delete(event.code);
+        });
+
+        document.querySelectorAll("[data-hold]").forEach((button) => {
+            const dir = button.dataset.hold;
+            const hold = (event) => {
+                event.preventDefault();
+                touchHold[dir] = true;
+            };
+            const release = (event) => {
+                event.preventDefault();
+                touchHold[dir] = false;
+            };
+            button.addEventListener("pointerdown", hold);
+            button.addEventListener("pointerup", release);
+            button.addEventListener("pointercancel", release);
+            button.addEventListener("pointerleave", release);
+        });
+
+        document.querySelector("[data-action='jump']").addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            jump();
+        });
+
+        startBtn.addEventListener("click", startGame);
+        retryBtn.addEventListener("click", startGame);
+
+        updateHud();
+        makeFood();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
