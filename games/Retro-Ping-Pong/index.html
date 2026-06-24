@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Retro Ping Pong</title>
     <!-- Tailwind CSS for UI Layout -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,6 +13,11 @@
             font-family: 'Rajdhani', sans-serif;
             background-color: #05050d;
             overflow: hidden;
+            /* Prevent scrolling/bouncing on mobile devices */
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
         }
         .arcade-font {
             font-family: 'Orbitron', sans-serif;
@@ -31,22 +36,32 @@
             transform: scale(1.05);
             box-shadow: 0 0 20px rgba(236, 72, 153, 0.8);
         }
-        /* Custom scrollbar just in case */
-        ::-webkit-scrollbar {
-            width: 6px;
+
+        /* Screen Rotation Prompt enforcer: Only triggers during active gameplay in portrait orientation */
+        #rotation-overlay {
+            display: none;
         }
-        ::-webkit-scrollbar-track {
-            background: #05050d;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #ec4899;
-            border-radius: 3px;
+        @media (orientation: portrait) {
+            body.game-active #rotation-overlay {
+                display: flex !important;
+            }
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen text-white p-4">
+<body class="flex flex-col items-center justify-center min-h-screen text-white p-2 select-none">
 
-    <!-- Game Container with both Aspect Ratio and Max Height constraints so it fits all screens -->
+    <!-- Screen Rotation Prompt (Triggers only when playing and in portrait mode) -->
+    <div id="rotation-overlay" class="hidden fixed inset-0 bg-[#05050d] z-50 flex-col items-center justify-center text-center p-6">
+        <div class="animate-bounce mb-4 text-pink-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+        </div>
+        <h2 class="arcade-font text-2xl text-cyan-400 mb-2">ROTATE YOUR DEVICE</h2>
+        <p class="text-slate-300 text-sm">Please turn your device to Landscape to control the grid arena!</p>
+    </div>
+
+    <!-- Game Container with both Aspect Ratio and Max Height constraints -->
     <div id="game-wrapper" class="relative w-full max-w-4xl aspect-[16/10] max-h-[85vh] bg-slate-950/80 rounded-2xl overflow-hidden neon-border flex flex-col items-center justify-center">
         
         <!-- Score & Status Top Bar (Only visible while playing) -->
@@ -55,11 +70,34 @@
                 <span id="player1-label" class="text-xs uppercase tracking-widest text-cyan-400 font-bold">Player 1</span>
                 <span id="player1-score" class="arcade-font text-3xl font-extrabold text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.6)]">0</span>
             </div>
+            
+            <!-- Mid-HUD pause button for touchscreens -->
+            <button onclick="triggerPauseButton()" class="bg-slate-900/60 hover:bg-slate-850 px-3 py-1 rounded-md border border-slate-700 text-xs arcade-font tracking-wider active:scale-95 focus:outline-none">
+                PAUSE
+            </button>
+
             <!-- Power-up indicators -->
             <div class="flex gap-2" id="active-effects"></div>
+            
             <div class="flex items-center gap-4">
                 <span id="player2-score" class="arcade-font text-3xl font-extrabold text-pink-500 drop-shadow-[0_0_10px_rgba(236,72,153,0.6)]">0</span>
                 <span id="player2-label" class="text-xs uppercase tracking-widest text-pink-500 font-bold">AI (Normal)</span>
+            </div>
+        </div>
+
+        <!-- Touch Controls Guide Overlay (briefly hints swipe zones on touch devices) -->
+        <div id="touch-indicator-overlay" class="absolute inset-0 flex justify-between pointer-events-none opacity-0 transition-opacity duration-500 z-10">
+            <div class="w-1/2 h-full border-r border-dashed border-cyan-500/20 bg-gradient-to-r from-cyan-500/5 to-transparent flex items-center justify-center">
+                <div class="text-center p-4 rounded-xl bg-slate-950/50 backdrop-blur-sm border border-cyan-500/10">
+                    <span class="text-cyan-400 text-2xl animate-pulse block">↕</span>
+                    <span class="text-[10px] uppercase tracking-wider text-cyan-300">Drag Here (P1)</span>
+                </div>
+            </div>
+            <div id="touch-indicator-right" class="w-1/2 h-full bg-gradient-to-l from-pink-500/5 to-transparent flex items-center justify-center">
+                <div class="text-center p-4 rounded-xl bg-slate-950/50 backdrop-blur-sm border border-pink-500/10">
+                    <span class="text-pink-500 text-2xl animate-pulse block">↕</span>
+                    <span id="p2-touch-hint-text" class="text-[10px] uppercase tracking-wider text-pink-400">Drag Here (P2)</span>
+                </div>
             </div>
         </div>
 
@@ -67,112 +105,87 @@
         <canvas id="gameCanvas" class="w-full h-full block bg-[#070714]"></canvas>
 
         <!-- Start / Main Menu Screen Overlay -->
-        <div id="menu-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-6 z-20 transition-opacity duration-300">
+        <div id="menu-overlay" class="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 z-20 transition-opacity duration-300">
             <!-- Game Logo -->
-            <div class="text-center mb-6">
-                <h1 class="arcade-font text-5xl md:text-7xl font-black italic tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 drop-shadow-[0_4px_12px_rgba(236,72,153,0.5)]">
+            <div class="text-center mb-10">
+                <h1 class="arcade-font text-4xl md:text-7xl font-black italic tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 drop-shadow-[0_4px_12px_rgba(236,72,153,0.5)]">
                     NEON PONG
                 </h1>
-                <p class="text-cyan-300 tracking-wider uppercase text-sm mt-2 font-semibold">The Ultimate Synthwave Arcade Experience</p>
+                <p class="text-cyan-300 tracking-wider uppercase text-[10px] md:text-xs mt-2 font-semibold">The Ultimate Synthwave Arcade Experience</p>
             </div>
 
-            <!-- Configuration & Controls Panel -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl mb-6">
-                <!-- Modes and Settings -->
-                <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 flex flex-col gap-4">
-                    <h3 class="text-pink-500 font-bold uppercase tracking-wider text-sm border-b border-slate-800 pb-2">1. Game Settings</h3>
-                    
-                    <!-- Game Mode -->
-                    <div>
-                        <label class="block text-xs uppercase text-slate-400 mb-1">Game Mode</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button id="btn-mode-1p" class="py-2 px-3 rounded-lg bg-pink-600 hover:bg-pink-500 text-white font-bold text-sm transition-all focus:outline-none" onclick="setMode('1p')">
-                                Single Player
-                            </button>
-                            <button id="btn-mode-2p" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-all focus:outline-none" onclick="setMode('2p')">
-                                Local 2 Player
-                            </button>
-                        </div>
-                    </div>
+            <!-- MAIN MENU VERTICAL STACK (Extremely clean, fits vertical screen layouts) -->
+            <div id="main-menu-panel" class="flex flex-col gap-4 w-full max-w-xs transition-all duration-300">
+                <button onclick="startGame()" class="arcade-font w-full py-4 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl text-md font-black tracking-widest text-white shadow-[0_0_20px_rgba(236,72,153,0.4)] neon-btn uppercase text-center focus:outline-none">
+                    Play Game
+                </button>
+                <button onclick="showSettingsPanel()" class="arcade-font w-full py-3 bg-slate-900 hover:bg-slate-850 rounded-xl text-sm font-bold tracking-widest text-cyan-400 border border-cyan-500/30 neon-btn uppercase text-center focus:outline-none">
+                    Settings
+                </button>
+            </div>
 
-                    <!-- Difficulty (Only for 1P) -->
-                    <div id="difficulty-settings">
-                        <label class="block text-xs uppercase text-slate-400 mb-1">AI Difficulty</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button id="btn-diff-easy" class="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold" onclick="setDifficulty('easy')">Easy</button>
-                            <button id="btn-diff-medium" class="py-1.5 px-2 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-xs font-semibold" onclick="setDifficulty('medium')">Normal</button>
-                            <button id="btn-diff-hard" class="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold" onclick="setDifficulty('hard')">Expert</button>
-                        </div>
-                    </div>
-
-                    <!-- Audio Toggle -->
-                    <div class="flex items-center justify-between mt-1">
-                        <span class="text-sm text-slate-300">Retro Audio FX</span>
-                        <button id="btn-audio" class="w-12 h-6 bg-pink-600 rounded-full p-0.5 transition-colors duration-200 focus:outline-none" onclick="toggleAudio()">
-                            <div id="audio-slider" class="w-5 h-5 bg-white rounded-full shadow-md transform translate-x-6 transition-transform duration-200"></div>
+            <!-- DETAILED SETTINGS DRAWER (Hidden by default, opens cleanly inside menu) -->
+            <div id="settings-panel" class="hidden flex flex-col gap-4 w-full max-w-sm bg-slate-900/90 p-5 rounded-2xl border border-slate-800 transition-all duration-300">
+                <h3 class="text-pink-500 font-bold uppercase tracking-wider text-xs border-b border-slate-800 pb-2 arcade-font">Game Settings</h3>
+                
+                <!-- Game Mode Selector -->
+                <div>
+                    <label class="block text-[10px] uppercase text-slate-400 mb-1">Game Mode</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btn-mode-1p" class="py-2 px-3 rounded-lg bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs transition-all focus:outline-none" onclick="setMode('1p')">
+                            Single Player
+                        </button>
+                        <button id="btn-mode-2p" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all focus:outline-none" onclick="setMode('2p')">
+                            Local 2 Player
                         </button>
                     </div>
                 </div>
 
-                <!-- How to Play instructions -->
-                <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
-                    <div>
-                        <h3 class="text-cyan-400 font-bold uppercase tracking-wider text-sm border-b border-slate-800 pb-2 mb-3">2. Controls</h3>
-                        <div class="space-y-3 text-xs text-slate-300">
-                            <!-- Desktop -->
-                            <div class="flex items-start gap-2">
-                                <div class="flex flex-col gap-1 shrink-0">
-                                    <span id="p1-key-hint-1" class="bg-slate-800 text-cyan-400 px-2 py-0.5 rounded font-mono border border-slate-700 text-center">W / S</span>
-                                    <span id="p1-key-hint-2" class="bg-slate-800 text-cyan-400 px-2 py-0.5 rounded font-mono border border-slate-700 text-center">▲ / ▼</span>
-                                </div>
-                                <div>
-                                    <strong class="text-white block">Player 1 (Left)</strong>
-                                    <span id="p1-control-desc">Use W/S or Arrow Up/Down keys, or move cursor/finger.</span>
-                                </div>
-                            </div>
-                            <!-- Player 2 / AI -->
-                            <div id="control-p2" class="flex items-start gap-2 hidden">
-                                <span class="bg-slate-800 text-pink-400 px-2 py-0.5 rounded font-mono border border-slate-700">▲ / ▼</span>
-                                <div>
-                                    <strong class="text-white block">Player 2 (Right)</strong>
-                                    Use Arrow Up/Down keys, or drag/touch inside Right Half.
-                                </div>
-                            </div>
-                            <!-- Power-ups explain -->
-                            <div class="pt-2 border-t border-slate-800">
-                                <span class="text-pink-400 font-bold">⭐ Power-ups:</span> Hit the glowing floating cubes for unexpected effects (Paddle expansion, Slow-mo, Shield, Multi-ball!).
-                            </div>
-                        </div>
+                <!-- Difficulty Selector (Only for 1P) -->
+                <div id="difficulty-settings">
+                    <label class="block text-[10px] uppercase text-slate-400 mb-1">AI Difficulty</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="btn-diff-easy" class="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold" onclick="setDifficulty('easy')">Easy</button>
+                        <button id="btn-diff-medium" class="py-1.5 px-2 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-[10px] font-semibold" onclick="setDifficulty('medium')">Normal</button>
+                        <button id="btn-diff-hard" class="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold" onclick="setDifficulty('hard')">Expert</button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Start Button -->
-            <button onclick="startGame()" class="arcade-font px-12 py-4 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl text-lg font-black tracking-widest text-white shadow-[0_0_20px_rgba(236,72,153,0.4)] neon-btn uppercase">
-                Launch Battle
-            </button>
+                <!-- Audio FX Toggle -->
+                <div class="flex items-center justify-between py-1">
+                    <span class="text-xs text-slate-300">Retro Audio FX</span>
+                    <button id="btn-audio" class="w-12 h-6 bg-pink-600 rounded-full p-0.5 transition-colors duration-200 focus:outline-none" onclick="toggleAudio()">
+                        <div id="audio-slider" class="w-5 h-5 bg-white rounded-full shadow-md transform translate-x-6 transition-transform duration-200"></div>
+                    </button>
+                </div>
+
+                <!-- Action Button Instructions -->
+                <div class="text-[11px] text-slate-400 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800 space-y-1">
+                    <span id="p1-control-desc" class="block">P1: Use W/S or Arrow keys, or swipe screen.</span>
+                    <span id="control-p2" class="hidden">P2: Use Up/Down Arrow keys, or swipe right screen.</span>
+                </div>
+
+                <!-- Back button to return to Main Menu -->
+                <button onclick="hideSettingsPanel()" class="arcade-font w-full mt-2 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold tracking-widest text-white uppercase text-center focus:outline-none">
+                    Back to Menu
+                </button>
+            </div>
         </div>
 
-        <!-- Custom Notification Message Box (E.g. Round Winner, Pause, Custom alerts) -->
-        <div id="modal-overlay" class="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-6 z-30 opacity-0 pointer-events-none transition-opacity duration-300">
+        <!-- Custom Notification Message Box (No native alerts!) -->
+        <div id="modal-overlay" class="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-6 z-35 opacity-0 pointer-events-none transition-opacity duration-300">
             <div class="bg-slate-900 border-2 border-cyan-400 p-8 rounded-2xl text-center max-w-sm w-full shadow-[0_0_30px_rgba(34,211,238,0.3)]">
-                <h2 id="modal-title" class="arcade-font text-3xl font-black text-cyan-400 mb-2">PLAYER 1 SCORES!</h2>
-                <p id="modal-desc" class="text-slate-300 text-sm mb-6">Get ready for the next round.</p>
-                <button id="modal-btn" class="arcade-font py-2 px-6 bg-pink-600 hover:bg-pink-500 rounded-lg text-sm font-bold tracking-widest text-white neon-btn uppercase focus:outline-none">
+                <h2 id="modal-title" class="arcade-font text-2xl md:text-3xl font-black text-cyan-400 mb-2">PLAYER 1 SCORES!</h2>
+                <p id="modal-desc" class="text-slate-300 text-xs md:text-sm mb-6">Get ready for the next round.</p>
+                <button id="modal-btn" class="arcade-font py-2 px-6 bg-pink-600 hover:bg-pink-500 rounded-lg text-xs font-bold tracking-widest text-white neon-btn uppercase focus:outline-none">
                     Continue
                 </button>
             </div>
         </div>
 
         <!-- Desktop Pause Overlay Hints -->
-        <div id="pause-hint" class="absolute bottom-4 right-4 text-xs text-slate-500 pointer-events-none select-none">
+        <div id="pause-hint" class="absolute bottom-4 right-4 text-[10px] text-slate-500 pointer-events-none select-none hidden md:block">
             Press [Space] to Pause
-        </div>
-
-        <!-- Mobile Touchpad Control Areas Overlay (Invisible overlay, triggers input events) -->
-        <div id="touch-controls" class="absolute inset-0 flex justify-between pointer-events-none select-none z-10">
-            <div id="touch-left" class="w-1/2 h-full pointer-events-auto cursor-pointer" style="display: none;"></div>
-            <div id="touch-right" class="w-1/2 h-full pointer-events-auto cursor-pointer" style="display: none;"></div>
         </div>
     </div>
 
@@ -192,6 +205,7 @@
         const p1Label = document.getElementById('player1-label');
         const p2Label = document.getElementById('player2-label');
         const activeEffectsContainer = document.getElementById('active-effects');
+        const touchGuide = document.getElementById('touch-indicator-overlay');
 
         // Web Audio Synthesizer helper
         let audioEnabled = true;
@@ -215,7 +229,6 @@
                 const now = audioContext.currentTime;
 
                 if (type === 'hit') {
-                    // Retro bleep
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(150, now);
                     osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
@@ -224,7 +237,6 @@
                     osc.start(now);
                     osc.stop(now + 0.12);
                 } else if (type === 'hit-paddle') {
-                    // Solid ping
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(300, now);
                     osc.frequency.exponentialRampToValueAtTime(900, now + 0.15);
@@ -233,7 +245,6 @@
                     osc.start(now);
                     osc.stop(now + 0.16);
                 } else if (type === 'powerup') {
-                    // Celestial arcade chime
                     osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(400, now);
                     osc.frequency.linearRampToValueAtTime(800, now + 0.1);
@@ -243,7 +254,6 @@
                     osc.start(now);
                     osc.stop(now + 0.3);
                 } else if (type === 'score-player') {
-                    // High-pitched victory sound
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(587.33, now); // D5
                     osc.frequency.setValueAtTime(880, now + 0.1);   // A5
@@ -253,7 +263,6 @@
                     osc.start(now);
                     osc.stop(now + 0.45);
                 } else if (type === 'score-ai' || type === 'lose') {
-                    // Disappointed sliding frequency
                     osc.type = 'sawtooth';
                     osc.frequency.setValueAtTime(250, now);
                     osc.frequency.linearRampToValueAtTime(100, now + 0.35);
@@ -267,6 +276,17 @@
             }
         }
 
+        // Settings Toggle Navigation
+        function showSettingsPanel() {
+            document.getElementById('main-menu-panel').classList.add('hidden');
+            document.getElementById('settings-panel').classList.remove('hidden');
+        }
+
+        function hideSettingsPanel() {
+            document.getElementById('settings-panel').classList.add('hidden');
+            document.getElementById('main-menu-panel').classList.remove('hidden');
+        }
+
         // Options toggling
         let gameMode = '1p'; // '1p' or '2p'
         let aiDifficulty = 'medium'; // 'easy', 'medium', 'hard'
@@ -276,30 +296,29 @@
         function setMode(mode) {
             gameMode = mode;
             document.getElementById('btn-mode-1p').className = mode === '1p' 
-                ? "py-2 px-3 rounded-lg bg-pink-600 hover:bg-pink-500 text-white font-bold text-sm transition-all focus:outline-none" 
-                : "py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-all focus:outline-none";
+                ? "py-2 px-3 rounded-lg bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs transition-all focus:outline-none" 
+                : "py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all focus:outline-none";
             document.getElementById('btn-mode-2p').className = mode === '2p' 
-                ? "py-2 px-3 rounded-lg bg-pink-600 hover:bg-pink-500 text-white font-bold text-sm transition-all focus:outline-none" 
-                : "py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm transition-all focus:outline-none";
+                ? "py-2 px-3 rounded-lg bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs transition-all focus:outline-none" 
+                : "py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all focus:outline-none";
             
             // Show / hide difficulty settings & control labels
             const diffBox = document.getElementById('difficulty-settings');
             const controlP2 = document.getElementById('control-p2');
-            const p1KeyHint2 = document.getElementById('p1-key-hint-2');
             const p1ControlDesc = document.getElementById('p1-control-desc');
 
             if (mode === '1p') {
                 diffBox.style.display = 'block';
                 controlP2.classList.add('hidden');
-                p1KeyHint2.classList.remove('hidden');
-                p1ControlDesc.innerText = "Use W/S or Arrow Up/Down keys, or move cursor/finger.";
+                p1ControlDesc.innerText = "P1: Use W/S or Arrow keys, or swipe screen.";
                 p2Label.innerText = `AI (${aiDifficulty.toUpperCase()})`;
+                document.getElementById('p2-touch-hint-text').innerText = 'AI Territory';
             } else {
                 diffBox.style.display = 'none';
                 controlP2.classList.remove('hidden');
-                p1KeyHint2.classList.add('hidden');
-                p1ControlDesc.innerText = "Use W (Up) & S (Down) keys, or move cursor/finger inside Left Half.";
+                p1ControlDesc.innerText = "P1: Use W/S keys, or swipe left screen.";
                 p2Label.innerText = "Player 2";
+                document.getElementById('p2-touch-hint-text').innerText = 'Drag Here (P2)';
             }
         }
 
@@ -309,9 +328,9 @@
             diffs.forEach(d => {
                 const btn = document.getElementById(`btn-diff-${d}`);
                 if (d === diff) {
-                    btn.className = "py-1.5 px-2 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-xs font-semibold";
+                    btn.className = "py-1.5 px-2 rounded-lg bg-pink-600 hover:bg-pink-500 text-white text-[10px] font-semibold";
                 } else {
-                    btn.className = "py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold";
+                    btn.className = "py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold";
                 }
             });
             if (gameMode === '1p') {
@@ -332,7 +351,7 @@
             }
         }
 
-        // Custom Modal Controller (No native alerts!)
+        // Custom Modal Controller
         function showModal(title, desc, buttonText, onConfirm) {
             modalTitle.innerText = title;
             modalDesc.innerText = desc;
@@ -340,7 +359,6 @@
             modalOverlay.style.opacity = "1";
             modalOverlay.style.pointerEvents = "auto";
             
-            // Temporarily pause calculations/loops
             isPaused = true;
 
             modalBtn.onclick = function() {
@@ -369,7 +387,7 @@
             h: defaultPaddleHeight,
             score: 0,
             speed: 10,
-            targetY: VIRTUAL_HEIGHT / 2 - defaultPaddleHeight / 2, // for smooth mobile/mouse slide
+            targetY: VIRTUAL_HEIGHT / 2 - defaultPaddleHeight / 2,
             effect: null,
             effectTimer: 0
         };
@@ -380,7 +398,7 @@
             w: paddleWidth,
             h: defaultPaddleHeight,
             score: 0,
-            speed: 8, // Adjust dynamically depending on mode & difficulty
+            speed: 8,
             targetY: VIRTUAL_HEIGHT / 2 - defaultPaddleHeight / 2,
             effect: null,
             effectTimer: 0
@@ -400,7 +418,7 @@
                 dy: dy || (Math.random() * 6 - 3),
                 speedMultiplier: 1.0,
                 color: '#00ffff',
-                trail: [] // Array of {x, y, alpha}
+                trail: []
             };
         }
 
@@ -435,8 +453,8 @@
             { type: 'SHIELD', name: 'ShieldZone', color: '#eab308', label: '🔋 Shield Guard' }
         ];
 
-        let currentPowerUp = null; // { x, y, radius, type, color, label }
-        let powerUpSpawnTimer = 350; // frames to check spawns
+        let currentPowerUp = null;
+        let powerUpSpawnTimer = 350;
 
         function spawnPowerUp() {
             if (currentPowerUp) return;
@@ -450,7 +468,7 @@
             };
         }
 
-        // Player Active Shields (blocks ball once per side)
+        // Player Active Shields
         let activeShields = {
             p1: false,
             p2: false
@@ -460,22 +478,31 @@
         let keys = {};
         window.addEventListener('keydown', e => {
             keys[e.key.toLowerCase()] = true;
-            // Prevent normal page scroll when pressing Space / Arrow keys
             if ([' ', 'arrowup', 'arrowdown'].includes(e.key.toLowerCase())) {
                 e.preventDefault();
             }
             if (e.key === ' ' && gameRunning) {
-                isPaused = !isPaused;
-                if (isPaused) {
-                    showModal("GAME PAUSED", "Press button or Spacebar to resume.", "Resume Game", () => {
-                        isPaused = false;
-                    });
-                }
+                togglePause();
             }
         });
         window.addEventListener('keyup', e => {
             keys[e.key.toLowerCase()] = false;
         });
+
+        function togglePause() {
+            isPaused = !isPaused;
+            if (isPaused) {
+                showModal("GAME PAUSED", "Press button to resume.", "Resume Game", () => {
+                    isPaused = false;
+                });
+            }
+        }
+
+        function triggerPauseButton() {
+            if (gameRunning) {
+                togglePause();
+            }
+        }
 
         // Initialize Responsive Dimensions
         function resizeCanvas() {
@@ -483,7 +510,6 @@
             const wrapperWidth = wrapper.clientWidth;
             const wrapperHeight = wrapper.clientHeight;
 
-            // Set canvas target buffer matching high density screens
             canvas.width = wrapperWidth;
             canvas.height = wrapperHeight;
 
@@ -491,12 +517,11 @@
             scaleY = wrapperHeight / VIRTUAL_HEIGHT;
         }
 
-        // Screen-to-virtual space coords translation
+        // Screen-to-virtual space coords translation for simple mouse pointer/touches
         function getCanvasMouseCoords(e, element) {
             const rect = element.getBoundingClientRect();
-            // Works for touch and mouse
-            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : undefined);
+            const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : undefined);
             
             if (clientX === undefined || clientY === undefined) return null;
 
@@ -506,26 +531,38 @@
             };
         }
 
-        // Set touch listener areas
-        const touchLeftZone = document.getElementById('touch-left');
-        const touchRightZone = document.getElementById('touch-right');
+        // Mobile Multi-Touch Controller Integration
+        function handleMobileTouches(e) {
+            if (!gameRunning || isPaused) return;
+            e.preventDefault(); // Prevents page pull-to-refresh & zoom behaviors
+
+            const rect = canvas.getBoundingClientRect();
+            
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                const touchX = (touch.clientX - rect.left) / scaleX;
+                const touchY = (touch.clientY - rect.top) / scaleY;
+
+                if (gameMode === '2p') {
+                    if (touchX < VIRTUAL_WIDTH / 2) {
+                        player1.targetY = touchY - player1.h / 2;
+                        player1.y = player1.targetY;
+                    } else {
+                        player2.targetY = touchY - player2.h / 2;
+                        player2.y = player2.targetY;
+                    }
+                } else {
+                    player1.targetY = touchY - player1.h / 2;
+                    player1.y = player1.targetY;
+                }
+            }
+        }
 
         function setupControls() {
-            // Drag / Touch Listeners for seamless mobile tracking
-            const handleTouchMove = (player, e) => {
-                e.preventDefault();
-                const coords = getCanvasMouseCoords(e, canvas);
-                if (coords) {
-                    player.targetY = coords.y - player.h / 2;
-                }
-            };
-
-            // Player 1 controller area
             window.addEventListener('mousemove', e => {
                 if (!gameRunning || isPaused) return;
                 const coords = getCanvasMouseCoords(e, canvas);
                 if (coords) {
-                    // Touch controls left half default
                     if (gameMode === '1p' || (gameMode === '2p' && coords.x < VIRTUAL_WIDTH / 2)) {
                         player1.targetY = coords.y - player1.h / 2;
                     } else if (gameMode === '2p' && coords.x >= VIRTUAL_WIDTH / 2) {
@@ -534,19 +571,9 @@
                 }
             });
 
-            const onLeftTouch = (e) => handleTouchMove(player1, e);
-            canvas.addEventListener('touchstart', onLeftTouch, { passive: false });
-            canvas.addEventListener('touchmove', onLeftTouch, { passive: false });
-
-            const onRightTouch = (e) => {
-                if (gameMode === '2p') {
-                    handleTouchMove(player2, e);
-                } else {
-                    handleTouchMove(player1, e);
-                }
-            };
-            canvas.addEventListener('touchstart', onRightTouch, { passive: false });
-            canvas.addEventListener('touchmove', onRightTouch, { passive: false });
+            canvas.addEventListener('touchstart', handleMobileTouches, { passive: false });
+            canvas.addEventListener('touchmove', handleMobileTouches, { passive: false });
+            canvas.addEventListener('touchend', handleMobileTouches, { passive: false });
         }
 
         window.addEventListener('resize', resizeCanvas);
@@ -561,14 +588,13 @@
             if (type === 'GROW') {
                 player.h = defaultPaddleHeight * 1.6;
                 player.effect = 'GROW';
-                player.effectTimer = 400; // frames
+                player.effectTimer = 400;
             } else if (type === 'SLOW') {
                 balls.forEach(b => {
                     b.dx *= 0.55;
                     b.dy *= 0.55;
                 });
             } else if (type === 'MULTIBALL') {
-                // Spawn another ball heading opposite
                 const referenceBall = balls[0] || createBall();
                 const extraBall = createBall(
                     VIRTUAL_WIDTH / 2, 
@@ -587,28 +613,27 @@
         function renderHUDActiveEffects() {
             activeEffectsContainer.innerHTML = '';
             
-            // Build simple indicators for ongoing buffs
             if (player1.effect) {
                 const span = document.createElement('span');
-                span.className = "text-xs bg-emerald-950 text-emerald-400 font-semibold px-2 py-1 rounded border border-emerald-500/30";
-                span.innerText = `P1: GigaPaddle`;
+                span.className = "text-[10px] bg-emerald-950 text-emerald-400 font-semibold px-2 py-0.5 rounded border border-emerald-500/30";
+                span.innerText = `P1: Giga`;
                 activeEffectsContainer.appendChild(span);
             }
             if (activeShields.p1) {
                 const span = document.createElement('span');
-                span.className = "text-xs bg-yellow-950 text-yellow-400 font-semibold px-2 py-1 rounded border border-yellow-500/30";
+                span.className = "text-[10px] bg-yellow-950 text-yellow-400 font-semibold px-2 py-0.5 rounded border border-yellow-500/30";
                 span.innerText = `P1: Shield`;
                 activeEffectsContainer.appendChild(span);
             }
             if (player2.effect) {
                 const span = document.createElement('span');
-                span.className = "text-xs bg-pink-950 text-pink-400 font-semibold px-2 py-1 rounded border border-pink-500/30";
-                span.innerText = `P2: GigaPaddle`;
+                span.className = "text-[10px] bg-pink-950 text-pink-400 font-semibold px-2 py-0.5 rounded border border-pink-500/30";
+                span.innerText = `P2: Giga`;
                 activeEffectsContainer.appendChild(span);
             }
             if (activeShields.p2) {
                 const span = document.createElement('span');
-                span.className = "text-xs bg-yellow-950 text-yellow-400 font-semibold px-2 py-1 rounded border border-yellow-500/30";
+                span.className = "text-[10px] bg-yellow-950 text-yellow-400 font-semibold px-2 py-0.5 rounded border border-yellow-500/30";
                 span.innerText = `P2: Shield`;
                 activeEffectsContainer.appendChild(span);
             }
@@ -625,12 +650,11 @@
         function updateAI() {
             if (gameMode !== '1p') return;
 
-            // Simple prediction based on nearest ball moving towards the right side
             let targetBall = null;
             let minDistance = Infinity;
 
             balls.forEach(ball => {
-                if (ball.dx > 0) { // moving towards AI
+                if (ball.dx > 0) {
                     const distance = VIRTUAL_WIDTH - ball.x;
                     if (distance < minDistance) {
                         minDistance = distance;
@@ -639,16 +663,14 @@
                 }
             });
 
-            // Fallback to first ball if none moving towards AI
             if (!targetBall && balls.length > 0) {
                 targetBall = balls[0];
             }
 
             if (!targetBall) return;
 
-            // Determine speed limits based on difficulty
             let aiSpeed = 5;
-            let reactionBuffer = 45; // AI center error tolerance
+            let reactionBuffer = 45;
 
             if (aiDifficulty === 'easy') {
                 aiSpeed = 4.2;
@@ -661,13 +683,11 @@
                 reactionBuffer = 15;
             }
 
-            // Powerup attraction override: If powerup is spawned and AI has high skill, it tries to get it if safe
             let targetY = targetBall.y;
             if (currentPowerUp && currentPowerUp.x > VIRTUAL_WIDTH / 2 && aiDifficulty === 'hard') {
                 targetY = currentPowerUp.y;
             }
 
-            // Move smoothly towards calculated target Y
             const aiCenterY = player2.y + player2.h / 2;
             if (Math.abs(aiCenterY - targetY) > reactionBuffer) {
                 if (aiCenterY < targetY) {
@@ -677,7 +697,6 @@
                 }
             }
 
-            // Keep bounds
             player2.y = Math.max(10, Math.min(VIRTUAL_HEIGHT - player2.h - 10, player2.y));
         }
 
@@ -709,19 +728,16 @@
             }
         }
 
-        // Reset entities for single round serve
         function resetRound() {
             balls = [createBall()];
             currentPowerUp = null;
             powerUpSpawnTimer = 350;
 
-            // Keep paddles but reset height buffs if active
             removePlayerEffects(player1);
             removePlayerEffects(player2);
             activeShields.p1 = false;
             activeShields.p2 = false;
 
-            // Reset positions
             player1.y = VIRTUAL_HEIGHT / 2 - player1.h / 2;
             player1.targetY = player1.y;
             player2.y = VIRTUAL_HEIGHT / 2 - player2.h / 2;
@@ -730,79 +746,81 @@
 
         function endMatch(winnerTitle, textMsg, buttonText) {
             gameRunning = false;
+            document.body.classList.remove('game-active');
             hud.classList.add('hidden');
             menuOverlay.style.opacity = "1";
             menuOverlay.style.pointerEvents = "auto";
             
-            // Re-use modal overlay format for endgame notice
-            showModal(winnerTitle, textMsg, buttonText, () => {
-                // Simply close the modal and remain on menu overlay
-            });
+            showModal(winnerTitle, textMsg, buttonText, () => {});
         }
 
         function startGame() {
-            // Setup scores
             player1.score = 0;
             player2.score = 0;
             p1ScoreEl.innerText = "0";
             p2ScoreEl.innerText = "0";
 
-            // Initialize Audio first interaction bypass
             if (audioEnabled && !audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
 
-            // State changes
             resetRound();
             gameRunning = true;
             isPaused = false;
+            
+            // Set body active state to trigger the orientation prompt logic
+            document.body.classList.add('game-active');
+
             menuOverlay.style.opacity = "0";
             menuOverlay.style.pointerEvents = "none";
             hud.classList.remove('hidden');
+
+            if ('ontouchstart' in window) {
+                touchGuide.style.opacity = "1";
+                setTimeout(() => {
+                    touchGuide.style.opacity = "0";
+                }, 2800);
+            }
         }
 
         // Simulation Update Loop
         function update() {
             if (!gameRunning || isPaused) return;
 
-            // Shake Decay
             if (shakeIntensity > 0) {
                 shakeIntensity *= 0.9;
                 if (shakeIntensity < 0.2) shakeIntensity = 0;
             }
 
-            // Power-ups spawning rules
             if (!currentPowerUp) {
                 powerUpSpawnTimer--;
                 if (powerUpSpawnTimer <= 0) {
                     spawnPowerUp();
-                    powerUpSpawnTimer = 400 + Math.random() * 300; // Reset spawn interval
+                    powerUpSpawnTimer = 400 + Math.random() * 300;
                 }
             }
 
             // 1. Move Player 1
-            // Try keys first (Allows W/S or Arrow keys if in Single Player mode)
             if (keys['w'] || (gameMode === '1p' && keys['arrowup'])) {
                 player1.y -= player1.speed;
-                player1.targetY = player1.y; // Sync target Y so letting go of key doesn't spring back
+                player1.targetY = player1.y;
             } else if (keys['s'] || (gameMode === '1p' && keys['arrowdown'])) {
                 player1.y += player1.speed;
-                player1.targetY = player1.y; // Sync target Y so letting go of key doesn't spring back
+                player1.targetY = player1.y;
             } else {
-                // Smooth interpolation to target cursor / touch coord
                 const diffY = player1.targetY - player1.y;
-                player1.y += diffY * 0.2; // Lerp factor
+                player1.y += diffY * 0.2;
             }
             player1.y = Math.max(10, Math.min(VIRTUAL_HEIGHT - player1.h - 10, player1.y));
 
-            // 2. Move Player 2 (Local Player 2 vs AI decision)
+            // 2. Move Player 2
             if (gameMode === '2p') {
                 if (keys['arrowup']) {
                     player2.y -= player2.speed;
-                    player2.targetY = player2.y; // Sync target Y so letting go of key doesn't spring back
+                    player2.targetY = player2.y;
                 } else if (keys['arrowdown']) {
                     player2.y += player2.speed;
-                    player2.targetY = player2.y; // Sync target Y so letting go of key doesn't spring back
+                    player2.targetY = player2.y;
                 } else {
                     const diffY = player2.targetY - player2.y;
                     player2.y += diffY * 0.2;
@@ -812,7 +830,6 @@
                 updateAI();
             }
 
-            // Active effects duration decay
             if (player1.effectTimer > 0) {
                 player1.effectTimer--;
                 if (player1.effectTimer <= 0) removePlayerEffects(player1);
@@ -826,14 +843,12 @@
             for (let i = balls.length - 1; i >= 0; i--) {
                 let ball = balls[i];
 
-                // Append trailing particles
                 ball.trail.push({ x: ball.x, y: ball.y, size: ball.radius });
                 if (ball.trail.length > 8) ball.trail.shift();
 
                 ball.x += ball.dx;
                 ball.y += ball.dy;
 
-                // Ceiling/Floor Collision bouncing
                 if (ball.y - ball.radius < 10) {
                     ball.y = 10 + ball.radius;
                     ball.dy = -ball.dy;
@@ -844,7 +859,6 @@
                     playSound('hit');
                 }
 
-                // Check collisions with Paddles
                 // Player 1 Paddle (Left)
                 if (ball.dx < 0 && 
                     ball.x - ball.radius < player1.x + player1.w && 
@@ -852,16 +866,15 @@
                     ball.y + ball.radius > player1.y && 
                     ball.y - ball.radius < player1.y + player1.h) {
                     
-                    // Deflect calculations relative to collision point
                     let relativeY = (ball.y - (player1.y + player1.h / 2)) / (player1.h / 2);
-                    let bounceAngle = relativeY * (Math.PI / 3.2); // max ~55 deg bounce
+                    let bounceAngle = relativeY * (Math.PI / 3.2);
                     
                     let speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
-                    speed = Math.min(speed + 0.6, maxBallSpeed); // progressive speed ramp
+                    speed = Math.min(speed + 0.6, maxBallSpeed);
 
                     ball.dx = speed * Math.cos(bounceAngle);
                     ball.dy = speed * Math.sin(bounceAngle);
-                    ball.x = player1.x + player1.w + ball.radius; // clear border
+                    ball.x = player1.x + player1.w + ball.radius;
 
                     triggerShake(4);
                     spawnImpactParticles(ball.x, ball.y, '#00ffff');
@@ -883,32 +896,28 @@
 
                     ball.dx = -speed * Math.cos(bounceAngle);
                     ball.dy = speed * Math.sin(bounceAngle);
-                    ball.x = player2.x - ball.radius; // clear border
+                    ball.x = player2.x - ball.radius;
 
                     triggerShake(4);
                     spawnImpactParticles(player2.x, ball.y, '#ec4899');
                     playSound('hit-paddle');
                 }
 
-                // Power-up container box touch detection
                 if (currentPowerUp) {
                     let distX = ball.x - currentPowerUp.x;
                     let distY = ball.y - currentPowerUp.y;
                     let distance = Math.sqrt(distX * distX + distY * distY);
                     
                     if (distance < ball.radius + currentPowerUp.radius) {
-                        // Impact direction awards power up to the matching player
                         let awardPlayer = ball.dx > 0 ? player1 : player2;
                         applyPowerUp(awardPlayer, currentPowerUp.type);
                         
                         spawnImpactParticles(currentPowerUp.x, currentPowerUp.y, currentPowerUp.color);
-                        currentPowerUp = null; // Consume power up
+                        currentPowerUp = null;
                     }
                 }
 
-                // Out of Bounds goal logic
                 if (ball.x - ball.radius < 0) {
-                    // Check Left Shield
                     if (activeShields.p1) {
                         activeShields.p1 = false;
                         ball.dx = -ball.dx;
@@ -921,7 +930,6 @@
                         if (balls.length === 0) checkScore(2);
                     }
                 } else if (ball.x + ball.radius > VIRTUAL_WIDTH) {
-                    // Check Right Shield
                     if (activeShields.p2) {
                         activeShields.p2 = false;
                         ball.dx = -ball.dx;
@@ -950,10 +958,7 @@
 
         // Graphic Render Loop
         function draw() {
-            // Apply screenshake effect dynamically with state saves
             ctx.save();
-            
-            // Apply scale transformation so all coordinate calculations are mapped perfectly to screen dimensions
             ctx.scale(scaleX, scaleY);
 
             if (shakeIntensity > 0) {
@@ -962,11 +967,10 @@
                 ctx.translate(dx, dy);
             }
 
-            // Clear background canvas with trail blend to make synth paths look extra smooth
             ctx.fillStyle = 'rgba(7, 7, 20, 0.3)';
             ctx.fillRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT);
 
-            // Draw decorative Grid background for Cyberpunk aesthetic
+            // Draw decorative grid
             ctx.strokeStyle = 'rgba(236, 72, 153, 0.04)';
             ctx.lineWidth = 1.5;
             const gridSpacing = 50;
@@ -983,12 +987,12 @@
                 ctx.stroke();
             }
 
-            // Neon boundary boundaries
+            // Boundaries
             ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
             ctx.lineWidth = 4;
             ctx.strokeRect(10, 10, VIRTUAL_WIDTH - 20, VIRTUAL_HEIGHT - 20);
 
-            // Central Net line
+            // Net line
             ctx.strokeStyle = 'rgba(236, 72, 153, 0.25)';
             ctx.lineWidth = 2;
             ctx.setLineDash([15, 15]);
@@ -996,9 +1000,9 @@
             ctx.moveTo(VIRTUAL_WIDTH / 2, 10);
             ctx.lineTo(VIRTUAL_WIDTH / 2, VIRTUAL_HEIGHT - 10);
             ctx.stroke();
-            ctx.setLineDash([]); // Reset line dashes
+            ctx.setLineDash([]);
 
-            // Draw Active Protective Shields (Shield Powerup)
+            // Shields
             if (activeShields.p1) {
                 ctx.strokeStyle = '#f59e0b';
                 ctx.shadowColor = '#f59e0b';
@@ -1008,7 +1012,7 @@
                 ctx.moveTo(15, 12);
                 ctx.lineTo(15, VIRTUAL_HEIGHT - 12);
                 ctx.stroke();
-                ctx.shadowBlur = 0; // reset glow
+                ctx.shadowBlur = 0;
             }
             if (activeShields.p2) {
                 ctx.strokeStyle = '#f59e0b';
@@ -1019,11 +1023,10 @@
                 ctx.moveTo(VIRTUAL_WIDTH - 15, 12);
                 ctx.lineTo(VIRTUAL_WIDTH - 15, VIRTUAL_HEIGHT - 12);
                 ctx.stroke();
-                ctx.shadowBlur = 0; // reset glow
+                ctx.shadowBlur = 0;
             }
 
-            // Draw player paddles with modern capsule shape & neon drop glow
-            // Player 1 Paddle (Cyan side)
+            // Player 1 Paddle
             ctx.fillStyle = '#00ffff';
             ctx.shadowColor = 'rgba(0, 255, 255, 0.8)';
             ctx.shadowBlur = 14;
@@ -1031,16 +1034,16 @@
             ctx.roundRect(player1.x, player1.y, player1.w, player1.h, 8);
             ctx.fill();
 
-            // Player 2 Paddle (Pink side)
+            // Player 2 Paddle
             ctx.fillStyle = '#ec4899';
             ctx.shadowColor = 'rgba(236, 72, 153, 0.8)';
             ctx.shadowBlur = 14;
             ctx.beginPath();
             ctx.roundRect(player2.x, player2.y, player2.w, player2.h, 8);
             ctx.fill();
-            ctx.shadowBlur = 0; // Clean up canvas dropshadow settings for next drawing elements
+            ctx.shadowBlur = 0;
 
-            // Draw current power-up container
+            // Power-up
             if (currentPowerUp) {
                 currentPowerUp.pulse += 0.05;
                 let finalRadius = currentPowerUp.radius + Math.sin(currentPowerUp.pulse) * 3;
@@ -1049,15 +1052,12 @@
                 ctx.translate(currentPowerUp.x, currentPowerUp.y);
                 ctx.rotate(currentPowerUp.pulse * 0.5);
 
-                // Glow shadow
                 ctx.shadowColor = currentPowerUp.color;
                 ctx.shadowBlur = 18;
 
-                // Color Box
                 ctx.fillStyle = currentPowerUp.color;
                 ctx.fillRect(-finalRadius, -finalRadius, finalRadius * 2, finalRadius * 2);
 
-                // Core icon label
                 ctx.shadowBlur = 0;
                 ctx.fillStyle = '#ffffff';
                 ctx.font = '12px "Orbitron", sans-serif';
@@ -1067,9 +1067,8 @@
                 ctx.restore();
             }
 
-            // Draw Balls
+            // Balls
             balls.forEach(ball => {
-                // Draw trails behind ball
                 ball.trail.forEach((t, index) => {
                     let ratio = index / ball.trail.length;
                     ctx.fillStyle = `rgba(0, 255, 255, ${ratio * 0.2})`;
@@ -1078,7 +1077,6 @@
                     ctx.fill();
                 });
 
-                // Main ball body
                 ctx.fillStyle = '#ffffff';
                 ctx.strokeStyle = '#00ffff';
                 ctx.lineWidth = 3;
@@ -1091,7 +1089,7 @@
                 ctx.shadowBlur = 0;
             });
 
-            // Draw Particles
+            // Particles
             particles.forEach(p => {
                 ctx.fillStyle = p.color;
                 ctx.globalAlpha = p.life;
@@ -1099,9 +1097,9 @@
                 ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
                 ctx.fill();
             });
-            ctx.globalAlpha = 1.0; // reset opacity config
+            ctx.globalAlpha = 1.0;
 
-            ctx.restore(); // end safe coordinate manipulation
+            ctx.restore();
         }
 
         // Native Refresh/Game Loop Orchestration
@@ -1111,7 +1109,6 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Initialize Loop directly when document is ready
         requestAnimationFrame(gameLoop);
 
     </script>
