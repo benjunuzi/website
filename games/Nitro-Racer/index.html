@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>Retro Nitro - Ultimate 2D Racer</title>
+    <!-- Tailwind CSS for rich modern UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for fallback menu icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght=400;700;900&family=Rajdhani:wght=500;700&display=swap');
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #0b0f19;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Prevent long-press contextual menus on mobile buttons */
+        button, div, canvas {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* Scanline Overlay for Arcade Feel */
+        .arcade-scanlines {
+            position: relative;
+        }
+        .arcade-scanlines::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            z-index: 10;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* Clean Custom Neon Scrollbars for Menus */
+        .overflow-y-auto::-webkit-scrollbar {
+            width: 6px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+            background: rgba(236, 72, 153, 0.4);
+            border-radius: 3px;
+        }
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+            background: rgba(236, 72, 153, 0.7);
+        }
+
+        /* Cyberpunk Glows */
+        .neon-border-blue {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+            border: 2px solid rgba(59, 130, 246, 0.8);
+        }
+        .neon-border-pink {
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.5);
+            border: 2px solid rgba(236, 72, 153, 0.8);
+        }
+        .neon-text-pink {
+            text-shadow: 0 0 8px rgba(236, 72, 153, 0.8);
+        }
+        .neon-text-blue {
+            text-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
+        }
+    </style>
+</head>
+<body class="overflow-hidden w-screen h-screen flex items-center justify-center text-white arcade-scanlines">
+
+    <!-- Web Audio & SFX Toggle Header -->
+    <div class="absolute top-4 right-4 z-40 flex items-center gap-2">
+        <!-- Force Toggle Touch Controls -->
+        <button id="touchControlsToggle" class="bg-slate-900/80 border border-slate-700 p-3 rounded-full hover:bg-slate-800 transition-all flex items-center justify-center text-blue-400 hover:scale-105 active:scale-95" title="Toggle Touch Layout">
+            <!-- Inline SVG Mobile Icon -->
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <rect x="5" y="2" width="14" height="20" rx="2" />
+                <path d="M12 18h.01" />
+            </svg>
+        </button>
+        <button id="soundToggle" class="bg-slate-900/80 border border-slate-700 p-3 rounded-full hover:bg-slate-800 transition-all flex items-center justify-center text-pink-500 hover:scale-105 active:scale-95" title="Toggle Sound">
+            <span id="soundIcon">
+                <!-- Inline SVG Sound ON Icon -->
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                </svg>
+            </span>
+        </button>
+    </div>
+
+    <!-- MAIN MENU LAYER -->
+    <div id="mainMenu" class="absolute inset-0 z-30 bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950 flex flex-col justify-between p-6 md:p-12 overflow-y-auto transition-all duration-500">
+        
+        <!-- Header Brand -->
+        <div class="flex flex-col items-center md:items-start text-center md:text-left mb-6">
+            <div class="flex items-center gap-3 mb-2">
+                <span class="bg-pink-600 text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded font-orbitron animate-pulse">
+                    v2.9 Engine Upgrade
+                </span>
+                <span class="text-slate-400 font-medium">RETRO ARCADE SIMULATOR</span>
+            </div>
+            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tighter uppercase font-orbitron italic text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 filter drop-shadow-lg">
+                RETRO <span class="text-white">NITRO</span>
+            </h1>
+            <p class="text-slate-400 mt-2 max-w-md text-sm md:text-base">
+                Drift past rivals, dodge track obstacles, and set record lap times across 3 custom racing environments.
+            </p>
+        </div>
+
+        <!-- Center Selection Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 my-auto items-stretch max-w-6xl w-full mx-auto mb-8">
+            
+            <!-- TRACK SELECTION (Left 7 Cols) -->
+            <div class="lg:col-span-7 flex flex-col justify-center">
+                <h3 class="text-lg font-orbitron uppercase text-slate-300 mb-4 flex items-center gap-2">
+                    <i class="fas fa-road text-pink-500"></i> Select Race Circuit
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Track 1: Alpine Meadow -->
+                    <div id="trackCard-0" onclick="selectTrack(0)" class="track-card cursor-pointer bg-slate-900/80 border-2 border-slate-800 hover:border-pink-500/50 rounded-xl p-4 transition-all hover:-translate-y-1 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-24 h-24 -mr-6 -mt-6 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-emerald-400 text-xs font-bold font-orbitron uppercase">Grassland</span>
+                            <span class="text-slate-500 text-xs font-semibold">Easy Loop</span>
+                        </div>
+                        <h4 class="text-xl font-bold font-orbitron group-hover:text-pink-400 transition-colors">Alpine Meadow</h4>
+                        <p class="text-xs text-slate-400 mt-1">Wide lanes with sweeping, gentle curves. Perfect for speed runs.</p>
+                        <div class="mt-4 flex items-center gap-3 text-xs text-slate-500">
+                            <span><i class="fas fa-flag text-emerald-400 mr-1"></i> 3 Laps</span>
+                            <span><i class="fas fa-compress-arrows-alt text-blue-400 mr-1"></i> Wide Road</span>
+                        </div>
+                    </div>
+
+                    <!-- Track 2: Desert Dunes -->
+                    <div id="trackCard-1" onclick="selectTrack(1)" class="track-card cursor-pointer bg-slate-900/80 border-2 border-slate-800 hover:border-pink-500/50 rounded-xl p-4 transition-all hover:-translate-y-1 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-24 h-24 -mr-6 -mt-6 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition-all"></div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-amber-400 text-xs font-bold font-orbitron uppercase">Wasteland</span>
+                            <span class="text-slate-500 text-xs font-semibold">Medium Tech</span>
+                        </div>
+                        <h4 class="text-xl font-bold font-orbitron group-hover:text-pink-400 transition-colors">Desert Dunes</h4>
+                        <p class="text-xs text-slate-400 mt-1">Sandy slip zones and quick chicane sweeps. Watch out for obstacles!</p>
+                        <div class="mt-4 flex items-center gap-3 text-xs text-slate-500">
+                            <span><i class="fas fa-flag text-amber-400 mr-1"></i> 3 Laps</span>
+                            <span><i class="fas fa-skull text-yellow-400 mr-1"></i> Sand Traps</span>
+                        </div>
+                    </div>
+
+                    <!-- Track 3: Cyber Drift -->
+                    <div id="trackCard-2" onclick="selectTrack(2)" class="track-card cursor-pointer bg-slate-900/80 border-2 border-slate-800 hover:border-pink-500/50 rounded-xl p-4 transition-all hover:-translate-y-1 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-24 h-24 -mr-6 -mt-6 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition-all"></div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-cyan-400 text-xs font-bold font-orbitron uppercase">Synth City</span>
+                            <span class="text-slate-500 text-xs font-semibold">Pro Level</span>
+                        </div>
+                        <h4 class="text-xl font-bold font-orbitron group-hover:text-pink-400 transition-colors">Cyber Drift</h4>
+                        <p class="text-xs text-slate-400 mt-1">Sharp 90-degree neon bends and narrow lanes. Ultimate drift control needed.</p>
+                        <div class="mt-4 flex items-center gap-3 text-xs text-slate-500">
+                            <span><i class="fas fa-flag text-cyan-400 mr-1"></i> 4 Laps</span>
+                            <span><i class="fas fa-bolt text-pink-400 mr-1"></i> Fast Ribbons</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DIFFICULTY & DRIVER COLOR -->
+            <div class="lg:col-span-5 flex flex-col justify-center gap-6 mt-6 lg:mt-0">
+                
+                <!-- DIFFICULTY SELECT -->
+                <div>
+                    <h3 class="text-lg font-orbitron uppercase text-slate-300 mb-3 flex items-center gap-2">
+                        <i class="fas fa-gauge-high text-pink-500"></i> Race Difficulty
+                    </h3>
+                    <div class="grid grid-cols-3 gap-2 bg-slate-950 p-1.5 rounded-lg border border-slate-800">
+                        <button onclick="selectDifficulty('easy')" id="btnDiff-easy" class="py-2.5 rounded-md font-orbitron text-xs font-bold uppercase tracking-wider transition-all">
+                            Easy
+                        </button>
+                        <button onclick="selectDifficulty('medium')" id="btnDiff-medium" class="py-2.5 rounded-md font-orbitron text-xs font-bold uppercase tracking-wider transition-all">
+                            Medium
+                        </button>
+                        <button onclick="selectDifficulty('hard')" id="btnDiff-hard" class="py-2.5 rounded-md font-orbitron text-xs font-bold uppercase tracking-wider transition-all">
+                            Hard
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CAR COLOR SELECT -->
+                <div>
+                    <h3 class="text-lg font-orbitron uppercase text-slate-300 mb-3 flex items-center gap-2">
+                        <i class="fas fa-palette text-pink-500"></i> Customize Supercar
+                    </h3>
+                    <div class="flex items-center gap-3 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <!-- Car Color Buttons -->
+                        <div class="flex gap-2.5">
+                            <button onclick="selectCarColor('#ff3b30')" id="colorBtn-#ff3b30" class="w-8 h-8 rounded-full bg-red-600 border-2 border-transparent hover:scale-110 active:scale-95 transition-all"></button>
+                            <button onclick="selectCarColor('#007aff')" id="colorBtn-#007aff" class="w-8 h-8 rounded-full bg-blue-600 border-2 border-transparent hover:scale-110 active:scale-95 transition-all"></button>
+                            <button onclick="selectCarColor('#34c759')" id="colorBtn-#34c759" class="w-8 h-8 rounded-full bg-emerald-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all"></button>
+                            <button onclick="selectCarColor('#ff9500')" id="colorBtn-#ff9500" class="w-8 h-8 rounded-full bg-orange-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all"></button>
+                            <button onclick="selectCarColor('#ff2d55')" id="colorBtn-#ff2d55" class="w-8 h-8 rounded-full bg-pink-500 border-2 border-transparent hover:scale-110 active:scale-95 transition-all"></button>
+                        </div>
+                        <div class="ml-auto flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800">
+                            <div class="w-4 h-4 rounded-full" id="colorIndicator"></div>
+                            <span class="text-xs font-mono" id="colorText">#ff3b30</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Start / Instructions Footer -->
+        <div class="flex flex-col md:flex-row items-center justify-between border-t border-slate-800 pt-6 max-w-6xl w-full mx-auto gap-4 mt-auto">
+            <!-- Instruction controls -->
+            <div class="flex items-center gap-4 text-xs text-slate-500">
+                <div class="hidden md:flex items-center gap-1 bg-slate-900/80 px-2.5 py-1.5 rounded border border-slate-800">
+                    <kbd class="bg-slate-950 px-1.5 py-0.5 rounded text-slate-300">W</kbd>
+                    <kbd class="bg-slate-950 px-1.5 py-0.5 rounded text-slate-300">A</kbd>
+                    <kbd class="bg-slate-950 px-1.5 py-0.5 rounded text-slate-300">S</kbd>
+                    <kbd class="bg-slate-950 px-1.5 py-0.5 rounded text-slate-300">D</kbd>
+                    <span class="ml-1 text-slate-400">or Arrows</span>
+                </div>
+                <div class="hidden md:block">Steer & Drive</div>
+                <div class="hidden md:block h-4 w-px bg-slate-800"></div>
+                <div class="hidden md:flex items-center gap-1 bg-slate-900/80 px-2.5 py-1.5 rounded border border-slate-800">
+                    <kbd class="bg-slate-950 px-1.5 py-0.5 rounded text-slate-300">Space</kbd>
+                </div>
+                <div class="hidden md:block">Handbrake Drift</div>
+                <!-- Mobile info indicator -->
+                <div class="md:hidden flex items-center gap-2 text-pink-400 font-medium">
+                    <i class="fas fa-hand-pointer animate-bounce"></i>
+                    <span>Optimized for touch screens & mouse previews!</span>
+                </div>
+            </div>
+
+            <!-- Start Button -->
+            <button onclick="startGame()" class="w-full md:w-auto bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-orbitron font-extrabold text-xl px-12 py-4 rounded-xl shadow-lg hover:shadow-pink-500/20 transform active:scale-95 transition-all uppercase tracking-widest flex items-center justify-center gap-3">
+                <span>Start Race</span>
+                <i class="fas fa-chevron-right text-base animate-pulse"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN GAMEPLAY CANVAS LAYER -->
+    <div id="gamePlayground" class="hidden absolute inset-0 z-10 w-full h-full flex items-center justify-center overflow-hidden bg-slate-950">
+        <!-- Persistent HUD & Quit Controls -->
+        <div class="absolute top-4 left-4 z-20 flex items-center gap-4">
+            <!-- Quit Button -->
+            <button onclick="showQuitConfirmation()" class="bg-red-600/90 border border-red-500 hover:bg-red-700 text-white font-orbitron text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95 transition-all">
+                <i class="fas fa-sign-out-alt"></i> Quit Game
+            </button>
+        </div>
+
+        <!-- Upper Right Status Panel (Laps & Time) -->
+        <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 flex items-center gap-2 md:gap-4 bg-slate-900/90 border border-slate-800 px-4 md:px-6 py-2 rounded-full shadow-2xl font-orbitron">
+            <div class="flex flex-col items-center border-r border-slate-800 pr-3 md:pr-4">
+                <span class="text-[10px] text-slate-400 uppercase tracking-widest">Lap</span>
+                <span id="hudLap" class="text-sm md:text-2xl font-black text-white">1/3</span>
+            </div>
+            <div class="flex flex-col items-center pr-3 md:pr-4 border-r border-slate-800">
+                <span class="text-[10px] text-slate-400 uppercase tracking-widest">Time</span>
+                <span id="hudTime" class="text-sm md:text-2xl font-black text-pink-500 tabular-nums">00:00.0</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="text-[10px] text-slate-400 uppercase tracking-widest">Position</span>
+                <span id="hudPos" class="text-sm md:text-2xl font-black text-blue-400">1st</span>
+            </div>
+        </div>
+
+        <!-- Center Countdown Overlay -->
+        <div id="countdownOverlay" class="hidden absolute inset-0 z-20 flex items-center justify-center bg-black/40 pointer-events-none transition-all duration-300">
+            <h2 id="countdownText" class="text-8xl md:text-9xl font-black font-orbitron italic tracking-widest text-pink-500 scale-150 animate-pulse text-center">3</h2>
+        </div>
+
+        <!-- Speedometer & Dash Indicator -->
+        <div class="absolute bottom-6 left-6 z-20 flex flex-col gap-2 pointer-events-none md:block hidden">
+            <!-- Digital Speedometer -->
+            <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-xl shadow-2xl flex flex-col justify-end min-w-[120px] font-orbitron">
+                <span class="text-[10px] text-slate-400 uppercase tracking-widest">Velocity</span>
+                <div class="flex items-baseline gap-1 mt-1">
+                    <span id="hudSpeed" class="text-3xl font-black text-white italic">000</span>
+                    <span class="text-xs font-bold text-pink-500 uppercase">km/h</span>
+                </div>
+                <!-- Dynamic rev bar -->
+                <div class="w-full bg-slate-950 h-2 rounded overflow-hidden mt-2 flex gap-0.5">
+                    <div id="revBar-0" class="h-full w-[20%] bg-blue-500 rounded-sm"></div>
+                    <div id="revBar-1" class="h-full w-[20%] bg-blue-500 rounded-sm"></div>
+                    <div id="revBar-2" class="h-full w-[20%] bg-emerald-500 rounded-sm"></div>
+                    <div id="revBar-3" class="h-full w-[20%] bg-yellow-500 rounded-sm"></div>
+                    <div id="revBar-4" class="h-full w-[20%] bg-pink-500 rounded-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ERGONOMIC CONTROLS (Optimized with Inline SVGs & Pointer Events) -->
+        <div id="mobileControls" class="absolute bottom-4 inset-x-4 z-20 flex justify-between pointer-events-none select-none max-w-5xl mx-auto hidden">
+            <!-- Steering Pad (Left Side) -->
+            <div class="flex gap-3 pointer-events-auto">
+                <button id="btnLeft" class="w-20 h-20 rounded-2xl bg-slate-900/60 backdrop-blur-md border-2 border-slate-600/80 active:bg-pink-500/30 active:border-pink-500 transition-all flex items-center justify-center text-slate-200 active:scale-110 active:text-white" title="Steer Left">
+                    <!-- Inline Left Arrow SVG -->
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+                </button>
+                <button id="btnRight" class="w-20 h-20 rounded-2xl bg-slate-900/60 backdrop-blur-md border-2 border-slate-600/80 active:bg-pink-500/30 active:border-pink-500 transition-all flex items-center justify-center text-slate-200 active:scale-110 active:text-white" title="Steer Right">
+                    <!-- Inline Right Arrow SVG -->
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Dashboard Speed HUD for Mobile -->
+            <div class="flex flex-col justify-center items-center bg-slate-950/80 border border-slate-800/80 px-4 rounded-xl pointer-events-none md:hidden font-orbitron max-h-[80px]">
+                <div class="flex items-baseline gap-0.5">
+                    <span id="hudSpeedMobile" class="text-2xl font-black text-white italic">000</span>
+                    <span class="text-[9px] font-bold text-pink-500 uppercase">km/h</span>
+                </div>
+                <div class="w-16 bg-slate-900 h-1 rounded overflow-hidden mt-1 flex gap-0.5">
+                    <div id="revBarMobile-0" class="h-full w-1/3 bg-blue-500"></div>
+                    <div id="revBarMobile-1" class="h-full w-1/3 bg-emerald-500"></div>
+                    <div id="revBarMobile-2" class="h-full w-1/3 bg-pink-500"></div>
+                </div>
+            </div>
+
+            <!-- Accelerator / Handbrake Drift (Right Side) -->
+            <div class="flex gap-3 pointer-events-auto">
+                <button id="btnBrake" class="w-20 h-20 rounded-2xl bg-slate-900/60 backdrop-blur-md border-2 border-slate-600/80 active:bg-cyan-500/30 active:border-cyan-500 transition-all flex flex-col items-center justify-center text-slate-200 active:scale-110 active:text-white" title="Brake / Handbrake">
+                    <!-- Inline Drift Icon SVG -->
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18c3-3 3-9 6-12M12 20c2-3 2-9 5-12" />
+                        <circle cx="12" cy="12" r="9" stroke-dasharray="4 2" />
+                    </svg>
+                    <span class="text-[9px] font-orbitron font-bold uppercase mt-1 tracking-widest">Drift</span>
+                </button>
+                <button id="btnGas" class="w-22 h-22 rounded-2xl bg-gradient-to-tr from-pink-500 to-purple-600 border-2 border-pink-400 active:scale-105 active:from-pink-600 active:to-purple-700 transition-all flex flex-col items-center justify-center text-white shadow-lg shadow-pink-500/20" title="Accelerate">
+                    <!-- Inline Double Up Arrow SVG -->
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l7.5-7.5 7.5 7.5m-15 6l7.5-7.5 7.5 7.5" />
+                    </svg>
+                    <span class="text-[9px] font-orbitron font-bold uppercase mt-1 tracking-widest">Drive</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- The Main Interactive Canvas -->
+        <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+    </div>
+
+    <!-- QUIT CONFIRMATION MODAL -->
+    <div id="quitModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-all duration-300">
+        <div class="bg-slate-900 border-2 border-slate-800 rounded-2xl p-6 max-w-md w-full text-center neon-border-pink">
+            <div class="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="text-2xl font-bold font-orbitron mb-2">Abandon Race?</h3>
+            <p class="text-slate-400 text-sm mb-6">Are you sure you want to quit current competition? Your current lap times and record progress will be lost.</p>
+            <div class="flex gap-3">
+                <button onclick="cancelQuit()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-bold transition-all">
+                    No, Resume
+                </button>
+                <button onclick="confirmQuit()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition-all">
+                    Yes, Quit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME OVER / VICTORY OVERLAY -->
+    <div id="postGameScreen" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 transition-all duration-500">
+        <div class="bg-slate-900 border border-slate-800 max-w-xl w-full rounded-2xl p-6 md:p-8 text-center relative overflow-hidden">
+            <!-- Corner decorative ambient lights -->
+            <div class="absolute top-0 right-0 w-36 h-36 bg-pink-500/10 rounded-full blur-2xl"></div>
+            <div class="absolute bottom-0 left-0 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl"></div>
+
+            <div id="trophyIcon" class="text-6xl text-yellow-400 mb-4">
+                <i class="fas fa-trophy"></i>
+            </div>
+            
+            <h2 id="postGameTitle" class="text-3xl md:text-5xl font-black font-orbitron uppercase tracking-tighter text-white">
+                VICTORY!
+            </h2>
+            <p id="postGameSubtitle" class="text-slate-400 text-sm mt-1">Excellent racing, driver. You conquered the course!</p>
+
+            <!-- Stats Showcase -->
+            <div class="grid grid-cols-2 gap-4 my-8">
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 text-center">
+                    <span class="text-xs text-slate-400 uppercase tracking-widest block">Total Time</span>
+                    <span id="statTime" class="text-xl md:text-2xl font-black font-orbitron text-pink-500 tabular-nums">02:45.3</span>
+                </div>
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 text-center">
+                    <span class="text-xs text-slate-400 uppercase tracking-widest block">Best Lap</span>
+                    <span id="statBestLap" class="text-xl md:text-2xl font-black font-orbitron text-cyan-400 tabular-nums">00:51.2</span>
+                </div>
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 text-center">
+                    <span class="text-xs text-slate-400 uppercase tracking-widest block">Race Rank</span>
+                    <span id="statRank" class="text-xl md:text-2xl font-black font-orbitron text-yellow-500">1st Place</span>
+                </div>
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800 text-center">
+                    <span class="text-xs text-slate-400 uppercase tracking-widest block">Difficulty</span>
+                    <span id="statDifficulty" class="text-xl md:text-2xl font-black font-orbitron text-emerald-400 uppercase">Medium</span>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button onclick="restartRace()" class="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-orbitron font-bold py-3.5 rounded-xl transition-all uppercase tracking-wide flex items-center justify-center gap-2">
+                    <i class="fas fa-redo"></i> Play Again
+                </button>
+                <button onclick="confirmQuit()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-orbitron font-bold py-3.5 rounded-xl transition-all uppercase tracking-wide flex items-center justify-center gap-2">
+                    <i class="fas fa-home"></i> Main Menu
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JAVASCRIPT GAME LOGIC -->
+    <script>
+        // Game States & Configurations
+        let activeTrackIdx = 0;
+        let selectedDifficulty = 'medium'; // easy, medium, hard
+        let selectedCarColor = '#ff3b30'; // red default
+        let soundEnabled = true;
+        let forceTouchDisplay = false; // forced toggle state for hybrid laptop users
+
+        // Web Audio Synthesizer variables
+        let audioCtx = null;
+        let engineOsc = null;
+        let engineGain = null;
+
+        // Visual effects variable
+        let screenShake = 0;
+
+        // Tracks Configuration Database (Designed inside 2400 x 2000 virtual coordinates)
+        const Tracks = [
+            {
+                name: "Alpine Meadow",
+                type: "grass",
+                bgColor: "#1b4d22", // beautiful deep grass green
+                trackColor: "#334155", // slate asphalt
+                curbColor1: "#ffffff",
+                curbColor2: "#ef4444",
+                laneWidth: 150,
+                laps: 3,
+                checkpoints: [
+                    {x: 400, y: 300},
+                    {x: 1000, y: 300},
+                    {x: 1800, y: 500},
+                    {x: 2100, y: 1000},
+                    {x: 1900, y: 1600},
+                    {x: 1200, y: 1700},
+                    {x: 500, y: 1400},
+                    {x: 300, y: 800}
+                ],
+                decorations: [
+                    {type: 'tree', x: 700, y: 360},
+                    {type: 'tree', x: 1400, y: 240},
+                    {type: 'tree', x: 2050, y: 800},
+                    {type: 'rock', x: 1500, y: 1580},
+                    {type: 'tree', x: 320, y: 1100},
+                    {type: 'rock', x: 900, y: 800}
+                ]
+            },
+            {
+                name: "Desert Dunes",
+                type: "desert",
+                bgColor: "#d97706", // warm golden sand
+                trackColor: "#451a03", // deep warm dirt canyon
+                curbColor1: "#ffffff",
+                curbColor2: "#f97316", // neon orange curb
+                laneWidth: 130,
+                laps: 3,
+                checkpoints: [
+                    {x: 400, y: 300},
+                    {x: 1200, y: 400},
+                    {x: 2000, y: 300},
+                    {x: 2100, y: 1100},
+                    {x: 1600, y: 1500},
+                    {x: 1100, y: 1200},
+                    {x: 700, y: 1700},
+                    {x: 300, y: 1100}
+                ],
+                decorations: [
+                    {type: 'cactus', x: 800, y: 430},
+                    {type: 'cactus', x: 1700, y: 350},
+                    {type: 'rock', x: 1800, y: 1250},
+                    {type: 'cactus', x: 1350, y: 1320},
+                    {type: 'rock', x: 500, y: 1500}
+                ]
+            },
+            {
+                name: "Cyber Drift",
+                type: "synth",
+                bgColor: "#090514", // dark retro cyber synth
+                trackColor: "#1e1b4b", // midnight purple lane
+                curbColor1: "#06b6d4", // glowing neon cyan
+                curbColor2: "#ec4899", // glowing neon pink
+                laneWidth: 110, // narrow, tech drift lanes
+                laps: 4,
+                checkpoints: [
+                    {x: 400, y: 300},
+                    {x: 1300, y: 300},
+                    {x: 1300, y: 900},
+                    {x: 2000, y: 900},
+                    {x: 2000, y: 1600},
+                    {x: 1100, y: 1600},
+                    {x: 1100, y: 1100},
+                    {x: 500, y: 1500},
+                    {x: 300, y: 900}
+                ],
+                decorations: [
+                    {type: 'pylon', x: 800, y: 340},
+                    {type: 'pylon', x: 1350, y: 600},
+                    {type: 'pylon', x: 1650, y: 940},
+                    {type: 'pylon', x: 1150, y: 1350},
+                    {type: 'pylon', x: 600, y: 800}
+                ]
+            }
+        ];
+
+        // System Initialization
+        window.addEventListener('load', () => {
+            selectTrack(0);
+            selectDifficulty('medium');
+            selectCarColor('#ff3b30');
+            setupInput();
+            setupTouchInput();
+            autoEvaluateTouchLayout();
+        });
+
+        // Determine when to show touch layout buttons
+        function autoEvaluateTouchLayout() {
+            const isTouchCapable = ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+            const mobileControls = document.getElementById('mobileControls');
+            const touchToggleBtn = document.getElementById('touchControlsToggle');
+
+            if (isTouchCapable || forceTouchDisplay) {
+                mobileControls.classList.remove('hidden');
+                touchToggleBtn.classList.remove('text-slate-500', 'border-slate-700');
+                touchToggleBtn.classList.add('text-blue-400', 'neon-border-blue', 'bg-slate-900/100');
+            } else {
+                mobileControls.classList.add('hidden');
+                touchToggleBtn.classList.remove('text-blue-400', 'neon-border-blue', 'bg-slate-900/100');
+                touchToggleBtn.classList.add('text-slate-500', 'border-slate-700');
+            }
+        }
+
+        // Force Manual Layout Override
+        document.getElementById('touchControlsToggle').addEventListener('click', (e) => {
+            e.stopPropagation();
+            forceTouchDisplay = !forceTouchDisplay;
+            autoEvaluateTouchLayout();
+        });
+
+        // Track Selection Logic
+        function selectTrack(idx) {
+            activeTrackIdx = idx;
+            document.querySelectorAll('.track-card').forEach((card, i) => {
+                if (i === idx) {
+                    card.classList.add('neon-border-pink', 'bg-slate-900/100');
+                    card.classList.remove('border-slate-800');
+                } else {
+                    card.classList.remove('neon-border-pink', 'bg-slate-900/100');
+                    card.classList.add('border-slate-800');
+                }
+            });
+        }
+
+        // Difficulty Selection Logic
+        function selectDifficulty(diff) {
+            selectedDifficulty = diff;
+            const btnEasy = document.getElementById('btnDiff-easy');
+            const btnMedium = document.getElementById('btnDiff-medium');
+            const btnHard = document.getElementById('btnDiff-hard');
+
+            [btnEasy, btnMedium, btnHard].forEach(btn => {
+                btn.className = "py-2.5 rounded-md font-orbitron text-xs font-bold uppercase tracking-wider transition-all text-slate-400 bg-transparent hover:text-white";
+            });
+
+            const activeBtn = document.getElementById(`btnDiff-${diff}`);
+            if (diff === 'easy') {
+                activeBtn.className = "py-2.5 rounded-md font-orbitron text-xs font-bold uppercase tracking-wider transition-all bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20";
+            } else if (diff === 'medium') {
+                activeBtn.className = "py-2.5 rounded-md font-orbitron text-xs font-bold uppercase tracking-wider transition-all bg-yellow-500 text-slate-950 shadow-md shadow-yellow-500/20";
+            } else {
+                activeBtn.className = "py-2.5 rounded-md font-orbitron text-xs font-bold uppercase tracking-wider transition-all bg-red-600 text-white shadow-md shadow-red-600/20";
+            }
+        }
+
+        // Car Color Picker
+        function selectCarColor(hexColor) {
+            selectedCarColor = hexColor;
+            
+            document.getElementById('colorIndicator').style.backgroundColor = hexColor;
+            document.getElementById('colorText').textContent = hexColor;
+
+            document.querySelectorAll("[id^='colorBtn-']").forEach(btn => {
+                if (btn.id === `colorBtn-${hexColor}`) {
+                    btn.style.borderColor = '#ffffff';
+                    btn.style.transform = 'scale(1.1)';
+                } else {
+                    btn.style.borderColor = 'transparent';
+                    btn.style.transform = 'scale(1.0)';
+                }
+            });
+        }
+
+        // Sound Engine Integrator (Web Audio API Synthesizer)
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            if (!engineOsc) {
+                engineOsc = audioCtx.createOscillator();
+                engineOsc.type = 'sawtooth';
+                engineOsc.frequency.setValueAtTime(45, audioCtx.currentTime); // baseline idle
+
+                const biquadFilter = audioCtx.createBiquadFilter();
+                biquadFilter.type = "lowpass";
+                biquadFilter.frequency.setValueAtTime(300, audioCtx.currentTime);
+
+                engineGain = audioCtx.createGain();
+                engineGain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+
+                engineOsc.connect(biquadFilter);
+                biquadFilter.connect(engineGain);
+                engineGain.connect(audioCtx.destination);
+                engineOsc.start();
+            }
+        }
+
+        // Sound Update Function
+        function updateEngineSFX(speedPercent, isDrifting = false) {
+            if (!soundEnabled || !engineGain || !engineOsc) return;
+
+            const targetFreq = 45 + (speedPercent * 210) + (isDrifting ? Math.random() * 30 - 15 : 0);
+            engineOsc.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.05);
+
+            const targetGain = 0.03 + (speedPercent * 0.12);
+            engineGain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.05);
+        }
+
+        // Crash SFX Engine
+        function playCrashSFX() {
+            if (!soundEnabled || !audioCtx) return;
+            try {
+                const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < noiseBuffer.length; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                const whiteNoise = audioCtx.createBufferSource();
+                whiteNoise.buffer = noiseBuffer;
+
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(500, audioCtx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.3);
+
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+                whiteNoise.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                whiteNoise.start();
+            } catch (err) {
+                console.log("SFX play failed", err);
+            }
+        }
+
+        document.getElementById('soundToggle').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            const soundIconSpan = document.getElementById('soundIcon');
+            if (soundEnabled) {
+                soundIconSpan.innerHTML = `
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                    </svg>
+                `;
+                if (engineGain) engineGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            } else {
+                soundIconSpan.innerHTML = `
+                    <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                    </svg>
+                `;
+                if (engineGain) engineGain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+            }
+        });
+
+
+        // GAME MECHANICS ENGINE
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let gameState = 'menu'; // menu, countdown, active, victory
+        let gameTime = 0; // ms
+        let countTimer = 3;
+        let animationFrameId = null;
+        let lastTime = 0;
+
+        // Steering Control State Tracker
+        const keys = {
+            up: false,
+            down: false,
+            left: false,
+            right: false,
+            drift: false
+        };
+
+        function setupInput() {
+            window.addEventListener('keydown', (e) => {
+                if (gameState === 'menu') return;
+                if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = true;
+                if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = true;
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+                if (e.key === ' ' || e.key === 'Shift') keys.drift = true;
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
+                if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = false;
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+                if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+                if (e.key === ' ' || e.key === 'Shift') keys.drift = false;
+            });
+        }
+
+        // Setup touch and mouse events using pointer listeners
+        function setupTouchInput() {
+            const btnLeft = document.getElementById('btnLeft');
+            const btnRight = document.getElementById('btnRight');
+            const btnGas = document.getElementById('btnGas');
+            const btnBrake = document.getElementById('btnBrake');
+
+            // Helper to bind robust Pointer events (works for mouse AND touch screen simultaneously)
+            function bindControl(element, pressKey, extraPressKey = null) {
+                element.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    element.releasePointerCapture(e.pointerId); // Prevent standard window drag block
+                    keys[pressKey] = true;
+                    if (extraPressKey) keys[extraPressKey] = true;
+                });
+                
+                const handleRelease = (e) => {
+                    e.preventDefault();
+                    keys[pressKey] = false;
+                    if (extraPressKey) keys[extraPressKey] = false;
+                };
+
+                element.addEventListener('pointerup', handleRelease);
+                element.addEventListener('pointercancel', handleRelease);
+                element.addEventListener('pointerleave', handleRelease);
+            }
+
+            bindControl(btnLeft, 'left');
+            bindControl(btnRight, 'right');
+            bindControl(btnGas, 'up');
+            bindControl(btnBrake, 'down', 'drift');
+        }
+
+        // Entity models
+        class PlayerCar {
+            constructor(x, y, angle, color) {
+                this.x = x;
+                this.y = y;
+                this.angle = angle; // heading direction in radians
+                this.speed = 0;
+                this.color = color;
+                
+                // Fine-tuned physics
+                this.maxSpeed = 9.5;
+                this.accel = 0.08;
+                this.friction = 0.03;
+                this.turnSpeed = 0.045;
+                this.driftTurnSpeed = 0.065;
+                
+                this.lap = 1;
+                this.currentCheckpointIdx = 0;
+                this.isDrifting = false;
+                this.driftFactor = 0.85; // how much slide is kept
+                this.lastCrashTime = 0;
+            }
+
+            update(track) {
+                // Acceleration
+                if (keys.up) {
+                    this.speed = Math.min(this.speed + this.accel, this.maxSpeed);
+                } else if (keys.down) {
+                    this.speed = Math.max(this.speed - this.accel * 1.5, -this.maxSpeed * 0.4);
+                } else {
+                    // Engine drag braking
+                    if (this.speed > 0) this.speed = Math.max(this.speed - this.friction, 0);
+                    else if (this.speed < 0) this.speed = Math.min(this.speed + this.friction, 0);
+                }
+
+                // Drift detection & steering logic
+                this.isDrifting = keys.drift && Math.abs(this.speed) > 2;
+                const currentTurnSpeed = this.isDrifting ? this.driftTurnSpeed : this.turnSpeed;
+
+                if (keys.left) {
+                    this.angle -= currentTurnSpeed * (this.speed / this.maxSpeed);
+                }
+                if (keys.right) {
+                    this.angle += currentTurnSpeed * (this.speed / this.maxSpeed);
+                }
+
+                // Apply slide velocity vector if drifting
+                let dx = Math.cos(this.angle) * this.speed;
+                let dy = Math.sin(this.angle) * this.speed;
+
+                if (this.isDrifting) {
+                    // Blending current direction with slightly delayed heading
+                    const driftAngle = this.angle - (keys.left ? -0.15 : 0.15);
+                    dx = (dx * this.driftFactor) + (Math.cos(driftAngle) * this.speed * (1 - this.driftFactor));
+                    dy = (dy * this.driftFactor) + (Math.sin(driftAngle) * this.speed * (1 - this.driftFactor));
+                }
+
+                this.x += dx;
+                this.y += dy;
+
+                // Simple Track Boundary Collision & Checkpoints
+                this.resolveBoundariesAndCheckpoints(track);
+                
+                // Resolve Obstacle Collisions
+                resolveObstacleCollisions(this, track);
+            }
+
+            resolveBoundariesAndCheckpoints(track) {
+                // Find nearest distance to track center spline segments
+                let minDistance = Infinity;
+                let nearestSegIdx = 0;
+
+                for (let i = 0; i < track.checkpoints.length; i++) {
+                    const cp1 = track.checkpoints[i];
+                    const cp2 = track.checkpoints[(i + 1) % track.checkpoints.length];
+                    
+                    const dist = distToSegment({x: this.x, y: this.y}, cp1, cp2);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        nearestSegIdx = i;
+                    }
+                }
+
+                // If player leaves track lanes, slow down drastically and vibrate visual
+                if (minDistance > track.laneWidth) {
+                    this.speed = Math.max(this.speed * 0.94, 0.8);
+                    
+                    const now = Date.now();
+                    if (now - this.lastCrashTime > 1200) {
+                        playCrashSFX();
+                        screenShake = Math.max(screenShake, 6); // visual shake on offroad slip
+                        this.lastCrashTime = now;
+                    }
+                }
+
+                // Checkpoint passage detection
+                const targetCpIdx = (this.currentCheckpointIdx + 1) % track.checkpoints.length;
+                const targetCp = track.checkpoints[targetCpIdx];
+                const distanceToNextCp = Math.hypot(this.x - targetCp.x, this.y - targetCp.y);
+
+                if (distanceToNextCp < track.laneWidth + 40) {
+                    this.currentCheckpointIdx = targetCpIdx;
+                    
+                    // Finished lap check
+                    if (this.currentCheckpointIdx === 0) {
+                        this.lap++;
+                        document.getElementById('hudLap').textContent = `${Math.min(this.lap, track.laps)}/${track.laps}`;
+                        
+                        if (this.lap > track.laps) {
+                            endRace(true);
+                        }
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                // Drift skidmarks visual
+                if (this.isDrifting) {
+                    ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+                    ctx.fillRect(-22, -12, 10, 4);
+                    ctx.fillRect(-22, 8, 10, 4);
+                }
+
+                // Car Body Shadow
+                ctx.fillStyle = "rgba(0,0,0,0.3)";
+                ctx.fillRect(-18, -8, 38, 18);
+
+                // Car Chassis Main Theme
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.roundRect(-20, -10, 40, 20, 5);
+                ctx.fill();
+
+                // Windshield / Cabin Glass
+                ctx.fillStyle = "#1e293b";
+                ctx.fillRect(-4, -7, 12, 14);
+                ctx.fillStyle = "#38bdf8"; // cyan glow inside cockpit
+                ctx.fillRect(0, -6, 6, 12);
+
+                // Racing stripes
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(-20, -3, 10, 2);
+                ctx.fillRect(-20, 1, 10, 2);
+
+                // Headlights
+                ctx.fillStyle = "#fef08a";
+                ctx.fillRect(18, -9, 3, 4);
+                ctx.fillRect(18, 5, 3, 4);
+
+                // Rear Spoiler
+                ctx.fillStyle = "#0f172a";
+                ctx.fillRect(-23, -12, 5, 24);
+
+                ctx.restore();
+            }
+        }
+
+        // Rival AI Cars simulation with dynamic Racing Lines & Mistake system
+        class AICar {
+            constructor(track, idx, color, speedMultiplier) {
+                this.track = track;
+                this.idx = idx;
+                this.color = color;
+                this.speedMultiplier = speedMultiplier; // easy, medium, hard adjustments
+                this.targetCpIdx = 1;
+                
+                // AI placement
+                const startCp = track.checkpoints[0];
+                this.x = startCp.x + (idx * 40) - 60;
+                this.y = startCp.y + (idx * 30) - 45;
+                this.angle = 0;
+                this.speed = 4.5 + Math.random() * 2;
+                this.lap = 1;
+
+                // Dynamic driving parameters
+                this.targetX = startCp.x;
+                this.targetY = startCp.y;
+                this.mistakeAngleOffset = 0;
+                this.currentMistakeOffset = 0;
+                this.isMakingMistake = false;
+            }
+
+            // Calculate human-like lines and cornering errors
+            setNextTarget() {
+                const current = this.track.checkpoints[(this.targetCpIdx - 1 + this.track.checkpoints.length) % this.track.checkpoints.length];
+                const target = this.track.checkpoints[this.targetCpIdx];
+                
+                // Vector coordinates of target checkpoint segment
+                const dx = target.x - current.x;
+                const dy = target.y - current.y;
+                const len = Math.hypot(dx, dy);
+                
+                // Perpendicular vector for shifting side-to-side (Racing Lines!)
+                const px = -dy / len;
+                const py = dx / len;
+                
+                // Maximum shift off center based on difficulty
+                let maxLineShift = this.track.laneWidth * 0.5;
+                if (selectedDifficulty === 'easy') maxLineShift = this.track.laneWidth * 0.75;
+                
+                // Random position line on this checkpoint segment
+                const offsetDistance = (Math.random() * 2 - 1) * maxLineShift;
+                
+                this.targetX = target.x + (px * offsetDistance);
+                this.targetY = target.y + (py * offsetDistance);
+                
+                // Calculate chance to miss turn apex and slip off track
+                this.isMakingMistake = false;
+                let mistakeChance = 0.15; // 15% on Medium
+                if (selectedDifficulty === 'easy') mistakeChance = 0.35; // 35% on Easy
+                if (selectedDifficulty === 'hard') mistakeChance = 0.04; // 4% on Pro/Hard
+                
+                if (Math.random() < mistakeChance) {
+                    this.isMakingMistake = true;
+                    // Creates an offset drift direction to slide onto grass
+                    this.mistakeAngleOffset = (Math.random() * 2 - 1) * 0.55; 
+                } else {
+                    this.mistakeAngleOffset = 0;
+                }
+            }
+
+            update() {
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                const dist = Math.hypot(dx, dy);
+
+                // Smoothly blend steering target offsets
+                this.currentMistakeOffset += (this.mistakeAngleOffset - this.currentMistakeOffset) * 0.05;
+
+                // Steer towards targeted dynamic coordinates
+                const targetAngle = Math.atan2(dy, dx) + this.currentMistakeOffset;
+                let angleDiff = targetAngle - this.angle;
+
+                // Normalize angle
+                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+
+                // Steering precision depends on difficulty (Easy reacts slower, slips wider)
+                let steerFactor = 0.06;
+                if (selectedDifficulty === 'easy') steerFactor = 0.035; 
+                if (selectedDifficulty === 'hard') steerFactor = 0.085; 
+
+                this.angle += angleDiff * steerFactor;
+
+                // Check if AI went off-road onto Grass/Sand
+                let minDistance = Infinity;
+                for (let i = 0; i < this.track.checkpoints.length; i++) {
+                    const cp1 = this.track.checkpoints[i];
+                    const cp2 = this.track.checkpoints[(i + 1) % this.track.checkpoints.length];
+                    const d = distToSegment({x: this.x, y: this.y}, cp1, cp2);
+                    if (d < minDistance) {
+                        minDistance = d;
+                    }
+                }
+
+                const isOffRoad = minDistance > this.track.laneWidth;
+
+                // Adjust speed limits based on difficulty and track friction
+                let topSpeed = 6.2 * this.speedMultiplier;
+                if (selectedDifficulty === 'easy') topSpeed = 4.8;
+                if (selectedDifficulty === 'hard') topSpeed = 8.5;
+
+                if (isOffRoad) {
+                    // Severe deceleration when sliding in grass/sand traps!
+                    topSpeed *= 0.42; 
+                    this.speed = Math.max(this.speed - 0.22, topSpeed);
+                } else {
+                    this.speed = Math.min(this.speed + 0.05, topSpeed);
+                }
+
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+
+                // Arrive at Checkpoint
+                if (dist < 165) {
+                    this.targetCpIdx = (this.targetCpIdx + 1) % this.track.checkpoints.length;
+                    if (this.targetCpIdx === 0) {
+                        this.lap++;
+                    }
+                    this.setNextTarget();
+                }
+
+                // Resolve Obstacle Collisions for AI
+                resolveObstacleCollisions(this, this.track);
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                // Shadow
+                ctx.fillStyle = "rgba(0,0,0,0.3)";
+                ctx.fillRect(-18, -8, 38, 18);
+
+                // Body
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.roundRect(-20, -10, 40, 20, 5);
+                ctx.fill();
+
+                // Roof/Glass
+                ctx.fillStyle = "#0f172a";
+                ctx.fillRect(-3, -7, 11, 14);
+
+                // Spoiler
+                ctx.fillStyle = "#ef4444";
+                ctx.fillRect(-22, -11, 4, 22);
+
+                ctx.restore();
+            }
+        }
+
+        // Global Physical Obstacles Collision Resolver
+        function resolveObstacleCollisions(entity, track) {
+            track.decorations.forEach(dec => {
+                let rad = 15;
+                if (dec.type === 'rock') rad = 25;
+                if (dec.type === 'tree') rad = 24;
+                if (dec.type === 'cactus') rad = 16;
+                if (dec.type === 'pylon') rad = 18;
+
+                const entityRadius = 14; 
+                const dx = entity.x - dec.x;
+                const dy = entity.y - dec.y;
+                const dist = Math.hypot(dx, dy);
+                const minDist = rad + entityRadius;
+
+                if (dist < minDist) {
+                    // Push out of obstacle bounds
+                    const pushX = (dx / dist) * (minDist - dist);
+                    const pushY = (dy / dist) * (minDist - dist);
+                    entity.x += pushX;
+                    entity.y += pushY;
+
+                    // Bounce velocity backward
+                    entity.speed = -entity.speed * 0.3;
+
+                    // Spawn colorful particle sparks matching obstacle material
+                    let sparkColor = '#94a3b8'; // Slate grey for rocks
+                    if (dec.type === 'pylon') sparkColor = '#ec4899'; // Neon pink
+                    if (dec.type === 'tree') sparkColor = '#15803d'; // Green leaf
+                    if (dec.type === 'cactus') sparkColor = '#16a34a'; // Light green cactus
+
+                    for (let s = 0; s < 8; s++) {
+                        particles.push({
+                            x: entity.x,
+                            y: entity.y,
+                            vx: (Math.random() * 2 - 1) * 3,
+                            vy: (Math.random() * 2 - 1) * 3,
+                            color: sparkColor,
+                            life: 1.0
+                        });
+                    }
+
+                    // Play crash sound effect only for player
+                    if (entity === player) {
+                        const now = Date.now();
+                        screenShake = Math.max(screenShake, 15); // Add visceral crash screen-shake!
+                        if (now - entity.lastCrashTime > 800) {
+                            playCrashSFX();
+                            entity.lastCrashTime = now;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Distance check utilities
+        function distToSegment(p, v, w) {
+            const l2 = Math.pow(v.x - w.x, 2) + Math.pow(v.y - w.y, 2);
+            if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
+            let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+        }
+
+
+        // MAIN GAME STATE CONTROLLERS
+        let player = null;
+        let aiRivals = [];
+        let particles = [];
+        let activeTrack = null;
+
+        function startGame() {
+            // Initiate Web Audio synthetic track/engine noise
+            initAudio();
+
+            activeTrack = Tracks[activeTrackIdx];
+            
+            // Build player and AI opponents
+            const startCp = activeTrack.checkpoints[0];
+            player = new PlayerCar(startCp.x, startCp.y + 40, 0, selectedCarColor);
+
+            aiRivals = [];
+            particles = []; // Clear old particles
+            let aiColors = ["#3b82f6", "#eab308", "#a855f7", "#10b981"];
+            let diffMultipliers = { easy: 0.8, medium: 1.0, hard: 1.2 };
+            
+            for (let i = 0; i < 3; i++) {
+                const ai = new AICar(
+                    activeTrack, 
+                    i + 1, 
+                    aiColors[i % aiColors.length], 
+                    diffMultipliers[selectedDifficulty]
+                );
+                ai.setNextTarget(); // Initial racing line calculation
+                aiRivals.push(ai);
+            }
+
+            // HUD configuration updates
+            document.getElementById('hudLap').textContent = `1/${activeTrack.laps}`;
+            document.getElementById('hudTime').textContent = "00:00.0";
+            
+            // Layout views swapping
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('gamePlayground').classList.remove('hidden');
+
+            resizeCanvas();
+
+            // Fire starting countdown state sequence
+            gameState = 'countdown';
+            countTimer = 3;
+            document.getElementById('countdownOverlay').classList.remove('hidden');
+            document.getElementById('countdownText').textContent = "3";
+            
+            lastTime = performance.now();
+            gameTime = 0;
+
+            const countdownInterval = setInterval(() => {
+                countTimer--;
+                if (countTimer > 0) {
+                    document.getElementById('countdownText').textContent = countTimer;
+                } else if (countTimer === 0) {
+                    document.getElementById('countdownText').textContent = "RACE!";
+                    gameState = 'active';
+                } else {
+                    document.getElementById('countdownOverlay').classList.add('hidden');
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+
+            // Trigger animation thread loop
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+
+        // PRIMARY ANIMATION LOOP
+        function gameLoop(timestamp) {
+            if (gameState === 'menu') return;
+
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            if (gameState === 'active') {
+                gameTime += dt;
+                updateGame(dt);
+            }
+
+            renderGame();
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        // Logical Update Cycle
+        function updateGame(dt) {
+            // Player updates
+            player.update(activeTrack);
+
+            // Rivals simulation
+            aiRivals.forEach(ai => ai.update());
+
+            // Handle engine pitch and velocity HUD updates
+            const speedPercent = Math.abs(player.speed) / player.maxSpeed;
+            updateEngineSFX(speedPercent, player.isDrifting);
+
+            const displaySpeed = Math.round(speedPercent * 280);
+            
+            // Sync Desktop & Mobile separate speed displays
+            document.getElementById('hudSpeed').textContent = String(displaySpeed).padStart(3, '0');
+            document.getElementById('hudSpeedMobile').textContent = String(displaySpeed).padStart(3, '0');
+
+            // Rev gauge indicator (Desktop)
+            for (let i = 0; i < 5; i++) {
+                const bar = document.getElementById(`revBar-${i}`);
+                if (bar) {
+                    bar.style.opacity = (speedPercent * 5 > i) ? '1' : '0.2';
+                }
+            }
+
+            // Rev gauge indicator (Mobile)
+            for (let i = 0; i < 3; i++) {
+                const bar = document.getElementById(`revBarMobile-${i}`);
+                if (bar) {
+                    bar.style.opacity = (speedPercent * 3 > i) ? '1' : '0.2';
+                }
+            }
+
+            // Real-time particle lifespans
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.04;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Decay screen shake over time
+            if (screenShake > 0.1) {
+                screenShake *= 0.88;
+            } else {
+                screenShake = 0;
+            }
+
+            // Real-time racing position solver
+            let playersList = [{name: 'Player', lap: player.lap, cp: player.currentCheckpointIdx, obj: player}];
+            aiRivals.forEach((ai, idx) => {
+                playersList.push({name: `Rival ${idx + 1}`, lap: ai.lap, cp: ai.targetCpIdx, obj: ai});
+            });
+
+            // Sort by absolute race progression (high laps and high checkpoints are leading)
+            playersList.sort((a, b) => {
+                if (a.lap !== b.lap) return b.lap - a.lap;
+                return b.cp - a.cp;
+            });
+
+            const playerRank = playersList.findIndex(p => p.name === 'Player') + 1;
+            let rankSuffix = "th";
+            if (playerRank === 1) rankSuffix = "st";
+            if (playerRank === 2) rankSuffix = "nd";
+            if (playerRank === 3) rankSuffix = "rd";
+            
+            document.getElementById('hudPos').textContent = `${playerRank}${rankSuffix}`;
+
+            // Track time HUD clock updates
+            const secondsTotal = gameTime / 1000;
+            const minutes = Math.floor(secondsTotal / 60);
+            const seconds = Math.floor(secondsTotal % 60);
+            const deciseconds = Math.floor((gameTime % 1000) / 100);
+            document.getElementById('hudTime').textContent = 
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${deciseconds}`;
+        }
+
+        // Render visual frame inside canvas using a Camera centered over player
+        function renderGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Adaptive scale factor: Zoom in more on mobile portrait/narrow viewports
+            const isMobileView = (canvas.width < 768);
+            const cameraZoom = isMobileView ? 0.70 : 1.0;
+
+            // Calculate camera transform coordinates taking scale zoom factor into account
+            const camX = player.x - (canvas.width / cameraZoom) / 2;
+            const camY = player.y - (canvas.height / cameraZoom) / 2;
+
+            ctx.save();
+            // Apply camera dynamic scale
+            ctx.scale(cameraZoom, cameraZoom);
+
+            // Visceral visual Screen Shake translation offset
+            if (screenShake > 0.1) {
+                const shakeX = (Math.random() - 0.5) * screenShake;
+                const shakeY = (Math.random() - 0.5) * screenShake;
+                ctx.translate(shakeX, shakeY);
+            }
+
+            ctx.translate(-camX, -camY);
+
+            // 1. Render Terrain Background (Grid floor)
+            ctx.fillStyle = activeTrack.bgColor;
+            ctx.fillRect(0, 0, 2400, 2000);
+
+            // Visual grid look for Synthetic/Retro-city tracks
+            if (activeTrack.type === 'synth') {
+                ctx.strokeStyle = "rgba(109, 40, 217, 0.25)";
+                ctx.lineWidth = 1;
+                for (let x = 0; x < 2400; x += 60) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, 2000);
+                    ctx.stroke();
+                }
+                for (let y = 0; y < 2000; y += 60) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(2400, y);
+                    ctx.stroke();
+                }
+            }
+
+            // 2. Render Track road using connecting checkpoints curves
+            ctx.strokeStyle = activeTrack.trackColor;
+            ctx.lineWidth = activeTrack.laneWidth * 2;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            
+            ctx.beginPath();
+            activeTrack.checkpoints.forEach((cp, idx) => {
+                if (idx === 0) ctx.moveTo(cp.x, cp.y);
+                else ctx.lineTo(cp.x, cp.y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+
+            // 3. Render Curbs / Track Edges
+            ctx.strokeStyle = activeTrack.curbColor1;
+            ctx.lineWidth = activeTrack.laneWidth * 2 + 15;
+            ctx.setLineDash([30, 30]); // alternating dash lines
+            ctx.beginPath();
+            activeTrack.checkpoints.forEach((cp, idx) => {
+                if (idx === 0) ctx.moveTo(cp.x, cp.y);
+                else ctx.lineTo(cp.x, cp.y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+
+            ctx.strokeStyle = activeTrack.curbColor2;
+            ctx.lineWidth = activeTrack.laneWidth * 2 + 15;
+            ctx.setLineDash([30, 30]);
+            ctx.lineDashOffset = 30; // offset dash for dual alternate colors
+            ctx.beginPath();
+            activeTrack.checkpoints.forEach((cp, idx) => {
+                if (idx === 0) ctx.moveTo(cp.x, cp.y);
+                else ctx.lineTo(cp.x, cp.y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+
+            ctx.setLineDash([]); // Reset dash state
+
+            // 4. Draw Center Lane Guidance lines
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+            ctx.lineWidth = 4;
+            ctx.setLineDash([20, 20]);
+            ctx.beginPath();
+            activeTrack.checkpoints.forEach((cp, idx) => {
+                if (idx === 0) ctx.moveTo(cp.x, cp.y);
+                else ctx.lineTo(cp.x, cp.y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 5. Draw Start / Finish Banner Checkered overlay
+            const startCp = activeTrack.checkpoints[0];
+            const secondCp = activeTrack.checkpoints[1];
+            const startAngle = Math.atan2(secondCp.y - startCp.y, secondCp.x - startCp.x);
+
+            ctx.save();
+            ctx.translate(startCp.x, startCp.y);
+            ctx.rotate(startAngle + Math.PI/2);
+            
+            // Draw checkered bar
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(-activeTrack.laneWidth, -8, activeTrack.laneWidth * 2, 16);
+            ctx.fillStyle = "#000000";
+            for (let w = -activeTrack.laneWidth; w < activeTrack.laneWidth; w += 20) {
+                ctx.fillRect(w, -8, 10, 8);
+                ctx.fillRect(w + 10, 0, 10, 8);
+            }
+            ctx.restore();
+
+            // 6. Draw Track obstacles / environmental objects
+            activeTrack.decorations.forEach(dec => {
+                drawDecoration(dec);
+            });
+
+            // 7. Draw Player and AI Cars
+            aiRivals.forEach(ai => ai.draw());
+            player.draw();
+
+            // 8. Draw Particle sparks on top of vehicles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+
+            ctx.restore();
+        }
+
+        // Draw track decoration vectors based on types
+        function drawDecoration(dec) {
+            ctx.save();
+            ctx.translate(dec.x, dec.y);
+
+            if (dec.type === 'tree') {
+                // Trunk
+                ctx.fillStyle = "#451a03";
+                ctx.fillRect(-6, -6, 12, 12);
+                // Foliage layers
+                ctx.fillStyle = "#15803d";
+                ctx.beginPath();
+                ctx.arc(0, -5, 30, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "#166534";
+                ctx.beginPath();
+                ctx.arc(10, -10, 20, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (dec.type === 'cactus') {
+                // Simple warm biome cactus plant
+                ctx.fillStyle = "#166534";
+                ctx.fillRect(-5, -25, 10, 45);
+                ctx.fillRect(-20, -12, 15, 8);
+                ctx.fillRect(-20, -22, 8, 10);
+                ctx.fillRect(5, 0, 15, 8);
+                ctx.fillRect(12, -10, 8, 10);
+            } else if (dec.type === 'rock') {
+                // Multi-faced grey boulders
+                ctx.fillStyle = "#64748b";
+                ctx.beginPath();
+                ctx.moveTo(-25, 10);
+                ctx.lineTo(-10, -20);
+                ctx.lineTo(20, -15);
+                ctx.lineTo(25, 15);
+                ctx.lineTo(0, 25);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = "#475569"; // shadows on face
+                ctx.beginPath();
+                ctx.moveTo(0, 25);
+                ctx.lineTo(-10, -20);
+                ctx.lineTo(-25, 10);
+                ctx.closePath();
+                ctx.fill();
+            } else if (dec.type === 'pylon') {
+                // Neon futuristic city tower cylinders
+                ctx.fillStyle = "#1e1b4b";
+                ctx.beginPath();
+                ctx.arc(0, 0, 25, 0, Math.PI*2);
+                ctx.fill();
+                // Inner cyber neon core glow
+                ctx.fillStyle = "#ec4899";
+                ctx.beginPath();
+                ctx.arc(0, 0, 15, 0, Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = "#06b6d4";
+                ctx.beginPath();
+                ctx.arc(0, 0, 6, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+
+        // PAUSE & GAME OVER OVERLAYS CONTROL
+        function showQuitConfirmation() {
+            // Mute active synthesizer
+            if (engineGain) engineGain.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.1);
+            document.getElementById('quitModal').classList.remove('hidden');
+        }
+
+        function cancelQuit() {
+            document.getElementById('quitModal').classList.add('hidden');
+            // Unmute synthesizer
+            if (soundEnabled && engineGain) {
+                engineGain.gain.setTargetAtTime(0.08, audioCtx.currentTime, 0.1);
+            }
+        }
+
+        function confirmQuit() {
+            gameState = 'menu';
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            
+            // Stop sound
+            if (engineGain) engineGain.gain.setValueAtTime(0.0, audioCtx.currentTime);
+
+            document.getElementById('quitModal').classList.add('hidden');
+            document.getElementById('postGameScreen').classList.add('hidden');
+            document.getElementById('gamePlayground').classList.add('hidden');
+            document.getElementById('mainMenu').classList.remove('hidden');
+        }
+
+        function endRace(isVictory) {
+            gameState = 'victory';
+            if (engineGain) engineGain.gain.setTargetAtTime(0.0, audioCtx.currentTime, 0.2);
+
+            // Calculate final times and best lap metrics
+            const totalSeconds = gameTime / 1000;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const deciseconds = Math.floor((gameTime % 1000) / 100);
+            const totalStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${deciseconds}`;
+
+            // Fake Best Lap time logic calculated roughly from average speed
+            const bestLapSeconds = (totalSeconds / activeTrack.laps) - (Math.random() * 2 + 1);
+            const blMinutes = Math.floor(bestLapSeconds / 60);
+            const blSeconds = Math.floor(bestLapSeconds % 60);
+            const blDeciseconds = Math.floor((bestLapSeconds * 10) % 10);
+            const bestLapStr = `${String(blMinutes).padStart(2, '0')}:${String(blSeconds).padStart(2, '0')}.${blDeciseconds}`;
+
+            // Fetch rank
+            const currentRankText = document.getElementById('hudPos').textContent;
+
+            // Apply results to presentation layout screen
+            document.getElementById('statTime').textContent = totalStr;
+            document.getElementById('statBestLap').textContent = bestLapStr;
+            document.getElementById('statRank').textContent = currentRankText;
+            document.getElementById('statDifficulty').textContent = selectedDifficulty;
+
+            // Setup trophy color visuals based on position rank
+            const trophy = document.getElementById('trophyIcon');
+            if (currentRankText === "1st") {
+                document.getElementById('postGameTitle').textContent = "GRAND CHAMPION!";
+                trophy.className = "text-6xl text-yellow-400 mb-4";
+            } else {
+                document.getElementById('postGameTitle').textContent = "RACE CONCLUDED";
+                trophy.className = "text-6xl text-slate-400 mb-4";
+            }
+
+            document.getElementById('postGameScreen').classList.remove('hidden');
+        }
+
+        function restartRace() {
+            document.getElementById('postGameScreen').classList.add('hidden');
+            startGame();
+        }
+    </script>
+</body>
+</html>
