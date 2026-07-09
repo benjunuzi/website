@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Optimized viewport meta to prevent accidental scaling and zooming on mobile browsers -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Endless Touchdown: Gridiron Hero</title>
+    <!-- Tailwind CSS for modern HUD & UI layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font for arcade theme -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0b0f19;
+            font-family: 'Rajdhani', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            /* Disable pull-to-refresh and elastic bounce-back scrolling on mobile devices */
+            overscroll-behavior: none;
+            touch-action: none;
+        }
+        .arcade-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+        canvas {
+            image-rendering: pixelated;
+            aspect-ratio: 9 / 14;
+            /* Disable default browser touch gestures on the canvas */
+            touch-action: none;
+        }
+        /* Pulse animations for UI elements */
+        .glow-button {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+            transition: all 0.2s ease;
+        }
+        .glow-button:hover {
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.8);
+            transform: scale(1.03);
+        }
+        /* Mobile touch button feedback active states */
+        .touch-active:active {
+            background-color: rgb(30, 58, 138) !important;
+            transform: scale(0.95);
+        }
+        .spin-active:active {
+            background-color: rgb(234, 179, 8) !important;
+            color: black !important;
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-2 md:p-4 text-white overflow-hidden">
+
+    <!-- Container for dynamic scaling -->
+    <div class="relative w-full max-w-[420px] flex flex-col items-center bg-gray-900/85 rounded-2xl border-4 border-blue-500 shadow-2xl p-3 md:p-4 gap-2">
+        
+        <!-- Header HUD -->
+        <div class="w-full flex justify-between items-center px-2">
+            <div class="flex flex-col">
+                <span class="text-xs text-blue-400 font-bold uppercase tracking-wider">Gridiron Hero</span>
+                <h1 class="text-xl font-extrabold text-white tracking-wide leading-none">ENDLESS TOUCHDOWN</h1>
+            </div>
+            <!-- High Score Badge -->
+            <div class="bg-blue-950/80 border border-blue-500 px-3 py-1 rounded-lg text-right">
+                <div class="text-[9px] text-gray-400 uppercase tracking-widest">Best Yards</div>
+                <div id="highScoreText" class="text-md font-bold text-yellow-400">0 YDS</div>
+            </div>
+        </div>
+
+        <!-- Canvas Container - Using w-fit and responsive constraints to prevent vertical cutoff -->
+        <div class="relative w-fit mx-auto rounded-xl overflow-hidden border-2 border-gray-700 bg-emerald-900 flex justify-center items-center">
+            <canvas id="gameCanvas" width="450" height="700" class="max-h-[48vh] xs:max-h-[50vh] sm:max-h-[58vh] md:max-h-[60vh] w-auto aspect-[9/14] block"></canvas>
+            
+            <!-- In-Game UI Overlay (HUD overlay) -->
+            <div id="hudOverlay" class="absolute top-3 left-3 pointer-events-none flex flex-col gap-1.5">
+                <!-- Live Score -->
+                <div class="bg-black/70 px-2.5 py-1 rounded-lg border border-white/20 flex items-center gap-1.5 w-fit">
+                    <span class="text-[10px] text-gray-300">YARDS:</span>
+                    <span id="hudYards" class="text-md font-black text-white">0</span>
+                </div>
+                <!-- Spin Cooldown Bar -->
+                <div class="bg-black/70 p-1.5 rounded-lg border border-white/20 flex flex-col gap-0.5 w-28">
+                    <div class="flex justify-between text-[8px] font-bold">
+                        <span id="spinLabel" class="text-yellow-400">JUKE SPIN</span>
+                        <span id="spinPercent">100%</span>
+                    </div>
+                    <div class="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                        <div id="spinProgress" class="bg-yellow-400 h-full transition-all duration-75" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <!-- Active Powerup Indicators -->
+                <div id="activeBuffs" class="flex gap-1"></div>
+            </div>
+
+            <!-- Start / Main Menu Screen Overlay -->
+            <div id="startScreen" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center p-4 text-center z-10">
+                <div class="arcade-font text-lg text-blue-400 mb-1 animate-pulse">GRIDIRON HERO</div>
+                <p class="text-gray-400 text-xs max-w-xs mb-4">
+                    Steer your runner, grab items, dodge defenders, and cross touchdown lines!
+                </p>
+
+                <!-- Customizations -->
+                <div class="w-full bg-gray-800/60 rounded-xl p-3 border border-gray-700 mb-4">
+                    <h3 class="text-xs font-bold text-gray-300 uppercase mb-2">Choose Jersey Color</h3>
+                    <div class="flex justify-center gap-3">
+                        <button onclick="setPlayerColor('#1e40af')" class="w-8 h-8 rounded-full bg-[#1e40af] border-2 border-white focus:outline-none focus:ring-4 ring-blue-300 transition-transform hover:scale-110" title="Home Blue"></button>
+                        <button onclick="setPlayerColor('#15803d')" class="w-8 h-8 rounded-full bg-[#15803d] border-2 border-transparent focus:outline-none focus:ring-4 ring-green-300 transition-transform hover:scale-110" title="Away Green"></button>
+                        <button onclick="setPlayerColor('#eab308')" class="w-8 h-8 rounded-full bg-[#eab308] border-2 border-transparent focus:outline-none focus:ring-4 ring-amber-300 transition-transform hover:scale-110" title="Gold Rush"></button>
+                        <button onclick="setPlayerColor('#a21caf')" class="w-8 h-8 rounded-full bg-[#a21caf] border-2 border-transparent focus:outline-none focus:ring-4 ring-purple-300 transition-transform hover:scale-110" title="Purple Pride"></button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2 w-full">
+                    <button id="startButton" class="glow-button w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-md font-bold tracking-widest uppercase transition-all">
+                        Kick Off Game
+                    </button>
+                    <button id="startLeaderboardButton" class="w-full py-2 bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-xl text-sm font-bold tracking-wide uppercase transition-all">
+                        Leaderboard
+                    </button>
+                </div>
+                <div class="mt-3 text-[10px] text-gray-500">
+                    Press <span class="bg-gray-700 text-gray-300 px-1 rounded font-mono">SPACE</span> or tap screen sides to steer / juke!
+                </div>
+            </div>
+
+            <!-- Arcade Initials Entry Screen Overlay (Shows on Top 5 Score) -->
+            <div id="initialsScreen" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center p-4 text-center z-20 hidden">
+                <div class="arcade-font text-md text-yellow-400 mb-2 animate-pulse">NEW HIGH SCORE!</div>
+                <div class="text-xs text-gray-400 uppercase tracking-widest mb-4">Enter your initials for the leaderboard</div>
+
+                <div class="flex justify-center gap-2 mb-6">
+                    <input type="text" id="initialsInput" maxlength="3" placeholder="HER" class="w-28 text-center py-2 bg-gray-800 border-2 border-yellow-500 rounded-xl text-xl font-bold tracking-widest text-yellow-400 uppercase focus:outline-none focus:ring-2 focus:ring-yellow-300" />
+                </div>
+
+                <button id="submitScoreButton" class="glow-button w-full max-w-xs py-3 bg-yellow-500 hover:bg-yellow-400 text-black rounded-xl text-sm font-bold tracking-widest uppercase transition-all">
+                    Submit Score
+                </button>
+            </div>
+
+            <!-- Leaderboard Display Panel Overlay -->
+            <div id="leaderboardScreen" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center p-4 text-center z-20 hidden">
+                <div class="arcade-font text-lg text-blue-400 mb-3 uppercase tracking-wide">LEADERBOARD</div>
+                
+                <div class="w-full max-w-xs bg-gray-900/90 rounded-xl border border-gray-800 p-3 mb-4 flex flex-col gap-2">
+                    <div class="grid grid-cols-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800 pb-1.5 px-2">
+                        <span>Rank</span>
+                        <span>Name</span>
+                        <span class="text-right">Yards</span>
+                        <span class="text-right">TDs</span>
+                    </div>
+                    <div id="leaderboardRows" class="flex flex-col gap-2">
+                        <!-- Dynamic Leaderboard Data -->
+                    </div>
+                </div>
+
+                <button id="closeLeaderboardButton" class="glow-button w-full max-w-xs py-2 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm font-bold tracking-widest uppercase transition-all">
+                    Go Back
+                </button>
+            </div>
+
+            <!-- Game Over Screen Overlay -->
+            <div id="gameOverScreen" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center p-4 text-center z-10 hidden">
+                <div class="arcade-font text-xl text-red-500 mb-1 animate-bounce">TACKLED!</div>
+                <div class="text-gray-400 text-xs uppercase tracking-widest mb-4">Down at the play line</div>
+
+                <div class="grid grid-cols-2 gap-2 w-full max-w-xs mb-4 bg-gray-800/40 p-3 rounded-xl border border-gray-700">
+                    <div>
+                        <div class="text-[9px] text-gray-400 uppercase">Yards Gained</div>
+                        <div id="statYards" class="text-lg font-black text-white">0 YDS</div>
+                    </div>
+                    <div>
+                        <div class="text-[9px] text-gray-400 uppercase">Touchdowns</div>
+                        <div id="statTouchdowns" class="text-lg font-black text-yellow-400">0</div>
+                    </div>
+                    <div>
+                        <div class="text-[9px] text-gray-400 uppercase">Jukes Landed</div>
+                        <div id="statJukes" class="text-lg font-black text-blue-400">0</div>
+                    </div>
+                    <div>
+                        <div class="text-[9px] text-gray-400 uppercase">Coins Collected</div>
+                        <div id="statCoins" class="text-lg font-black text-amber-500">0</div>
+                    </div>
+                </div>
+
+                <!-- Dual Action Buttons Container -->
+                <div class="flex gap-2 w-full max-w-xs mb-2">
+                    <button id="retryButton" class="glow-button flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-sm font-bold tracking-widest uppercase transition-all">
+                        Play Again
+                    </button>
+                    <button id="homeButton" class="glow-button flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-bold tracking-widest uppercase transition-all">
+                        Home
+                    </button>
+                </div>
+
+                <button id="endLeaderboardButton" class="w-full max-w-xs py-2 bg-gray-800 hover:bg-gray-750 border border-gray-700 rounded-xl text-xs font-bold tracking-wide uppercase transition-all mb-2">
+                    Leaderboard
+                </button>
+                
+                <div class="text-[10px] text-gray-500">
+                    Or press <span class="bg-gray-700 text-gray-300 px-1 rounded font-mono">ENTER</span> to restart
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls UI Display (Keyboard / Responsive Controls) -->
+        <div id="keyboardControls" class="w-full text-center text-[11px] text-gray-400 mt-0.5 hidden md:block">
+            <p>← → <b class="text-white">Arrow Keys</b> to Run | <b class="text-white">Spacebar</b> to Juke Spin | <b class="text-white">Enter</b> to Restart</p>
+        </div>
+
+        <!-- Mobile Touch Pad controls with low-latency touch events -->
+        <div id="mobileControls" class="w-full flex gap-2 mt-0.5">
+            <button id="touchLeft" class="touch-active flex-1 py-4 bg-gray-800 border border-gray-700 rounded-xl flex items-center justify-center transition-all select-none">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button id="touchSpin" class="spin-active flex-1 py-4 bg-yellow-600 border border-yellow-500 rounded-xl font-bold uppercase tracking-widest flex flex-col items-center justify-center text-[11px] text-black select-none">
+                <span>JUKE</span>
+                <span class="text-[8px] font-black">SPIN</span>
+            </button>
+            <button id="touchRight" class="touch-active flex-1 py-4 bg-gray-800 border border-gray-700 rounded-xl flex items-center justify-center transition-all select-none">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </button>
+        </div>
+
+        <!-- Sound Toggle -->
+        <button id="audioToggle" class="absolute bottom-4 right-4 bg-gray-800/80 p-2 rounded-full border border-gray-700 text-xs text-gray-400 hover:text-white transition-colors">
+            <svg id="audioIconOn" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M12 18.75V5.25L7.75 9.5H4.5v5h3.25L12 18.75z"/></svg>
+            <svg id="audioIconOff" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" /></svg>
+        </button>
+    </div>
+
+    <!-- JS Logic -->
+    <script>
+        // Setup Canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Web Audio Synthesizer Setup
+        let audioEnabled = true;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        const audioToggleBtn = document.getElementById('audioToggle');
+        audioToggleBtn.addEventListener('click', () => {
+            audioEnabled = !audioEnabled;
+            document.getElementById('audioIconOn').classList.toggle('hidden', !audioEnabled);
+            document.getElementById('audioIconOff').classList.toggle('hidden', audioEnabled);
+        });
+
+        // Procedural Audio Generators
+        function playSound(type) {
+            if (!audioEnabled) return;
+            initAudio();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'whistle') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'tackle') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(30, now + 0.3);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+
+                    const osc2 = audioCtx.createOscillator();
+                    const gain2 = audioCtx.createGain();
+                    osc2.connect(gain2);
+                    gain2.connect(audioCtx.destination);
+                    osc2.type = 'triangle';
+                    osc2.frequency.setValueAtTime(80, now);
+                    gain2.gain.setValueAtTime(0.5, now);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc2.start(now);
+                    osc2.stop(now + 0.5);
+                } else if (type === 'spin') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.3);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'coin') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    osc.frequency.setValueAtTime(880, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'buff') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'touchdown') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.linearRampToValueAtTime(800, now + 0.2);
+                    osc.frequency.linearRampToValueAtTime(400, now + 0.4);
+                    osc.frequency.linearRampToValueAtTime(800, now + 0.6);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                    osc.start(now);
+                    osc.stop(now + 0.8);
+                }
+            } catch (e) {
+                console.warn("Audio Context blocked or failed to load:", e);
+            }
+        }
+
+        // Configuration & Mechanics Setup
+        const LANE_WIDTH = 450;
+        let playerColor = '#1e40af'; // Default: Vibrant Home Blue
+        
+        function setPlayerColor(color) {
+            playerColor = color;
+            const buttons = document.querySelectorAll('#startScreen button[title]');
+            buttons.forEach(btn => {
+                if (btn.getAttribute('title').toLowerCase().includes(color === '#1e40af' ? 'blue' : color === '#15803d' ? 'green' : color === '#eab308' ? 'gold' : 'purple')) {
+                    btn.classList.add('border-white');
+                    btn.classList.remove('border-transparent');
+                } else {
+                    btn.classList.add('border-transparent');
+                    btn.classList.remove('border-white');
+                }
+            });
+        }
+
+        // Game State Core
+        let gameActive = false;
+        let gameOver = false;
+        let yardsGained = 0;
+        let totalTouchdowns = 0;
+        let totalJukes = 0;
+        let totalCoins = 0;
+        let gameSpeed = 5;
+        let baseSpeed = 5;
+        let spawnTimer = 0;
+        let powerupSpawnTimer = 0;
+        let highScore = parseInt(localStorage.getItem('gridironHighScore') || '0');
+
+        document.getElementById('highScoreText').innerText = `${highScore} YDS`;
+
+        // Player configuration
+        let player = {
+            x: 210,
+            y: 530,
+            width: 32,
+            height: 48,
+            speed: 7,
+            isSpinning: false,
+            spinTimer: 0,
+            spinCooldown: 0,
+            maxSpinCooldown: 60,
+            runFrame: 0,
+            shieldTime: 0,
+            hasShield: false,
+            multiplierTime: 0,
+            hasMultiplier: false,
+            boostTime: 0,
+            hasBoost: false
+        };
+
+        // Arrays to manage instances
+        let defenders = [];
+        let particles = [];
+        let powerups = [];
+        let fieldLines = [];
+        let floatTexts = [];
+        let keys = {};
+
+        let lastTouchdownYard = 0;
+
+        // Initialize Procedural Yard Lines
+        function initFieldLines() {
+            fieldLines = [];
+            for (let i = -100; i < canvas.height + 150; i += 75) {
+                const absoluteYard = Math.floor(Math.abs(i) / 15);
+                fieldLines.push({ 
+                    y: i,
+                    yardNumber: absoluteYard
+                });
+            }
+        }
+
+        // Keyboard Event Handlers
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            if (e.key === 'Enter') {
+                if (gameOver) {
+                    resetGame();
+                } else if (!gameActive) {
+                    startGame();
+                }
+            }
+            if (e.key === ' ' && gameActive && !gameOver) {
+                triggerJuke();
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Mobile Button Touch Handlers with 0ms Touchstart Event Dispatch
+        let touchMoveLeft = false;
+        let touchMoveRight = false;
+
+        const leftBtn = document.getElementById('touchLeft');
+        const rightBtn = document.getElementById('touchRight');
+        const spinBtn = document.getElementById('touchSpin');
+
+        leftBtn.addEventListener('touchstart', (e) => { 
+            e.preventDefault(); 
+            touchMoveLeft = true; 
+        }, { passive: false });
+        leftBtn.addEventListener('touchend', (e) => { 
+            e.preventDefault(); 
+            touchMoveLeft = false; 
+        }, { passive: false });
+
+        rightBtn.addEventListener('touchstart', (e) => { 
+            e.preventDefault(); 
+            touchMoveRight = true; 
+        }, { passive: false });
+        rightBtn.addEventListener('touchend', (e) => { 
+            e.preventDefault(); 
+            touchMoveRight = false; 
+        }, { passive: false });
+
+        spinBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameActive && !gameOver) triggerJuke();
+        }, { passive: false });
+
+        // Backup mouse fallbacks for testing on desktop
+        leftBtn.addEventListener('mousedown', () => { touchMoveLeft = true; });
+        leftBtn.addEventListener('mouseup', () => { touchMoveLeft = false; });
+        leftBtn.addEventListener('mouseleave', () => { touchMoveLeft = false; });
+        rightBtn.addEventListener('mousedown', () => { touchMoveRight = true; });
+        rightBtn.addEventListener('mouseup', () => { touchMoveRight = false; });
+        rightBtn.addEventListener('mouseleave', () => { touchMoveRight = false; });
+        spinBtn.addEventListener('click', () => {
+            if (gameActive && !gameOver) triggerJuke();
+        });
+
+        // Direct-on-Canvas Screen Tapping System (Allows playing by just holding left/right half of screen!)
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!gameActive || gameOver) return;
+
+            // Get exact coordinate relative to the client rect
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const relativeX = touch.clientX - rect.left;
+            const canvasWidthRelative = rect.width;
+
+            // Divide the viewport area in half
+            if (relativeX < canvasWidthRelative * 0.4) {
+                touchMoveLeft = true;
+                touchMoveRight = false;
+            } else if (relativeX > canvasWidthRelative * 0.6) {
+                touchMoveRight = true;
+                touchMoveLeft = false;
+            } else {
+                // Tapping center triggers a Spin Juke
+                triggerJuke();
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!gameActive || gameOver) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const relativeX = touch.clientX - rect.left;
+            const canvasWidthRelative = rect.width;
+
+            if (relativeX < canvasWidthRelative * 0.4) {
+                touchMoveLeft = true;
+                touchMoveRight = false;
+            } else if (relativeX > canvasWidthRelative * 0.6) {
+                touchMoveRight = true;
+                touchMoveLeft = false;
+            } else {
+                touchMoveLeft = false;
+                touchMoveRight = false;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            touchMoveLeft = false;
+            touchMoveRight = false;
+        }, { passive: false });
+
+        // Particle generator
+        function createParticle(x, y, color, speedY, size, type = 'grass') {
+            particles.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 4,
+                vy: speedY + (Math.random() * 2),
+                size: size || Math.random() * 3 + 2,
+                color: color,
+                life: 30 + Math.random() * 20,
+                maxLife: 50,
+                type: type
+            });
+        }
+
+        // Float UI texts
+        function createFloatText(x, y, text, color) {
+            floatTexts.push({
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                alpha: 1.0,
+                scale: 1.0
+            });
+        }
+
+        // Handle Juke Spin
+        function triggerJuke() {
+            if (!player.isSpinning && player.spinCooldown === 0) {
+                player.isSpinning = true;
+                player.spinTimer = 22;
+                player.spinCooldown = player.maxSpinCooldown;
+                playSound('spin');
+
+                for (let i = 0; i < 12; i++) {
+                    createParticle(
+                        player.x + player.width/2, 
+                        player.y + player.height/2, 
+                        '#ffeb3b', 
+                        -gameSpeed + (Math.random() * 4), 
+                        Math.random() * 4 + 3,
+                        'spark'
+                    );
+                }
+            }
+        }
+
+        // Core Leaderboard Mechanics
+        let leaderboardSource = 'home';
+
+        function getLeaderboard() {
+            return JSON.parse(localStorage.getItem('gridironLeaderboard') || '[]');
+        }
+
+        function checkLeaderboardQualification(score) {
+            let leaderboard = getLeaderboard();
+            if (leaderboard.length < 5) return true;
+            return score > leaderboard[leaderboard.length - 1].yards;
+        }
+
+        function saveLeaderboardScore(initials, score, touchdowns) {
+            let leaderboard = getLeaderboard();
+            leaderboard.push({
+                name: initials.toUpperCase() || 'HER',
+                yards: Math.floor(score),
+                tds: touchdowns
+            });
+            leaderboard.sort((a, b) => b.yards - a.yards);
+            leaderboard = leaderboard.slice(0, 5);
+            localStorage.setItem('gridironLeaderboard', JSON.stringify(leaderboard));
+        }
+
+        function populateLeaderboardUI() {
+            let leaderboard = getLeaderboard();
+            let rowsContainer = document.getElementById('leaderboardRows');
+            rowsContainer.innerHTML = '';
+
+            if (leaderboard.length === 0) {
+                rowsContainer.innerHTML = `<div class="text-xs text-gray-500 py-4 uppercase">No entries yet. Be the first!</div>`;
+                return;
+            }
+
+            leaderboard.forEach((entry, idx) => {
+                let medalColor = 'text-gray-400';
+                if (idx === 0) medalColor = 'text-yellow-400 font-extrabold';
+                else if (idx === 1) medalColor = 'text-gray-300 font-bold';
+                else if (idx === 2) medalColor = 'text-amber-600 font-bold';
+
+                rowsContainer.innerHTML += `
+                    <div class="grid grid-cols-4 items-center bg-gray-800/40 rounded-lg py-2 px-3 text-sm text-white">
+                        <span class="${medalColor}">#${idx + 1}</span>
+                        <span class="font-mono uppercase font-black text-blue-400">${entry.name}</span>
+                        <span class="text-right font-bold text-yellow-400">${entry.yards} YDS</span>
+                        <span class="text-right text-gray-400">${entry.tds}</span>
+                    </div>
+                `;
+            });
+        }
+
+        // Leaderboard Navigation Listeners
+        document.getElementById('startLeaderboardButton').addEventListener('click', () => {
+            leaderboardSource = 'home';
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('leaderboardScreen').classList.remove('hidden');
+            populateLeaderboardUI();
+        });
+
+        document.getElementById('endLeaderboardButton').addEventListener('click', () => {
+            leaderboardSource = 'gameover';
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('leaderboardScreen').classList.remove('hidden');
+            populateLeaderboardUI();
+        });
+
+        document.getElementById('closeLeaderboardButton').addEventListener('click', () => {
+            document.getElementById('leaderboardScreen').classList.add('hidden');
+            if (leaderboardSource === 'home') {
+                document.getElementById('startScreen').classList.remove('hidden');
+            } else {
+                document.getElementById('gameOverScreen').classList.remove('hidden');
+            }
+        });
+
+        // Submit scoreboard score trigger
+        document.getElementById('submitScoreButton').addEventListener('click', () => {
+            let input = document.getElementById('initialsInput');
+            let initials = input.value.trim();
+            if (initials.length === 0) {
+                initials = 'HER';
+            }
+            saveLeaderboardScore(initials, yardsGained, totalTouchdowns);
+            input.value = '';
+            document.getElementById('initialsScreen').classList.add('hidden');
+            
+            leaderboardSource = 'gameover';
+            document.getElementById('leaderboardScreen').classList.remove('hidden');
+            populateLeaderboardUI();
+        });
+
+        // Core Game Initialization
+        function startGame() {
+            initAudio();
+            document.getElementById('startScreen').classList.add('hidden');
+            gameActive = true;
+            resetGame();
+        }
+
+        document.getElementById('startButton').addEventListener('click', startGame);
+        document.getElementById('retryButton').addEventListener('click', resetGame);
+        
+        // Setup Home Button handler to return to start menu
+        const homeBtn = document.getElementById('homeButton');
+        homeBtn.addEventListener('click', goToHome);
+        homeBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            goToHome();
+        }, { passive: false });
+
+        function goToHome() {
+            gameActive = false;
+            resetGame();
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+        }
+
+        function resetGame() {
+            player.x = 210;
+            player.y = 530;
+            player.isSpinning = false;
+            player.spinTimer = 0;
+            player.spinCooldown = 0;
+            player.hasShield = false;
+            player.shieldTime = 0;
+            player.hasMultiplier = false;
+            player.multiplierTime = 0;
+            player.hasBoost = false;
+            player.boostTime = 0;
+
+            defenders = [];
+            particles = [];
+            powerups = [];
+            floatTexts = [];
+            yardsGained = 0;
+            totalTouchdowns = 0;
+            totalJukes = 0;
+            totalCoins = 0;
+            baseSpeed = 5;
+            gameSpeed = 5;
+            lastTouchdownYard = 0;
+            gameOver = false;
+            touchMoveLeft = false;
+            touchMoveRight = false;
+
+            initFieldLines();
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('initialsScreen').classList.add('hidden');
+            document.getElementById('leaderboardScreen').classList.add('hidden');
+            
+            if (gameActive) {
+                playSound('whistle');
+            }
+        }
+
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        // Update loop logic
+        function update() {
+            if (gameActive && !gameOver) {
+                let speedMultiplier = player.hasBoost ? 2.0 : 1.0;
+                let yardsPerTick = 0.08 * speedMultiplier;
+                
+                if (player.hasMultiplier) {
+                    yardsPerTick *= 2.0;
+                }
+                
+                yardsGained += yardsPerTick;
+                baseSpeed = 5 + (yardsGained / 35);
+                gameSpeed = baseSpeed * speedMultiplier;
+
+                let nextTouchdown = Math.floor(yardsGained / 100);
+                if (nextTouchdown > totalTouchdowns) {
+                    totalTouchdowns = nextTouchdown;
+                    playSound('touchdown');
+                    createFloatText(player.x + player.width / 2, player.y - 30, 'TOUCHDOWN! +5 YDS', '#facc15');
+                    yardsGained += 5;
+                    
+                    for (let i = 0; i < 30; i++) {
+                        createParticle(
+                            Math.random() * canvas.width,
+                            Math.random() * 200,
+                            '#fbbf24',
+                            Math.random() * 3 + 2,
+                            Math.random() * 6 + 3,
+                            'star'
+                        );
+                    }
+                }
+
+                fieldLines.forEach(line => {
+                    line.y += gameSpeed;
+                    if (line.y > canvas.height) {
+                        line.y = -75;
+                    }
+                });
+
+                if ((keys['ArrowLeft'] || touchMoveLeft) && player.x > 30) {
+                    player.x -= player.speed * (player.hasBoost ? 1.4 : 1.0);
+                    if (Math.random() < 0.3) {
+                        createParticle(player.x + player.width, player.y + player.height, '#1e3a1e', 1, 3);
+                    }
+                }
+                if ((keys['ArrowRight'] || touchMoveRight) && player.x < canvas.width - player.width - 30) {
+                    player.x += player.speed * (player.hasBoost ? 1.4 : 1.0);
+                    if (Math.random() < 0.3) {
+                        createParticle(player.x, player.y + player.height, '#1e3a1e', 1, 3);
+                    }
+                }
+
+                if (Math.random() < 0.15) {
+                    createParticle(player.x + player.width/2, player.y + player.height, '#22c55e', 1, 2);
+                }
+
+                if (player.hasShield) {
+                    player.shieldTime--;
+                    if (player.shieldTime <= 0) player.hasShield = false;
+                }
+                if (player.hasMultiplier) {
+                    player.multiplierTime--;
+                    if (player.multiplierTime <= 0) player.hasMultiplier = false;
+                }
+                if (player.hasBoost) {
+                    player.boostTime--;
+                    if (player.boostTime <= 0) player.hasBoost = false;
+                }
+
+                if (player.isSpinning) {
+                    player.spinTimer--;
+                    if (player.spinTimer <= 0) {
+                        player.isSpinning = false;
+                        totalJukes++;
+                    }
+                }
+                if (player.spinCooldown > 0) {
+                    player.spinCooldown--;
+                }
+
+                powerupSpawnTimer++;
+                if (powerupSpawnTimer > 250) {
+                    let types = ['water', 'drink', 'football'];
+                    let selectedType = types[Math.floor(Math.random() * types.length)];
+                    powerups.push({
+                        x: Math.random() * (canvas.width - 80) + 40,
+                        y: -50,
+                        width: 25,
+                        height: 25,
+                        type: selectedType
+                    });
+                    powerupSpawnTimer = 0;
+                }
+
+                for (let i = powerups.length - 1; i >= 0; i--) {
+                    let p = powerups[i];
+                    p.y += gameSpeed;
+
+                    if (checkCollision(player, p)) {
+                        if (p.type === 'water') {
+                            player.hasShield = true;
+                            player.shieldTime = 300;
+                            playSound('buff');
+                            createFloatText(p.x, p.y, 'SHIELD ACQUIRED!', '#3b82f6');
+                        } else if (p.type === 'drink') {
+                            player.hasBoost = true;
+                            player.boostTime = 200;
+                            playSound('buff');
+                            createFloatText(p.x, p.y, 'TURBO CHARGED!', '#10b981');
+                        } else if (p.type === 'football') {
+                            player.hasMultiplier = true;
+                            player.multiplierTime = 300;
+                            playSound('coin');
+                            totalCoins++;
+                            createFloatText(p.x, p.y, '2X YARDS!', '#eab308');
+                        }
+                        
+                        for (let b = 0; b < 10; b++) {
+                            createParticle(p.x + p.width/2, p.y + p.height/2, '#ffffff', -1, 3, 'spark');
+                        }
+
+                        powerups.splice(i, 1);
+                        continue;
+                    }
+
+                    if (p.y > canvas.height) {
+                        powerups.splice(i, 1);
+                    }
+                }
+
+                spawnTimer++;
+                let spawnInterval = Math.max(18, 55 - (gameSpeed * 2.2));
+                if (spawnTimer > spawnInterval) {
+                    let types = ['standard', 'blitzer', 'swerver'];
+                    let chosenType = 'standard';
+                    let r = Math.random();
+                    if (r > 0.8) chosenType = 'blitzer';
+                    else if (r > 0.5) chosenType = 'swerver';
+
+                    defenders.push({
+                        x: Math.random() * (canvas.width - 80) + 40,
+                        y: -60,
+                        width: 32,
+                        height: 48,
+                        type: chosenType,
+                        color: chosenType === 'blitzer' ? '#8b5cf6' : (chosenType === 'swerver' ? '#f97316' : '#ef4444'),
+                        swerveOffset: Math.random() * 100,
+                        speedFactor: chosenType === 'blitzer' ? 2.5 : (chosenType === 'swerver' ? 1.0 : 1.2),
+                        runFrame: Math.floor(Math.random() * 20)
+                    });
+                    spawnTimer = 0;
+                }
+
+                for (let i = defenders.length - 1; i >= 0; i--) {
+                    let d = defenders[i];
+                    d.runFrame++;
+
+                    if (d.type === 'blitzer') {
+                        let dx = player.x - d.x;
+                        d.x += Math.sign(dx) * 2.0;
+                        d.y += gameSpeed + d.speedFactor;
+                    } else if (d.type === 'swerver') {
+                        d.x += Math.sin((d.y + d.swerveOffset) * 0.03) * 3;
+                        d.y += gameSpeed + d.speedFactor;
+                    } else {
+                        d.y += gameSpeed + d.speedFactor;
+                    }
+
+                    if (checkCollision(player, d)) {
+                        if (player.isSpinning) {
+                            createFloatText(d.x, d.y - 15, 'JUKED!', '#facc15');
+                            playSound('coin');
+                            yardsGained += 3;
+                            
+                            for (let p = 0; p < 12; p++) {
+                                createParticle(d.x + d.width/2, d.y + d.height/2, '#ffffff', -gameSpeed, 4, 'spark');
+                            }
+                            
+                            defenders.splice(i, 1);
+                            continue;
+                        } else if (player.hasShield) {
+                            player.hasShield = false;
+                            player.shieldTime = 0;
+                            playSound('tackle');
+                            createFloatText(player.x, player.y - 20, 'SHIELD BROKEN!', '#3b82f6');
+                            
+                            for (let p = 0; p < 15; p++) {
+                                createParticle(d.x + d.width/2, d.y + d.height/2, '#3b82f6', -3, 5, 'spark');
+                            }
+                            
+                            defenders.splice(i, 1);
+                            continue;
+                        } else {
+                            playSound('tackle');
+                            gameOver = true;
+                            triggerGameOverCelebration();
+                        }
+                    }
+
+                    if (d.y > canvas.height) {
+                        defenders.splice(i, 1);
+                    }
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    let p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life--;
+                    if (p.life <= 0) {
+                        particles.splice(i, 1);
+                    }
+                }
+
+                document.getElementById('hudYards').innerText = Math.floor(yardsGained);
+                
+                let buffsHTML = '';
+                if (player.hasShield) buffsHTML += `<span class="bg-blue-600 border border-blue-400 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider animate-pulse">SHIELD</span>`;
+                if (player.hasBoost) buffsHTML += `<span class="bg-emerald-600 border border-emerald-400 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider animate-pulse">TURBO</span>`;
+                if (player.hasMultiplier) buffsHTML += `<span class="bg-yellow-600 border border-yellow-400 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider animate-pulse">2X YARDS</span>`;
+                document.getElementById('activeBuffs').innerHTML = buffsHTML;
+
+                let percentage = Math.max(0, Math.floor(((player.maxSpinCooldown - player.spinCooldown) / player.maxSpinCooldown) * 100));
+                document.getElementById('spinPercent').innerText = `${percentage}%`;
+                document.getElementById('spinProgress').style.width = `${percentage}%`;
+
+                if (player.spinCooldown > 0) {
+                    document.getElementById('spinProgress').classList.replace('bg-yellow-400', 'bg-gray-500');
+                    document.getElementById('spinLabel').classList.replace('text-yellow-400', 'text-gray-400');
+                } else {
+                    document.getElementById('spinProgress').classList.replace('bg-gray-500', 'bg-yellow-400');
+                    document.getElementById('spinLabel').classList.replace('text-gray-400', 'text-yellow-400');
+                }
+            }
+
+            for (let i = floatTexts.length - 1; i >= 0; i--) {
+                let f = floatTexts[i];
+                f.y -= 1.5;
+                f.alpha -= 0.02;
+                if (f.alpha <= 0) {
+                    floatTexts.splice(i, 1);
+                }
+            }
+
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        function triggerGameOverCelebration() {
+            touchMoveLeft = false;
+            touchMoveRight = false;
+            if (yardsGained > highScore) {
+                highScore = Math.floor(yardsGained);
+                localStorage.setItem('gridironHighScore', highScore);
+                document.getElementById('highScoreText').innerText = `${highScore} YDS`;
+            }
+
+            document.getElementById('statYards').innerText = `${Math.floor(yardsGained)} YDS`;
+            document.getElementById('statTouchdowns').innerText = totalTouchdowns;
+            document.getElementById('statJukes').innerText = totalJukes;
+            document.getElementById('statCoins').innerText = totalCoins;
+
+            if (checkLeaderboardQualification(yardsGained)) {
+                document.getElementById('initialsScreen').classList.remove('hidden');
+            } else {
+                document.getElementById('gameOverScreen').classList.remove('hidden');
+            }
+
+            for (let i = 0; i < 40; i++) {
+                createParticle(
+                    player.x + player.width/2,
+                    player.y + player.height/2,
+                    Math.random() > 0.5 ? '#ef4444' : '#ffffff',
+                    (Math.random() - 0.5) * 8 - 4,
+                    Math.random() * 5 + 3,
+                    'star'
+                );
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#1e3a1e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            fieldLines.forEach(line => {
+                ctx.fillStyle = '#224a22';
+                ctx.fillRect(0, line.y, canvas.width, 35);
+            });
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(30, 0, 6, canvas.height);
+            ctx.fillRect(canvas.width - 36, 0, 6, canvas.height);
+
+            fieldLines.forEach(line => {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(30, line.y);
+                ctx.lineTo(canvas.width - 30, line.y);
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+                ctx.fillRect(160, line.y, 8, 2);
+                ctx.fillRect(280, line.y, 8, 2);
+
+                let markerNumber = Math.abs(50 - (line.yardNumber % 100)) % 60;
+                if (markerNumber % 10 === 0 && markerNumber > 0) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.font = 'bold 16px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(markerNumber, 65, line.y + 20);
+                    ctx.fillText(markerNumber, canvas.width - 65, line.y + 20);
+                }
+            });
+
+            let currentModuloYard = Math.floor(yardsGained) % 100;
+            let endzoneOffset = (100 - currentModuloYard) * 15;
+            if (endzoneOffset < canvas.height && endzoneOffset > -150) {
+                ctx.fillStyle = 'rgba(250, 204, 21, 0.2)';
+                ctx.fillRect(36, endzoneOffset, canvas.width - 72, 100);
+                
+                ctx.strokeStyle = '#facc15';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(36, endzoneOffset, canvas.width - 72, 100);
+
+                ctx.fillStyle = '#facc15';
+                ctx.font = '900 24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('TOUCHDOWN', canvas.width / 2, endzoneOffset + 60);
+            }
+
+            powerups.forEach(p => {
+                ctx.save();
+                let bobOffset = Math.sin(Date.now() * 0.01) * 3;
+                
+                if (p.type === 'water') {
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.fillRect(p.x, p.y + bobOffset, p.width, p.height);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(p.x + 3, p.y + 8 + bobOffset, p.width - 6, 8);
+                } else if (p.type === 'drink') {
+                    ctx.fillStyle = '#10b981';
+                    ctx.fillRect(p.x, p.y + bobOffset, p.width, p.height);
+                    ctx.fillStyle = '#eab308';
+                    ctx.beginPath();
+                    ctx.moveTo(p.x + 12, p.y + 4 + bobOffset);
+                    ctx.lineTo(p.x + 6, p.y + 14 + bobOffset);
+                    ctx.lineTo(p.x + 18, p.y + 14 + bobOffset);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (p.type === 'football') {
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.beginPath();
+                    ctx.ellipse(p.x + p.width/2, p.y + p.height/2 + bobOffset, p.width/2, p.height/3, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x + p.width/2 - 5, p.y + p.height/2 + bobOffset);
+                    ctx.lineTo(p.x + p.width/2 + 5, p.y + p.height/2 + bobOffset);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            });
+
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+            ctx.globalAlpha = 1.0;
+
+            // Draw Defenders
+            defenders.forEach(d => {
+                ctx.save();
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+                ctx.beginPath();
+                ctx.ellipse(d.x + d.width/2, d.y + d.height - 2, 12, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                let runOffset = Math.sin(d.runFrame * 0.4) * 5;
+
+                ctx.fillStyle = d.color;
+                ctx.fillRect(d.x + 4, d.y + 12, d.width - 8, d.height - 24);
+                ctx.fillRect(d.x, d.y + 10, d.width, 10);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(d.x + d.width/2, d.y + 10, 9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(d.x + d.width/2 - 6, d.y + 5, 12, 4);
+
+                ctx.fillStyle = '#e5e7eb';
+                ctx.fillRect(d.x + 4, d.y + d.height - 12 + runOffset, 6, 12);
+                ctx.fillRect(d.x + d.width - 10, d.y + d.height - 12 - runOffset, 6, 12);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '900 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('99', d.x + d.width/2, d.y + 26);
+
+                ctx.restore();
+            });
+
+            // Draw Player
+            ctx.save();
+            
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.ellipse(player.x + player.width/2, player.y + player.height - 2, 14, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (player.isSpinning) {
+                ctx.fillStyle = 'rgba(251, 191, 36, 0.7)';
+                ctx.beginPath();
+                ctx.arc(player.x + player.width/2, player.y + player.height/2, player.width * 1.1, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                let spinAngle = (player.spinTimer * 0.5);
+                ctx.arc(player.x + player.width/2, player.y + player.height/2, player.width * 0.8, spinAngle, spinAngle + Math.PI);
+                ctx.stroke();
+            }
+
+            if (player.hasShield) {
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#3b82f6';
+                ctx.beginPath();
+                ctx.arc(player.x + player.width/2, player.y + player.height/2, player.width * 1.2, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            player.runFrame++;
+            let playerRunY = Math.sin(player.runFrame * 0.3) * 4;
+
+            ctx.fillStyle = playerColor;
+            ctx.fillRect(player.x + 4, player.y + 12, player.width - 8, player.height - 24);
+            ctx.fillRect(player.x, player.y + 10, player.width, 10);
+
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(player.x + player.width/2, player.y + 10, 9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(player.x + player.width/2 - 6, player.y + 7, 12, 4);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(player.x + 4, player.y + player.height - 12 + playerRunY, 6, 12);
+            ctx.fillRect(player.x + player.width - 10, player.y + player.height - 12 - playerRunY, 6, 12);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('10', player.x + player.width/2, player.y + 26);
+
+            ctx.restore();
+
+            floatTexts.forEach(f => {
+                ctx.save();
+                ctx.globalAlpha = f.alpha;
+                ctx.fillStyle = f.color;
+                ctx.font = 'bold 15px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(f.text, f.x, f.y);
+                ctx.restore();
+            });
+        }
+
+        initFieldLines();
+        update();
+    </script>
+</body>
+</html>
