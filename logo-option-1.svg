@@ -1,0 +1,16 @@
+<svg width="640" height="180" viewBox="0 0 640 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Ben's Website – Neon controller logo</title>
+  <desc id="desc">A playful blue game controller with a bold Ben's Website wordmark.</desc>
+  <defs>
+    <linearGradient id="bg" x1="24" y1="20" x2="616" y2="160" gradientUnits="userSpaceOnUse"><stop stop-color="#171B55"/><stop offset="1" stop-color="#5A24A5"/></linearGradient>
+    <linearGradient id="pad" x1="44" y1="44" x2="152" y2="136" gradientUnits="userSpaceOnUse"><stop stop-color="#40E9FF"/><stop offset="1" stop-color="#6B7CFF"/></linearGradient>
+  </defs>
+  <rect width="640" height="180" rx="36" fill="url(#bg)"/>
+  <circle cx="560" cy="32" r="64" fill="#FF4FA3" fill-opacity=".18"/>
+  <path d="M48 103c4-37 22-59 49-59h18c28 0 46 22 49 59 2 22-15 36-32 25l-20-13H99l-20 13c-17 11-34-3-31-25Z" fill="url(#pad)" stroke="#D6FBFF" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M77 78v24M65 90h24" stroke="#171B55" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="133" cy="80" r="6" fill="#FF4FA3"/><circle cx="145" cy="92" r="6" fill="#FFE66D"/>
+  <path d="M103 76c5-4 12-4 17 0" stroke="#171B55" stroke-width="5" stroke-linecap="round"/>
+  <text x="194" y="88" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="900" letter-spacing="-2">BEN'S</text>
+  <text x="194" y="130" fill="#40E9FF" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="800" letter-spacing="8">WEBSITE</text>
+</svg>

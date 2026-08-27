@@ -1,0 +1,14 @@
+<svg width="640" height="180" viewBox="0 0 640 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Ben's Website – Arcade badge logo</title>
+  <desc id="desc">A retro arcade badge with a lightning bolt and Ben's Website lettering.</desc>
+  <defs>
+    <linearGradient id="badge" x1="28" y1="18" x2="161" y2="160" gradientUnits="userSpaceOnUse"><stop stop-color="#FFCE4A"/><stop offset="1" stop-color="#FF7A31"/></linearGradient>
+  </defs>
+  <rect width="640" height="180" rx="36" fill="#101827"/>
+  <rect x="16" y="16" width="608" height="148" rx="25" stroke="#334155" stroke-width="3"/>
+  <path d="M92 20 160 59v62l-68 39-68-39V59l68-39Z" fill="url(#badge)"/>
+  <path d="m103 42-37 52h27l-12 43 39-57H93l10-38Z" fill="#101827"/>
+  <text x="198" y="86" fill="#F8FAFC" font-family="Arial Black, Arial, sans-serif" font-size="48" font-weight="900">BEN'S</text>
+  <text x="198" y="125" fill="#FFB938" font-family="Arial, Helvetica, sans-serif" font-size="29" font-weight="900" letter-spacing="6">WEBSITE</text>
+  <path d="M199 143h304" stroke="#FFB938" stroke-width="5" stroke-linecap="round"/>
+</svg>

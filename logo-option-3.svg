@@ -1,0 +1,11 @@
+<svg width="640" height="180" viewBox="0 0 640 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Ben's Website – Clean pixel logo</title>
+  <desc id="desc">A minimalist pixel B monogram with a clean wordmark.</desc>
+  <rect width="640" height="180" rx="36" fill="#F7F8FC"/>
+  <g fill="#265DFF">
+    <rect x="44" y="35" width="26" height="110" rx="5"/><rect x="70" y="35" width="27" height="25" rx="4"/><rect x="97" y="48" width="26" height="31" rx="4"/><rect x="70" y="79" width="27" height="25" rx="4"/><rect x="97" y="104" width="26" height="31" rx="4"/><rect x="70" y="120" width="27" height="25" rx="4"/>
+  </g>
+  <rect x="122" y="48" width="12" height="12" fill="#FF4E86"/><rect x="122" y="120" width="12" height="12" fill="#FF4E86"/>
+  <text x="178" y="94" fill="#172033" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="900" letter-spacing="-2">benswebsite</text>
+  <text x="182" y="129" fill="#667085" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" letter-spacing="4">PLAY · EXPLORE · WIN</text>
+</svg>

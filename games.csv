@@ -1,6 +1,7 @@
 title,goal,url,category
 "number guessing","guess the number in the least tries","games/number-guessing/index.html","Sports"
 "football","go as far as you can","games/football2/index.html","Sports"
+"Touchdown Blitz","Outrun the CPU and score three touchdowns first!","games/touchdown-blitz/index.html","Sports"
 "Nitro-Racer","try to cross the line first","games/Nitro-Racer/index.html","Sports"
 "go-kart","try to cross the line first","games/go-kart/index.html","only on computer"
 "Retro Ping Pong","don't let the ball in your side","games/Retro-Ping-Pong/index.html","Sports"
@@ -36,4 +37,3 @@ title,goal,url,category
 "Cool Baseball","Aim for the fences and hit a home run!","games/cool-baseball/index.html","Sports"
 "Flappy Bird","Flap through obstacles and set a high score!","games/flappy-bird/index.html","Arcade"
 "Dog Food Run","Jump, collect food, and escape people and obstacles!","games/dog-food-run/index.html","Arcade"
-"Star Scoop","Catch golden stars and dodge space rocks!","games/star-scoop/index.html","Arcade"
