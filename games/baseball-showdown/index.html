@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseball Showdown</title>
+    <style>
+        :root {
+            --bg: #071b12;
+            --panel: #0e2d20;
+            --panel-2: #12392a;
+            --grass: #187a4b;
+            --grass-dark: #0f5f39;
+            --dirt: #c98a4b;
+            --line: #e7f3ec;
+            --text: #f4fbf7;
+            --muted: #a6c8b8;
+            --gold: #ffd166;
+            --red: #ef476f;
+            --blue: #118ab2;
+            --white: #f8f9fa;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 20% 10%, rgba(255, 209, 102, 0.14), transparent 36%),
+                radial-gradient(circle at 85% 0%, rgba(17, 138, 178, 0.18), transparent 40%),
+                var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        #game {
+            width: min(920px, 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .topbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        .brand {
+            min-width: 190px;
+            padding: 14px 18px;
+            background: var(--panel);
+            border: 1px solid rgba(255, 209, 102, 0.35);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            color: var(--gold);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+        }
+
+        .brand .ball-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 34% 30%, #fff 0 8%, #e8eef2 9% 100%);
+            position: relative;
+            flex: 0 0 auto;
+            box-shadow: inset -4px -5px 8px rgba(0, 0, 0, 0.18);
+        }
+
+        .brand .ball-icon::before,
+        .brand .ball-icon::after {
+            content: "";
+            position: absolute;
+            left: 4px;
+            right: 4px;
+            top: 13px;
+            border-top: 1.5px solid #c33d52;
+        }
+
+        .brand .ball-icon::after {
+            transform: rotate(90deg);
+            border-color: #c33d52;
+            left: 13px;
+            right: 13px;
+            top: 4px;
+            border-top: 0;
+            border-left: 1.5px solid #c33d52;
+        }
+
+        .scoreboard {
+            flex: 1 1 460px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1px;
+            overflow: hidden;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .stat {
+            background: var(--panel);
+            text-align: center;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .stat-value {
+            font-size: clamp(18px, 4vw, 27px);
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .stat-value.you {
+            color: var(--gold);
+        }
+
+        .stat-value.cpu {
+            color: var(--blue);
+        }
+
+        .stat-value.danger {
+            color: var(--red);
+        }
+
+        .field-shell {
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.34);
+            background: var(--grass);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+            background: var(--grass);
+        }
+
+        #message-banner {
+            position: absolute;
+            left: 50%;
+            top: 14px;
+            transform: translateX(-50%);
+            max-width: 84%;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(3, 20, 13, 0.82);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            color: #fff;
+            font-weight: 800;
+            text-align: center;
+            letter-spacing: 0.02em;
+            pointer-events: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            backdrop-filter: blur(6px);
+        }
+
+        #count-board {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .count-cluster {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .count-pill {
+            min-width: 92px;
+            padding: 11px 14px;
+            border-radius: 14px;
+            background: var(--panel);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .count-pill .label {
+            font-size: 10px;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .count-pill .value {
+            font-size: 24px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        #base-map {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: var(--panel);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .base-label {
+            font-size: 10px;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .diamond {
+            position: relative;
+            width: 54px;
+            height: 54px;
+            transform: rotate(45deg);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            margin: 0 10px;
+        }
+
+        .base {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #d8d8d8;
+            border: 2px solid rgba(0, 0, 0, 0.25);
+            transition: background 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .base.on {
+            background: var(--gold);
+            box-shadow: 0 0 10px var(--gold);
+        }
+
+        .base.first {
+            top: -5px;
+            right: -5px;
+        }
+
+        .base.second {
+            top: -5px;
+            left: -5px;
+        }
+
+        .base.third {
+            bottom: -5px;
+            left: -5px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button {
+            border: 0;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            color: var(--text);
+            background: var(--panel-2);
+            border-radius: 14px;
+            padding: 13px 18px;
+            font-size: 14px;
+            transition: transform 0.08s ease, background 0.12s ease, box-shadow 0.12s ease;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+        }
+
+        button:hover {
+            background: #1c4a38;
+        }
+
+        button:active {
+            transform: translateY(2px);
+        }
+
+        #action-btn {
+            flex: 1 1 240px;
+            font-size: 18px;
+            color: #201500;
+            background: linear-gradient(180deg, #ffd970, #f6b73c);
+            box-shadow: 0 8px 22px rgba(246, 183, 60, 0.25);
+        }
+
+        #action-btn:hover {
+            background: linear-gradient(180deg, #ffe087, #ffc24f);
+        }
+
+        #action-btn.pitch {
+            color: #e9fbff;
+            background: linear-gradient(180deg, #28b8d9, #118ab2);
+            box-shadow: 0 8px 22px rgba(17, 138, 178, 0.24);
+        }
+
+        #action-btn.pitch:hover {
+            background: linear-gradient(180deg, #40cae8, #179fc9);
+        }
+
+        .rules {
+            padding: 14px 16px;
+            background: var(--panel);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
+        .rules strong {
+            color: var(--text);
+        }
+
+        @media (max-width: 620px) {
+            body {
+                padding: 8px;
+                align-items: flex-start;
+            }
+
+            .brand {
+                min-width: 100%;
+            }
+
+            .scoreboard {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            #count-board {
+                align-items: stretch;
+            }
+
+            #base-map {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div class="topbar">
+            <div class="brand">
+                <span class="ball-icon" aria-hidden="true"></span>
+                <span>BASEBALL SHOWDOWN</span>
+            </div>
+
+            <div class="scoreboard" aria-label="Game scoreboard">
+                <div class="stat">
+                    <span class="stat-label">Inning</span>
+                    <span class="stat-value" id="stat-inning">1T</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">You</span>
+                    <span class="stat-value you" id="stat-you">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">CPU</span>
+                    <span class="stat-value cpu" id="stat-cpu">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Outs</span>
+                    <span class="stat-value danger" id="stat-outs">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Count</span>
+                    <span class="stat-value" id="stat-count">0-0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="field-shell">
+            <canvas id="field" width="900" height="540" aria-label="Baseball field"></canvas>
+            <div id="message-banner">Press Play Ball to start!</div>
+        </div>
+
+        <div id="count-board">
+            <div class="count-cluster">
+                <div class="count-pill">
+                    <span class="label">Balls</span>
+                    <span class="value" id="ball-count">0</span>
+                </div>
+                <div class="count-pill">
+                    <span class="label">Strikes</span>
+                    <span class="value" id="strike-count">0</span>
+                </div>
+                <div class="count-pill">
+                    <span class="label">Batting</span>
+                    <span class="value" id="batting-team">YOU</span>
+                </div>
+            </div>
+
+            <div id="base-map" aria-label="Bases">
+                <span class="base-label">BASES</span>
+                <div class="diamond">
+                    <span class="base first" id="base-1"></span>
+                    <span class="base second" id="base-2"></span>
+                    <span class="base third" id="base-3"></span>
+                </div>
+                <button id="sound-btn" type="button">SOUND: ON</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="action-btn" type="button">PLAY BALL</button>
+            <button id="restart-btn" type="button">NEW GAME</button>
+        </div>
+
+        <div class="rules">
+            <strong>How to play:</strong> You bat in the top half and pitch in the bottom half of each 3-inning game.
+            Press <strong>Space</strong>, click/tap the field, or use the big button. Time your swing as the pitch reaches the plate.
+            When pitching, release as the moving target crosses the strike zone. Three outs ends the half-inning.
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            const canvas = document.getElementById("field");
+            const ctx = canvas.getContext("2d");
+
+            const W = 900;
+            const H = 540;
+            const GROUND_Y = 315;
+            const WALL_X = 64;
+            const WALL_TOP = 155;
+            const WALL_BOTTOM = GROUND_Y;
+            const PLATE_X = 690;
+            const ZONE_LEFT = 640;
+            const ZONE_RIGHT = 716;
+            const ZONE_TOP = 220;
+            const ZONE_BOTTOM = 310;
+            const ZONE_CENTER = (ZONE_TOP + ZONE_BOTTOM) / 2;
+            const PITCHER_X = 108;
+            const PITCHER_Y = GROUND_Y;
+            const BATTER_X = 735;
+            const BATTER_Y = GROUND_Y;
+            const PITCH_SPEED = 7.6;
+
+            const totalInnings = 3;
+
+            const ui = {
+                inning: document.getElementById("stat-inning"),
+                you: document.getElementById("stat-you"),
+                cpu: document.getElementById("stat-cpu"),
+                outs: document.getElementById("stat-outs"),
+                count: document.getElementById("stat-count"),
+                balls: document.getElementById("ball-count"),
+                strikes: document.getElementById("strike-count"),
+                batting: document.getElementById("batting-team"),
+                message: document.getElementById("message-banner"),
+                action: document.getElementById("action-btn"),
+                restart: document.getElementById("restart-btn"),
+                sound: document.getElementById("sound-btn"),
+                bases: [
+                    document.getElementById("base-1"),
+                    document.getElementById("base-2"),
+                    document.getElementById("base-3")
+                ]
+            };
+
+            let phase = "menu";       // menu | bat | pitch | break | over
+            let mode = "idle";        // idle | ready | aim | active | flight | result
+            let offense = "user";     // user | cpu
+            let half = "top";         // top | bottom
+            let inning = 1;
+            let userScore = 0;
+            let cpuScore = 0;
+            let balls = 0;
+            let strikes = 0;
+            let outs = 0;
+            let bases = [false, false, false];
+            let soundOn = true;
+            let resultTimer = 0;
+            let pendingCallback = null;
+            let batSwing = 0;
+            let aimY = ZONE_CENTER;
+            let aimDir = 1;
+            let readyTimer = 0;
+            let lastTime = performance.now();
+            let audioCtx = null;
+
+            let ball = {
+                kind: "idle",          // idle | pitch | hit
+                x: 0,
+                y: 0,
+                vx: 0,
+                vy: 0,
+                targetY: 0,
+                inZone: false,
+                willSwing: false,
+                decided: false,
+                resolved: false,
+                spin: 0,
+                outcome: null,
+                resultDelay: 0
+            };
+
+            function clamp(value, min, max) {
+                return Math.max(min, Math.min(max, value));
+            }
+
+            function lerp(a, b, t) {
+                return a + (b - a) * t;
+            }
+
+            function randomBetween(min, max) {
+                return min + Math.random() * (max - min);
+            }
+
+            function playTone(freq, duration = 0.08, type = "sine", volume = 0.04, delay = 0) {
+                if (!soundOn) return;
+                try {
+                    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+                    gain.gain.setValueAtTime(volume, audioCtx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + delay + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(audioCtx.currentTime + delay);
+                    osc.stop(audioCtx.currentTime + delay + duration);
+                } catch (err) {
+                    // Audio is optional and can fail in some browsers.
+                }
+            }
+
+            function soundSwing() {
+                playTone(180, 0.09, "sawtooth", 0.025);
+                playTone(95, 0.12, "triangle", 0.025, 0.03);
+            }
+
+            function soundHit(type) {
+                if (type === "hr") {
+                    playTone(520, 0.12, "square", 0.05);
+                    playTone(660, 0.16, "square", 0.05, 0.09);
+                    playTone(820, 0.24, "square", 0.05, 0.18);
+                } else if (type === "out") {
+                    playTone(220, 0.08, "triangle", 0.04);
+                    playTone(150, 0.14, "triangle", 0.04, 0.06);
+                } else if (type === "foul") {
+                    playTone(320, 0.06, "sawtooth", 0.02);
+                } else {
+                    playTone(430, 0.09, "square", 0.045);
+                    playTone(560, 0.09, "square", 0.04, 0.05);
+                }
+            }
+
+            function soundCount(positive) {
+                if (positive) {
+                    playTone(760, 0.06, "sine", 0.035);
+                } else {
+                    playTone(130, 0.1, "sine", 0.04);
+                }
+            }
+
+            function soundPitch() {
+                playTone(300, 0.05, "triangle", 0.018);
+            }
+
+            function setMessage(text) {
+                ui.message.textContent = text;
+            }
+
+            function updateUI() {
+                ui.inning.textContent = phase === "over" ? "F" : (inning + (half === "top" ? "T" : "B"));
+                ui.you.textContent = userScore;
+                ui.cpu.textContent = cpuScore;
+                ui.outs.textContent = outs;
+                ui.count.textContent = balls + "-" + strikes;
+                ui.balls.textContent = balls;
+                ui.strikes.textContent = strikes;
+                ui.batting.textContent = offense === "user" ? "YOU" : "CPU";
+                ui.bases.forEach((el, i) => el.classList.toggle("on", bases[i]));
+            }
+
+            function updateActionButton() {
+                if (phase === "menu") {
+                    ui.action.textContent = "PLAY BALL";
+                    ui.action.className = "";
+                } else if (phase === "break") {
+                    ui.action.textContent = "CONTINUE";
+                    ui.action.className = "";
+                } else if (phase === "over") {
+                    ui.action.textContent = "PLAY AGAIN";
+                    ui.action.className = "";
+                } else if (phase === "bat") {
+                    ui.action.textContent = "SWING";
+                    ui.action.className = "";
+                } else if (phase === "pitch") {
+                    ui.action.textContent = "PITCH";
+                    ui.action.className = "pitch";
+                }
+            }
+
+            function startGame() {
+                userScore = 0;
+                cpuScore = 0;
+                inning = 1;
+                half = "top";
+                offense = "user";
+                phase = "bat";
+                ball.kind = "idle";
+                startHalf();
+            }
+
+            function startHalf() {
+                outs = 0;
+                balls = 0;
+                strikes = 0;
+                bases = [false, false, false];
+                offense = half === "top" ? "user" : "cpu";
+                phase = offense === "user" ? "bat" : "pitch";
+                ball.kind = "idle";
+                batSwing = 0;
+                updateUI();
+                updateActionButton();
+                prepareAtBat();
+            }
+
+            function prepareNextPitch(resetCount) {
+                if (resetCount) {
+                    balls = 0;
+                    strikes = 0;
+                }
+                batSwing = 0;
+                ball.kind = "idle";
+                updateUI();
+
+                if (phase === "bat") {
+                    mode = "ready";
+                    readyTimer = 0.9;
+                    setMessage("Get ready to swing...");
+                } else {
+                    mode = "aim";
+                    aimY = ZONE_CENTER;
+                    aimDir = 1;
+                    setMessage("Aim your pitch, then release!");
+                }
+                updateActionButton();
+            }
+
+            function prepareAtBat() {
+                prepareNextPitch(true);
+            }
+
+            function startUserPitch() {
+                mode = "active";
+                const targetY = randomBetween(ZONE_TOP - 24, ZONE_BOTTOM + 24);
+                const inZone = targetY >= ZONE_TOP && targetY <= ZONE_BOTTOM;
+                ball = {
+                    kind: "pitch",
+                    x: PITCHER_X + 28,
+                    y: PITCHER_Y - 50,
+                    vx: PITCH_SPEED,
+                    vy: 0,
+                    targetY: targetY,
+                    inZone: inZone,
+                    willSwing: false,
+                    decided: false,
+                    resolved: false,
+                    spin: 0,
+                    outcome: null,
+                    resultDelay: 0
+                };
+                soundPitch();
+                setMessage(offense === "user" ? "SWING!" : "");
+            }
+
+            function swing() {
+                if (phase !== "bat" || (mode !== "active" && mode !== "ready")) return;
+                if (mode === "ready") {
+                    startUserPitch();
+                    return;
+                }
+                if (ball.kind !== "pitch" || ball.resolved) return;
+                batSwing = 0.2;
+                soundSwing();
+                resolveUserSwing();
+            }
+
+            function resolveUserSwing() {
+                ball.resolved = true;
+                const distanceFromPlate = Math.abs(ball.x - PLATE_X);
+                const inReach = distanceFromPlate <= 34 && ball.y >= ZONE_TOP - 22 && ball.y <= ZONE_BOTTOM + 22;
+
+                if (!inReach) {
+                    addStrike("Swing and a miss!");
+                    return;
+                }
+
+                const timingQuality = 1 - distanceFromPlate / 34;
+                const pitchLocationQuality = 1 - Math.abs(ball.y - ZONE_CENTER) / ((ZONE_BOTTOM - ZONE_TOP) / 2 + 22);
+                const quality = clamp(timingQuality * 0.82 + pitchLocationQuality * 0.18, 0, 1.04);
+
+                if (quality >= 0.94) {
+                    launchHit("hr");
+                } else if (quality >= 0.76) {
+                    launchHit("double");
+                } else if (quality >= 0.48) {
+                    launchHit("single");
+                } else if (quality >= 0.26) {
+                    launchHit("out");
+                } else {
+                    launchHit("foul");
+                }
+            }
+
+            function resolveUserNoSwing() {
+                ball.resolved = true;
+                if (ball.inZone) {
+                    addStrike("Strike! Should have swung.");
+                } else {
+                    addBall("Ball.");
+                }
+            }
+
+            function throwPitch() {
+                if (phase !== "pitch" || mode !== "aim") return;
+                mode = "active";
+                const targetY = aimY;
+                const inZone = targetY >= ZONE_TOP && targetY <= ZONE_BOTTOM;
+                const centerQuality = 1 - Math.abs(targetY - ZONE_CENTER) / ((ZONE_BOTTOM - ZONE_TOP) / 2);
+                const swingProbability = clamp(
+                    0.18 + (inZone ? 0.42 : 0.08) + (balls - strikes) * 0.06 + centerQuality * 0.18,
+                    0.08,
+                    0.9
+                );
+
+                ball = {
+                    kind: "pitch",
+                    x: PITCHER_X + 28,
+                    y: PITCHER_Y - 50,
+                    vx: PITCH_SPEED,
+                    vy: 0,
+                    targetY: targetY,
+                    inZone: inZone,
+                    willSwing: Math.random() < swingProbability,
+                    decided: false,
+                    resolved: false,
+                    spin: 0,
+                    outcome: null,
+                    resultDelay: 0
+                };
+
+                soundPitch();
+                setMessage("Pitch away!");
+            }
+
+            function resolveCpuSwing() {
+                ball.resolved = true;
+                batSwing = 0.2;
+                const centerQuality = 1 - Math.abs(ball.targetY - ZONE_CENTER) / ((ZONE_BOTTOM - ZONE_TOP) / 2);
+
+                if (!ball.inZone) {
+                    if (Math.random() < 0.35) {
+                        launchHit("out", "cpu");
+                    } else {
+                        addStrike("CPU swings and misses!");
+                    }
+                    return;
+                }
+
+                const quality = clamp(centerQuality * 0.72 + Math.random() * 0.36, 0, 1.05);
+                if (quality >= 0.88) {
+                    launchHit("hr", "cpu");
+                } else if (quality >= 0.66) {
+                    launchHit("double", "cpu");
+                } else if (quality >= 0.40) {
+                    launchHit("single", "cpu");
+                } else if (quality >= 0.16) {
+                    launchHit("out", "cpu");
+                } else {
+                    launchHit("foul", "cpu");
+                }
+            }
+
+            function resolveCpuNoSwing() {
+                ball.resolved = true;
+                if (ball.inZone) {
+                    addStrike("CPU takes a strike.");
+                } else {
+                    addBall("Ball. CPU lays off.");
+                }
+            }
+
+            function launchHit(type, team = offense) {
+                const hitY = ball.kind === "pitch" ? ball.y : ZONE_CENTER;
+                const speeds = {
+                    hr: { vx: -12.2, vy: -7.6, delay: 1.45 },
+                    double: { vx: -8.0, vy: -3.8, delay: 1.2 },
+                    single: { vx: -5.8, vy: -1.8, delay: 0.95 },
+                    out: { vx: -4.0, vy: 3.8, delay: 0.9 },
+                    foul: { vx: -3.4, vy: 4.6, delay: 0.65 }
+                };
+                const spec = speeds[type];
+                ball = {
+                    kind: "hit",
+                    x: PLATE_X - 14,
+                    y: hitY,
+                    vx: spec.vx,
+                    vy: spec.vy,
+                    targetY: hitY,
+                    inZone: false,
+                    willSwing: false,
+                    decided: false,
+                    resolved: true,
+                    spin: 0,
+                    outcome: type,
+                    resultDelay: spec.delay
+                };
+                mode = "flight";
+                batSwing = Math.max(batSwing, 0.12);
+                soundHit(type);
+
+                if (type === "hr") setMessage("HOME RUN!");
+                else if (type === "double") setMessage(team === "cpu" ? "CPU double!" : "Double!");
+                else if (type === "single") setMessage(team === "cpu" ? "CPU single!" : "Base hit!");
+                else if (type === "out") setMessage(team === "cpu" ? "CPU out!" : "Out!");
+                else setMessage("Foul ball!");
+            }
+
+            function finishOutcome(type, team) {
+                ball.kind = "idle";
+                mode = "result";
+
+                if (type === "foul") {
+                    if (strikes < 2) {
+                        strikes += 1;
+                        setMessage("Foul ball. Count " + balls + "-" + strikes);
+                        updateUI();
+                    } else {
+                        setMessage("Foul ball. Still " + balls + "-" + strikes);
+                        updateUI();
+                    }
+                    afterAtBatResult(false);
+                    return;
+                }
+
+                if (type === "out") {
+                    outs += 1;
+                    updateUI();
+                    if (outs >= 3) {
+                        setMessage("Three outs!");
+                        endHalf();
+                        return;
+                    }
+                    setMessage(team === "cpu" ? "CPU out!" : "Out!");
+                    afterAtBatResult(true);
+                    return;
+                }
+
+                let runs = 0;
+                if (type === "single") {
+                    runs = advanceBases("single");
+                } else if (type === "double") {
+                    runs = advanceBases("double");
+                } else if (type === "hr") {
+                    runs = advanceBases("hr");
+                }
+                addRuns(runs, team);
+                updateUI();
+                afterAtBatResult(true);
+            }
+
+            function addStrike(message) {
+                strikes += 1;
+                soundCount(false);
+                if (strikes >= 3) {
+                    outs += 1;
+                    strikes = 0;
+                    balls = 0;
+                    updateUI();
+                    if (outs >= 3) {
+                        setMessage("Strikeout! Three outs!");
+                        endHalf();
+                    } else {
+                        setMessage("Strikeout! " + message);
+                        afterAtBatResult(true);
+                    }
+                } else {
+                    setMessage(message);
+                    updateUI();
+                    afterAtBatResult(false);
+                }
+            }
+
+            function addBall(message) {
+                balls += 1;
+                soundCount(true);
+                if (balls >= 4) {
+                    const runs = applyWalk();
+                    balls = 0;
+                    strikes = 0;
+                    addRuns(runs, offense);
+                    updateUI();
+                    setMessage("Walk!");
+                    afterAtBatResult(true);
+                } else {
+                    setMessage(message);
+                    updateUI();
+                    afterAtBatResult(false);
+                }
+            }
+
+            function advanceBases(type) {
+                let runs = 0;
+                if (type === "single") {
+                    if (bases[2]) runs += 1;
+                    bases[2] = bases[1];
+                    bases[1] = bases[0];
+                    bases[0] = true;
+                } else if (type === "double") {
+                    if (bases[2]) runs += 1;
+                    if (bases[1]) runs += 1;
+                    bases[2] = bases[0];
+                    bases[1] = true;
+                    bases[0] = false;
+                } else if (type === "hr") {
+                    runs = (bases[0] ? 1 : 0) + (bases[1] ? 1 : 0) + (bases[2] ? 1 : 0) + 1;
+                    bases = [false, false, false];
+                }
+                return runs;
+            }
+
+            function applyWalk() {
+                let runs = 0;
+                if (!bases[0]) {
+                    bases[0] = true;
+                } else if (!bases[1]) {
+                    bases[0] = true;
+                    bases[1] = true;
+                } else if (!bases[2]) {
+                    bases[0] = true;
+                    bases[1] = true;
+                    bases[2] = true;
+                } else {
+                    bases = [true, true, true];
+                    runs = 1;
+                }
+                return runs;
+            }
+
+            function addRuns(runs, team) {
+                if (team === "user") {
+                    userScore += runs;
+                } else {
+                    cpuScore += runs;
+                }
+            }
+
+            function afterAtBatResult(resetCount) {
+                mode = "result";
+                resultTimer = 0.75;
+                pendingCallback = () => prepareNextPitch(resetCount);
+            }
+
+            function endHalf() {
+                mode = "result";
+                resultTimer = 1.15;
+                pendingCallback = () => {
+                    if (half === "top") {
+                        half = "bottom";
+                    } else {
+                        half = "top";
+                        inning += 1;
+                    }
+
+                    if (inning > totalInnings) {
+                        endGame();
+                    } else {
+                        phase = "break";
+                        mode = "idle";
+                        updateActionButton();
+                        updateUI();
+                        if (half === "top") {
+                            setMessage("Start the " + inning + " inning. You're up!");
+                        } else {
+                            setMessage("You're pitching now. Get three outs!");
+                        }
+                    }
+                };
+            }
+
+            function endGame() {
+                phase = "over";
+                mode = "idle";
+                ball.kind = "idle";
+                updateUI();
+                updateActionButton();
+
+                if (userScore > cpuScore) {
+                    setMessage("YOU WIN " + userScore + "-" + cpuScore + "!");
+                    soundHit("hr");
+                } else if (cpuScore > userScore) {
+                    setMessage("CPU WINS " + cpuScore + "-" + userScore + ". Rematch?");
+                    soundCount(false);
+                } else {
+                    setMessage("TIE GAME " + userScore + "-" + cpuScore + "!");
+                    soundPitch();
+                }
+            }
+
+            function continueFromBreak() {
+                if (phase !== "break") return;
+                startHalf();
+            }
+
+            function action() {
+                if (phase === "menu" || phase === "over") {
+                    startGame();
+                    return;
+                }
+                if (phase === "break") {
+                    continueFromBreak();
+                    return;
+                }
+                if (phase === "bat") {
+                    swing();
+                } else if (phase === "pitch") {
+                    throwPitch();
+                }
+            }
+
+            function resetBall() {
+                ball.kind = "idle";
+                ball.resolved = false;
+            }
+
+            function update(dt) {
+                const seconds = dt / 1000;
+
+                if (mode === "ready") {
+                    readyTimer -= seconds;
+                    if (readyTimer <= 0) {
+                        startUserPitch();
+                    }
+                }
+
+                if (mode === "aim") {
+                    aimY += aimDir * 4.2;
+                    if (aimY >= ZONE_BOTTOM + 18) {
+                        aimY = ZONE_BOTTOM + 18;
+                        aimDir = -1;
+                    } else if (aimY <= ZONE_TOP - 18) {
+                        aimY = ZONE_TOP - 18;
+                        aimDir = 1;
+                    }
+                }
+
+                if (ball.kind === "pitch" && !ball.resolved) {
+                    ball.x += ball.vx;
+                    const flightProgress = clamp((ball.x - PITCHER_X) / (PLATE_X - PITCHER_X), 0, 1);
+                    ball.y = lerp(PITCHER_Y - 50, ball.targetY, clamp(flightProgress / 0.28, 0, 1));
+                    ball.spin += 0.28;
+
+                    if (offense === "cpu") {
+                        if (!ball.decided && ball.x >= PLATE_X - 26) {
+                            ball.decided = true;
+                            if (ball.willSwing) {
+                                resolveCpuSwing();
+                            }
+                        }
+                        if (!ball.resolved && ball.decided && !ball.willSwing && ball.x > PLATE_X + 36) {
+                            resolveCpuNoSwing();
+                        }
+                    } else {
+                        if (ball.x > PLATE_X + 36) {
+                            resolveUserNoSwing();
+                        }
+                    }
+                }
+
+                if (ball.kind === "hit") {
+                    ball.x += ball.vx;
+                    ball.y += ball.vy;
+                    ball.vy += 0.42;
+                    ball.spin += 0.22;
+
+                    if (ball.y > GROUND_Y - 8) {
+                        ball.y = GROUND_Y - 8;
+                        if (ball.vy > 0) ball.vy *= -0.42;
+                        ball.vx *= 0.62;
+                    }
+
+                    ball.resultDelay -= seconds;
+                    if (ball.resultDelay <= 0) {
+                        finishOutcome(ball.outcome, offense);
+                    }
+                }
+
+                if (batSwing > 0) {
+                    batSwing -= seconds;
+                }
+
+                if (mode === "result") {
+                    resultTimer -= seconds;
+                    if (resultTimer <= 0) {
+                        mode = "idle";
+                        const callback = pendingCallback;
+                        pendingCallback = null;
+                        if (callback) callback();
+                    }
+                }
+            }
+
+            function drawField() {
+                const sky = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+                sky.addColorStop(0, "#062e45");
+                sky.addColorStop(0.6, "#0c5d72");
+                sky.addColorStop(1, "#7fc7b2");
+                ctx.fillStyle = sky;
+                ctx.fillRect(0, 0, W, GROUND_Y);
+
+                const grass = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+                grass.addColorStop(0, "#25915e");
+                grass.addColorStop(1, "#0d5a3a");
+                ctx.fillStyle = grass;
+                ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+
+                // Stadium wall and fence
+                ctx.fillStyle = "#0a2f3a";
+                ctx.fillRect(0, WALL_TOP, WALL_X, WALL_BOTTOM - WALL_TOP);
+                ctx.fillStyle = "#123f4c";
+                ctx.fillRect(WALL_X - 8, WALL_TOP - 8, 8, WALL_BOTTOM - WALL_TOP + 8);
+                ctx.strokeStyle = "#c6d8df";
+                ctx.lineWidth = 2;
+                for (let y = WALL_TOP; y < WALL_BOTTOM; y += 18) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(WALL_X, y - 10);
+                    ctx.stroke();
+                }
+                ctx.fillStyle = "#f6c453";
+                ctx.font = "900 14px 'Trebuchet MS'";
+                ctx.textAlign = "center";
+                ctx.fillText("HOME RUN", WALL_X / 2, WALL_TOP + 24);
+
+                // Simple crowd dots
+                ctx.fillStyle = "rgba(230, 245, 250, 0.35)";
+                for (let i = 0; i < 80; i++) {
+                    const crowdY = 25 + ((i * 37) % 120);
+                    const crowdX = 22 + ((i * 71) % 700);
+                    ctx.beginPath();
+                    ctx.arc(crowdX, crowdY, 2.4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Foul line and home plate area
+                ctx.strokeStyle = "rgba(255,255,255,0.5)";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(WALL_X, GROUND_Y);
+                ctx.lineTo(PLATE_X + 40, GROUND_Y);
+                ctx.stroke();
+
+                // Dirt around the plate
+                ctx.fillStyle = "#b86f42";
+                ctx.beginPath();
+                ctx.ellipse(PLATE_X, GROUND_Y + 4, 58, 17, 0, Math.PI, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "#d8d0b8";
+                ctx.beginPath();
+                ctx.moveTo(PLATE_X - 15, GROUND_Y);
+                ctx.lineTo(PLATE_X + 15, GROUND_Y);
+                ctx.lineTo(PLATE_X + 8, GROUND_Y - 14);
+                ctx.lineTo(PLATE_X - 8, GROUND_Y - 14);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function drawStrikeZone() {
+                ctx.strokeStyle = "rgba(255,255,255,0.72)";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(ZONE_LEFT, ZONE_TOP, ZONE_RIGHT - ZONE_LEFT, ZONE_BOTTOM - ZONE_TOP);
+
+                if (phase === "pitch" && mode === "aim") {
+                    const glow = 0.65 + Math.sin(performance.now() / 80) * 0.3;
+                    ctx.save();
+                    ctx.shadowColor = "rgba(255,209,102," + glow + ")";
+                    ctx.shadowBlur = 14;
+                    ctx.strokeStyle = "#ffd166";
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(PLATE_X - 4, aimY, 13, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+
+            function drawPitcher() {
+                const windup = ball.kind === "pitch" ? 1 : 0;
+                const bob = mode === "aim" ? Math.sin(performance.now() / 120) * 3 : 0;
+                ctx.save();
+                ctx.translate(PITCHER_X, PITCHER_Y + bob);
+                ctx.fillStyle = "#1c3b4d";
+                ctx.beginPath();
+                ctx.arc(0, -46, 16, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "#ef476f";
+                ctx.fillRect(-11, -31, 22, 24);
+                ctx.strokeStyle = "#d9e6ee";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-2, -33);
+                ctx.lineTo(-2, -8);
+                ctx.lineTo(4, 8);
+                ctx.stroke();
+                ctx.strokeStyle = "#e8b28a";
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(1, -8);
+                ctx.lineTo(12, 8);
+                ctx.moveTo(1, -8);
+                ctx.lineTo(-12, 12);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function drawBatter() {
+                const swingProgress = batSwing > 0 ? 1 - batSwing / 0.2 : 0;
+                const batAngle = swingProgress > 0 ? -0.15 + swingProgress * 1.65 : 0.25;
+                ctx.save();
+                ctx.translate(BATTER_X, BATTER_Y);
+                ctx.fillStyle = offense === "cpu" ? "#273d67" : "#8d2f3f";
+                ctx.beginPath();
+                ctx.arc(0, -52, 16, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = offense === "cpu" ? "#d8d8d8" : "#f3f4f6";
+                ctx.fillRect(-12, -37, 24, 29);
+                ctx.strokeStyle = "#e8b28a";
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(1, -8);
+                ctx.lineTo(11, 10);
+                ctx.moveTo(1, -8);
+                ctx.lineTo(-12, 10);
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(12, -33);
+                ctx.rotate(batAngle);
+                ctx.strokeStyle = "#f4d9a0";
+                ctx.lineWidth = 8;
+                ctx.lineCap = "round";
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(58, -12);
+                ctx.stroke();
+                ctx.strokeStyle = "#7a5630";
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(16, -3);
+                ctx.stroke();
+                ctx.restore();
+                ctx.restore();
+            }
+
+            function drawBall() {
+                if (ball.kind === "idle") return;
+                ctx.save();
+                ctx.translate(ball.x, ball.y);
+                ctx.rotate(ball.spin);
+                ctx.fillStyle = "#f8f8f5";
+                ctx.beginPath();
+                ctx.arc(0, 0, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "#c33d52";
+                ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                ctx.arc(0, 0, 8, -1.4, -1.4 + Math.PI);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(0, 0, 8, -1.4 + Math.PI, -1.4 + Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function render() {
+                ctx.clearRect(0, 0, W, H);
+                drawField();
+                drawStrikeZone();
+                drawPitcher();
+                drawBatter();
+                drawBall();
+            }
+
+            function frame(now) {
+                const dt = Math.min(50, now - lastTime);
+                lastTime = now;
+                update(dt);
+                render();
+                requestAnimationFrame(frame);
+            }
+
+            function toggleSound() {
+                soundOn = !soundOn;
+                ui.sound.textContent = "SOUND: " + (soundOn ? "ON" : "OFF");
+                if (soundOn) playTone(520, 0.06, "sine", 0.04);
+            }
+
+            ui.action.addEventListener("click", action);
+            ui.restart.addEventListener("click", startGame);
+            ui.sound.addEventListener("click", toggleSound);
+
+            canvas.addEventListener("pointerdown", (event) => {
+                event.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const scaleY = H / rect.height;
+                const y = (event.clientY - rect.top) * scaleY;
+
+                if (phase === "pitch" && mode === "aim") {
+                    aimY = clamp(y, ZONE_TOP - 16, ZONE_BOTTOM + 16);
+                }
+                action();
+            });
+
+            window.addEventListener("keydown", (event) => {
+                if (event.code === "Space" || event.code === "Enter") {
+                    event.preventDefault();
+                    action();
+                }
+                if (event.code === "ArrowUp" && phase === "pitch" && mode === "aim") {
+                    aimY = clamp(aimY - 7, ZONE_TOP - 16, ZONE_BOTTOM + 16);
+                }
+                if (event.code === "ArrowDown" && phase === "pitch" && mode === "aim") {
+                    aimY = clamp(aimY + 7, ZONE_TOP - 16, ZONE_BOTTOM + 16);
+                }
+            });
+
+            updateUI();
+            updateActionButton();
+            requestAnimationFrame(frame);
+        })();
+    </script>
+</body>
+</html>

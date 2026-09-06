@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Music Studio — Instruments & Beats</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #12081f;
+            --panel: #1a1a2e;
+            --panel-2: #242440;
+            --accent: #ff5733;
+            --accent-2: #ff99c8;
+            --accent-3: #33a2ff;
+            --accent-4: #ffe082;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            min-height: 100%;
+            background:
+                radial-gradient(circle at 15% 10%, rgba(255, 87, 51, .18), transparent 42%),
+                radial-gradient(circle at 85% 20%, rgba(51, 162, 255, .16), transparent 45%),
+                radial-gradient(circle at 50% 100%, rgba(255, 153, 200, .12), transparent 50%),
+                var(--bg);
+            color: #fff;
+            font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass {
+            background: rgba(26, 26, 46, .72);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,.08);
+            box-shadow: 0 20px 50px rgba(0,0,0,.45);
+        }
+        .neon-text {
+            background: linear-gradient(90deg, var(--accent-2), var(--accent), var(--accent-3));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        button { cursor: pointer; font-family: inherit; }
+        input[type=range] { accent-color: var(--accent); width: 100%; }
+        /* Keep taps snappy on touch: no double-tap zoom on controls */
+        .step, .pad, .white-key, .black-key, .tab-btn, .inst-btn, button { touch-action: manipulation; }
+
+        /* ===== Beat grid ===== */
+        .step {
+            border-radius: 8px;
+            background: rgba(255,255,255,.05);
+            border: 1px solid rgba(255,255,255,.06);
+            transition: transform .06s ease, background .1s ease, box-shadow .1s ease;
+            min-height: 34px;
+        }
+        .step.beat-4 { background: rgba(255,255,255,.10); }
+        .step.on { box-shadow: 0 0 14px currentColor; }
+        .step.playing { outline: 2px solid rgba(255,255,255,.5); outline-offset: 1px; transform: scale(1.08); }
+
+        /* ===== Keyboard ===== */
+        .keys { position: relative; height: 220px; display: flex; }
+        .white-key {
+            flex: 1; position: relative; background: linear-gradient(#fff, #e7eaf2);
+            border: 1px solid #b9c0d0; border-radius: 0 0 8px 8px; margin: 0 1px;
+            box-shadow: inset 0 -8px 12px rgba(0,0,0,.08);
+            transition: transform .05s, background .05s;
+        }
+        .white-key:active, .white-key.pressed { background: #ffe082; transform: translateY(3px); }
+        .black-key {
+            position: absolute; top: 0; width: 6.4%; height: 58%;
+            background: linear-gradient(#2a2a3a, #0e0e18);
+            border: 1px solid #000; border-radius: 0 0 6px 6px; z-index: 3;
+            box-shadow: 0 5px 6px rgba(0,0,0,.5); transform: translateX(-50%);
+            transition: background .05s, transform .05s;
+        }
+        .black-key:active, .black-key.pressed { background: #ff5733; transform: translateX(-50%) translateY(2px); }
+        .key-label {
+            position: absolute; bottom: 10px; left: 0; right: 0; text-align: center;
+            font-size: 12px; font-weight: 800; color: #6b7280; pointer-events: none;
+        }
+        .black-key .key-label { color: rgba(255,255,255,.5); bottom: 8px; font-size: 10px; }
+
+        /* ===== Pads ===== */
+        .pad {
+            aspect-ratio: 1; border-radius: 18px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 4px;
+            background: var(--panel); border: 1px solid rgba(255,255,255,.09);
+            box-shadow: inset 0 -6px 0 rgba(0,0,0,.35), 0 8px 18px rgba(0,0,0,.35);
+            transition: transform .06s, box-shadow .1s, background .1s;
+        }
+        .pad:active, .pad.pressed { transform: translateY(4px) scale(.97); background: var(--panel-2); }
+
+        .chip { display: inline-flex; align-items: center; gap: 6px; }
+        .track-chip { font-size: 12px; font-weight: 700; }
+        .tab-btn { transition: all .15s ease; }
+        .tab-btn.active {
+            background: linear-gradient(120deg, var(--accent), var(--accent-2));
+            color: #1a1a2e; box-shadow: 0 6px 16px rgba(255,87,51,.35);
+        }
+        .inst-btn.active { background: linear-gradient(120deg, var(--accent-3), var(--accent-4)); color: #1a1a2e !important; }
+        .wave-btn.active { background: var(--accent); color: #12081f; }
+
+        .beat-indicator { font-variant-numeric: tabular-nums; letter-spacing: 2px; }
+        @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(255,87,51,.5);} 100% { box-shadow: 0 0 0 12px rgba(255,87,51,0);} }
+        .rec { background: #ef4444 !important; color: #fff !important; animation: pulseRing 1s infinite; }
+        .scroll-x { overflow-x: auto; }
+        .no-bar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<div class="flex-1 w-full max-w-6xl mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <header class="text-center mb-6">
+        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-none">
+            <span class="mr-2">🎹</span><span class="neon-text">Music Studio</span>
+        </h1>
+        <p class="text-gray-300 mt-3 text-sm md:text-base">
+            Play every instrument &amp; build the perfect beat. Tap the keys, smash the pads, and let the sequencer do the rest.
+        </p>
+    </header>
+
+    <!-- Transport / controls -->
+    <section class="glass rounded-2xl p-4 md:p-5 mb-5">
+        <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+                <button id="playBtn" class="h-12 w-12 rounded-full bg-gradient-to-br from-[#ff5733] to-[#ff99c8] text-2xl font-black text-[#12081f] shadow-lg shadow-[#ff5733]/30 hover:scale-105 transition">▶</button>
+                <button id="stopBtn" class="h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-xl transition">⏹</button>
+            </div>
+
+            <div class="flex items-center gap-3 flex-1 min-w-[220px]">
+                <span class="text-xs font-bold text-gray-400">BPM</span>
+                <input id="bpm" type="range" min="60" max="200" value="112" class="w-full">
+                <span id="bpmVal" class="beat-indicator text-[#ff99c8] font-extrabold w-12 text-center">112</span>
+            </div>
+
+            <div class="flex items-center gap-3 flex-1 min-w-[180px]">
+                <span class="text-xs font-bold text-gray-400">VOL</span>
+                <input id="volume" type="range" min="0" max="100" value="90" class="w-full">
+                <span id="volVal" class="text-[#33a2ff] font-extrabold w-10 text-center">90</span>
+            </div>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div class="flex items-center gap-2">
+                <button id="clearBtn" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold">Clear</button>
+                <button id="presetBtn" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold">Groove 🥁</button>
+            </div>
+            <div class="flex items-center gap-2 ml-auto">
+                <span class="bg-white/10 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-300" id="beatDisplay">--</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tabs -->
+    <nav class="flex gap-2 mb-5 flex-wrap">
+        <button data-tab="drums" class="tab-btn active flex-1 min-w-[120px] px-4 py-3 rounded-xl bg-white/5 border border-white/10 font-bold text-sm">🥁 Beat Machine</button>
+        <button data-tab="instruments" class="tab-btn flex-1 min-w-[120px] px-4 py-3 rounded-xl bg-white/5 border border-white/10 font-bold text-sm">🎛️ Instruments</button>
+    </nav>
+
+    <!-- ============ DRUM MACHINE TAB ============ -->
+    <section id="panels-drums" class="panel glass rounded-2xl p-4 md:p-5">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-bold text-[#ff99c8]">Beat Sequencer</h2>
+            <span class="text-xs text-gray-400">click squares to build your pattern</span>
+        </div>
+        <div class="scroll-x no-bar pb-2">
+            <div class="min-w-[640px]">
+                <div id="stepLabels" class="grid" style="grid-template-columns: 96px repeat(16,1fr); margin-top:-6px; margin-bottom:6px;"></div>
+                <div id="beatGrid"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ INSTRUMENTS TAB ============ -->
+    <section id="panels-instruments" class="panel glass rounded-2xl p-4 md:p-6 hidden">
+        <h2 class="text-lg font-bold text-[#33a2ff] mb-3">Instrument Playground</h2>
+
+        <div id="instSelector" class="flex gap-2 flex-wrap mb-5">
+            <button data-inst="piano" class="inst-btn active px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-gray-200">🎹 Piano</button>
+            <button data-inst="synth" class="inst-btn px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-gray-200">🎛️ Synth</button>
+            <button data-inst="bass" class="inst-btn px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-gray-200">🎸 Bass</button>
+            <button data-inst="guitar" class="inst-btn px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-gray-200">🎸 Guitar</button>
+            <button data-inst="bells" class="inst-btn px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-gray-200">🔔 Bells</button>
+            <button data-inst="strings" class="inst-btn px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-gray-200">🎻 Strings</button>
+            <button data-inst="drums" class="inst-btn px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-bold text-gray-200">🥁 Pads</button>
+        </div>
+
+        <!-- per-instrument controls -->
+        <div id="controlsWrap" class="flex flex-wrap items-center gap-4 mb-5"></div>
+
+        <!-- shared keyboard view (hidden for drums) -->
+        <div id="keyboardWrap">
+            <div id="keyboard" class="keys rounded-xl overflow-hidden"></div>
+            <p id="keyHint" class="text-xs text-gray-400 mt-3 text-center"></p>
+        </div>
+
+        <!-- drum pads view (only for drums) -->
+        <div id="padsWrap" class="hidden grid grid-cols-4 sm:grid-cols-4 md:grid-cols-8 gap-3"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="text-center text-gray-500 text-xs mt-6">
+        Tip: use your computer keyboard (A S D F G H J K L ...) to play notes &amp; pads while the beat runs.
+    </footer>
+</div>
+
+<script>
+/* ============================================================
+   AUDIO ENGINE
+============================================================ */
+let ctx, master, comp, reverbSend, noiseBuffer;
+
+function audioReady(){ return !!ctx; }
+function initAudio(){
+    if (ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ctx = new AC();
+    master = ctx.createGain();
+    master.gain.value = (masterPend / 100) * 0.9;
+    comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -14; comp.knee.value = 24; comp.ratio.value = 7;
+    comp.attack.value = 0.003; comp.release.value = 0.25;
+    master.connect(comp); comp.connect(ctx.destination);
+
+    noiseBuffer = createNoiseBuffer();
+    reverbSend = ctx.createGain(); reverbSend.gain.value = 0.22;
+    const reverb = createConvolver(2.4, 2.2);
+    reverbSend.connect(reverb); reverb.connect(comp);
+}
+
+function createNoiseBuffer(){
+    const len = ctx.sampleRate;
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    return buf;
+}
+function createConvolver(duration, decay){
+    const rate = ctx.sampleRate, len = rate * duration;
+    const buf = ctx.createBuffer(2, len, rate);
+    for (let ch = 0; ch < 2; ch++){
+        const d = buf.getChannelData(ch);
+        for (let i = 0; i < len; i++){
+            d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+        }
+    }
+    const c = ctx.createConvolver(); c.buffer = buf; return c;
+}
+
+const midiToFreq = m => 440 * Math.pow(2, (m - 69) / 12);
+const now = () => ctx.currentTime;
+function noiseSrc(){
+    const s = ctx.createBufferSource(); s.buffer = noiseBuffer; s.loop = true; return s;
+}
+
+/* --- melodic voice builder --- */
+function voice(when, fn){
+    // route voice to main dry + reverb send
+    const g = ctx.createGain();
+    g.connect(master); g.connect(reverbSend);
+    fn(g, when);
+}
+
+const Kit = {
+    piano(midi, when){ 
+        const t = when == null ? now() : when;
+        voice(t, (g, t0) => {
+            g.gain.setValueAtTime(0, t0);
+            g.gain.linearRampToValueAtTime(0.5, t0 + 0.008);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.9);
+            const f = midiToFreq(midi);
+            const partials = [[1, 1, 'sine'], [2, 0.42, 'triangle'], [3, 0.16, 'sine'], [4, 0.07, 'sine']];
+            partials.forEach(([m, amp, type], i) => {
+                const o = ctx.createOscillator(); o.type = type; o.frequency.value = f * m;
+                const og = ctx.createGain(); og.gain.value = amp;
+                o.connect(og); og.connect(g);
+                o.start(t0); o.stop(t0 + 2.1);
+            });
+        });
+    },
+    synth(midi, when, waveform){
+        const t = when == null ? now() : when;
+        const wf = waveform || 'sawtooth';
+        voice(t, (g, t0) => {
+            const dur = 1.4;
+            g.gain.setValueAtTime(0, t0);
+            g.gain.linearRampToValueAtTime(0.34, t0 + 0.01);
+            g.gain.setValueAtTime(0.34, t0 + 0.28);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+            const f = midiToFreq(midi);
+            const filt = ctx.createBiquadFilter(); filt.type = 'lowpass';
+            filt.frequency.setValueAtTime(f * 9, t0);
+            filt.frequency.exponentialRampToValueAtTime(f * 1.5, t0 + dur);
+            filt.Q.value = 8;
+            filt.connect(g);
+            // two detuned oscillators
+            [-5, 5].forEach(det => {
+                const o = ctx.createOscillator(); o.type = wf; o.frequency.value = f;
+                o.detune.value = det;
+                const og = ctx.createGain(); og.gain.value = 0.5;
+                o.connect(og); og.connect(filt);
+                o.start(t0); o.stop(t0 + dur + 0.05);
+            });
+        });
+    },
+    bass(midi, when, waveform){
+        const t = when == null ? now() : when;
+        const wf = waveform || 'sawtooth';
+        voice(t, (g, t0) => {
+            const dur = 1.1;
+            g.gain.setValueAtTime(0, t0);
+            g.gain.linearRampToValueAtTime(0.45, t0 + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+            const f = midiToFreq(midi);
+            const filt = ctx.createBiquadFilter(); filt.type = 'lowpass';
+            filt.frequency.setValueAtTime(900, t0);
+            filt.frequency.exponentialRampToValueAtTime(140, t0 + dur);
+            filt.Q.value = 10;
+            filt.connect(g);
+            const o1 = ctx.createOscillator(); o1.type = wf; o1.frequency.value = f;
+            const og1 = ctx.createGain(); og1.gain.value = 0.6;
+            o1.connect(og1); og1.connect(filt);
+            const o2 = ctx.createOscillator(); o2.type = 'sine'; o2.frequency.value = f; // sub
+            const og2 = ctx.createGain(); og2.gain.value = 0.5;
+            o2.connect(og2); og2.connect(filt);
+            o1.start(t0); o1.stop(t0 + dur + 0.05);
+            o2.start(t0); o2.stop(t0 + dur + 0.05);
+        });
+    },
+    pluck(midi, when){
+        // karplus-strong style pluck via filtered saw w/ pitch bend feel
+        const t = when == null ? now() : when;
+        voice(t, (g, t0) => {
+            const f = midiToFreq(midi);
+            const dur = 1.0;
+            g.gain.setValueAtTime(0, t0);
+            g.gain.linearRampToValueAtTime(0.42, t0 + 0.004);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+            const filt = ctx.createBiquadFilter(); filt.type = 'lowpass'; filt.Q.value = 18;
+            filt.frequency.setValueAtTime(f * 14, t0);
+            filt.frequency.exponentialRampToValueAtTime(f * 1.2, t0 + dur);
+            filt.connect(g);
+            const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+            o.connect(filt); o.start(t0); o.stop(t0 + dur + 0.02);
+        });
+    },
+    bells(midi, when){
+        // soft mallet / marimba-style tone
+        const t = when == null ? now() : when;
+        voice(t, (g, t0) => {
+            g.gain.setValueAtTime(0, t0);
+            g.gain.linearRampToValueAtTime(0.45, t0 + 0.005);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.9);
+            const f = midiToFreq(midi);
+            [[1, 1, 'sine'], [2, 0.32, 'sine'], [4, 0.1, 'sine']].forEach(([m, amp, type]) => {
+                const o = ctx.createOscillator(); o.type = type; o.frequency.value = f * m;
+                const og = ctx.createGain(); og.gain.value = amp;
+                o.connect(og); og.connect(g);
+                o.start(t0); o.stop(t0 + 1.0);
+            });
+        });
+    },
+    strings(midi, when){
+        // sustained ensemble with slow attack + vibrato
+        const t = when == null ? now() : when;
+        voice(t, (g, t0) => {
+            const dur = 2.4;
+            g.gain.setValueAtTime(0, t0);
+            g.gain.linearRampToValueAtTime(0.28, t0 + 0.45);
+            g.gain.setValueAtTime(0.28, t0 + dur - 0.5);
+            g.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+            const f = midiToFreq(midi);
+            const filt = ctx.createBiquadFilter(); filt.type = 'lowpass';
+            filt.frequency.value = f * 6; filt.Q.value = 1; filt.connect(g);
+            const lfo = ctx.createOscillator(); lfo.frequency.value = 5.5;
+            const lfoGain = ctx.createGain(); lfoGain.gain.value = 3.5;
+            lfo.connect(lfoGain);
+            [[-6, 0.42], [6, 0.42]].forEach(([det, amp]) => {
+                const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det;
+                lfoGain.connect(o.detune);
+                const og = ctx.createGain(); og.gain.value = amp;
+                o.connect(og); og.connect(filt);
+                o.start(t0); o.stop(t0 + dur + 0.05);
+            });
+            const o2 = ctx.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = f * 2; o2.detune.value = 4;
+            const og2 = ctx.createGain(); og2.gain.value = 0.12;
+            o2.connect(og2); og2.connect(filt);
+            o2.start(t0); o2.stop(t0 + dur + 0.05);
+            lfo.start(t0); lfo.stop(t0 + dur + 0.05);
+        });
+    },
+
+    /* --- drums --- */
+    kick(when){
+        const t = when == null ? now() : when;
+        const g = ctx.createGain(); g.connect(master);
+        g.gain.setValueAtTime(1.0, t);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+        const o = ctx.createOscillator(); o.type = 'sine';
+        o.frequency.setValueAtTime(160, t);
+        o.frequency.exponentialRampToValueAtTime(42, t + 0.42);
+        o.connect(g); o.start(t); o.stop(t + 0.55);
+    },
+    snare(when){
+        const t = when == null ? now() : when;
+        const g = ctx.createGain(); g.connect(master);
+        g.gain.setValueAtTime(0.7, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+        const n = noiseSrc(); const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1500;
+        n.connect(hp); hp.connect(g);
+        const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = 220;
+        const og = ctx.createGain(); og.gain.value = 0.5; o.connect(og); og.connect(g);
+        n.start(t); n.stop(t + 0.25); o.start(t); o.stop(t + 0.22);
+    },
+    clap(when){
+        const t = when == null ? now() : when;
+        const g = ctx.createGain(); g.connect(master);
+        g.gain.value = 0.0001;
+        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1400; bp.Q.value = 1;
+        bp.connect(g);
+        for (let i = 0; i < 3; i++){
+            const tt = t + i * 0.012;
+            const n = noiseSrc();
+            const ng = ctx.createGain(); ng.gain.value = 0.0001;
+            ng.gain.setValueAtTime(0.65, tt); ng.gain.exponentialRampToValueAtTime(0.0001, tt + 0.04);
+            n.connect(ng); ng.connect(bp);
+            n.start(tt); n.stop(tt + 0.06);
+        }
+        const n2 = noiseSrc();
+        const tg = ctx.createGain(); tg.gain.value = 0.0001;
+        tg.gain.setValueAtTime(0.4, t + 0.036); tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+        n2.connect(tg); tg.connect(bp);
+        n2.start(t + 0.036); n2.stop(t + 0.22);
+    },
+    hat(when, open){
+        const t = when == null ? now() : when;
+        const dur = open ? 0.42 : 0.05;
+        const g = ctx.createGain(); g.connect(master);
+        g.gain.setValueAtTime(0.42, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        const n = noiseSrc(); const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7200;
+        n.connect(hp); hp.connect(g);
+        n.start(t); n.stop(t + dur + 0.02);
+    },
+    tom(when){
+        const t = when == null ? now() : when;
+        const g = ctx.createGain(); g.connect(master); g.connect(reverbSend);
+        g.gain.setValueAtTime(0.8, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+        const o = ctx.createOscillator(); o.type = 'sine';
+        o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(95, t + 0.4);
+        o.connect(g); o.start(t); o.stop(t + 0.52);
+    },
+    rim(when){
+        const t = when == null ? now() : when;
+        const g = ctx.createGain(); g.connect(master);
+        g.gain.setValueAtTime(0.4, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+        const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = 1800;
+        const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1200;
+        o.connect(hp); hp.connect(g); o.start(t); o.stop(t + 0.07);
+    },
+    cowbell(when){
+        const t = when == null ? now() : when;
+        const g = ctx.createGain(); g.connect(master);
+        g.gain.setValueAtTime(0.4, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+        const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2000; bp.Q.value = 4;
+        [540, 800].forEach(f => {
+            const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = f;
+            o.connect(bp);
+            o.start(t); o.stop(t + 0.3);
+        });
+        bp.connect(g);
+    }
+};
+
+/* ============================================================
+   BEAT SEQUENCER
+============================================================ */
+const TOTAL_STEPS = 16;
+const TRACKS = [
+    { id: 'kick',     label: 'Kick',    color: '#ff5733', play: (when) => Kit.kick(when) },
+    { id: 'snare',    label: 'Snare',   color: '#ff99c8', play: (when) => Kit.snare(when) },
+    { id: 'clap',     label: 'Clap',    color: '#ffe082', play: (when) => Kit.clap(when) },
+    { id: 'hat',      label: 'Closed Hat', color: '#33a2ff', play: (when) => Kit.hat(when, false) },
+    { id: 'openhat',  label: 'Open Hat',  color: '#33a2ff', play: (when) => Kit.hat(when, true) },
+    { id: 'tom',      label: 'Tom',      color: '#9be15d', play: (when) => Kit.tom(when) },
+    { id: 'rim',      label: 'Rim',      color: '#8a5cff', play: (when) => Kit.rim(when) },
+    { id: 'cow',      label: 'Cowbell',  color: '#ffb347', play: (when) => Kit.cowbell(when) },
+];
+
+let pattern = {};
+TRACKS.forEach(t => pattern[t.id] = new Array(TOTAL_STEPS).fill(false));
+
+// default groove
+function defaultPattern(){
+    pattern.kick   = [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0].map(Boolean);
+    pattern.snare  = [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0].map(Boolean);
+    pattern.hat    = [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0].map(Boolean);
+    pattern.openhat= [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,1,0].map(Boolean);
+    pattern.clap   = new Array(TOTAL_STEPS).fill(false);
+    pattern.tom    = new Array(TOTAL_STEPS).fill(false);
+    pattern.rim    = new Array(TOTAL_STEPS).fill(false);
+    pattern.cow    = new Array(TOTAL_STEPS).fill(false);
+}
+defaultPattern();
+
+let bpm = 112;
+let secondsPerStep = 60 / bpm / 4;
+let isPlaying = false;
+let currentStep = 0;
+let nextStepTime = 0;
+let schedulerTimer = null;
+let seqAnchor = 0;
+const lookahead = 25;               // ms
+const scheduleAhead = 0.12;         // s
+
+const beatGrid = document.getElementById('beatGrid');
+const stepLabels = document.getElementById('stepLabels');
+let stepCells = []; // [trackIndex][step] -> element
+
+function buildGrid(){
+    stepCells = [];
+    let html = '';
+    TRACKS.forEach((tr, ti) => {
+        html += `<div class="grid" style="grid-template-columns: 96px repeat(16,1fr); align-items:stretch; margin-bottom:4px;">`;
+        html += `<div class="flex items-center px-2"><span class="chip track-chip" style="color:${tr.color}"><span class="w-2 h-2 rounded-full inline-block" style="background:${tr.color}"></span>${tr.label}</span></div>`;
+        stepCells[ti] = [];
+        for (let s = 0; s < TOTAL_STEPS; s++){
+            const on = pattern[tr.id][s];
+            const beat4 = (s % 4 === 0);
+            stepCells[ti][s] = s; // will be replaced by element refs
+            html += `<div class="step ${on ? 'on' : ''} ${beat4 ? 'beat-4' : ''}" data-track="${ti}" data-step="${s}" style="color:${tr.color}; ${on ? 'background:'+hexToRgba(tr.color,.85) : ''}"></div>`;
+        }
+        html += `</div>`;
+    });
+    beatGrid.innerHTML = html;
+    beatGrid.querySelectorAll('.step').forEach(cell => {
+        const ti = +cell.dataset.track, s = +cell.dataset.step;
+        cell.addEventListener('pointerdown', ev => { ev.preventDefault(); toggleStep(ti, s); });
+    });
+    // rebuild stepCells as element refs
+    stepCells = [];
+    TRACKS.forEach((tr, ti) => {
+        stepCells[ti] = [];
+        for (let s = 0; s < TOTAL_STEPS; s++){
+            stepCells[ti][s] = beatGrid.querySelector(`.step[data-track="${ti}"][data-step="${s}"]`);
+        }
+    });
+    // labels row
+    stepLabels.innerHTML = `<div></div>` + Array.from({length: TOTAL_STEPS}, (_, i) =>
+        `<div class="text-center text-[10px] font-bold ${i%4===0 ? 'text-white' : 'text-gray-500'}">${i+1}</div>`).join('');
+}
+
+function hexToRgba(hex, a){
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+
+function toggleStep(ti, s){
+    initAudio(); if (ctx && ctx.state === 'suspended') ctx.resume();
+    const id = TRACKS[ti].id;
+    pattern[id][s] = !pattern[id][s];
+    const cell = stepCells[ti][s];
+    const on = pattern[id][s];
+    const color = TRACKS[ti].color;
+    cell.classList.toggle('on', on);
+    cell.style.background = on ? hexToRgba(color, .85) : '';
+    // preview sound
+    TRACKS[ti].play();
+}
+
+function scheduleStep(step, when){
+    for (const tr of TRACKS){
+        if (pattern[tr.id][step]){
+            tr.play(when);
+        }
+    }
+}
+
+function scheduler(){
+    while (nextStepTime < ctx.currentTime + scheduleAhead){
+        scheduleStep(currentStep, nextStepTime);
+        currentStep = (currentStep + 1) % TOTAL_STEPS;
+        nextStepTime += secondsPerStep;
+    }
+}
+
+function play(){
+    initAudio(); if (ctx.state === 'suspended') ctx.resume();
+    if (isPlaying) return;
+    isPlaying = true;
+    currentStep = 0;
+    nextStepTime = ctx.currentTime + 0.06;
+    seqAnchor = nextStepTime;
+    schedulerTimer = setInterval(scheduler, lookahead);
+    updatePlayBtn();
+    startBeatAnim();
+}
+
+function stop(){
+    isPlaying = false;
+    clearInterval(schedulerTimer);
+    schedulerTimer = null;
+    updatePlayBtn();
+    clearBeatAnim();
+    setBeatDisplay(null);
+}
+
+function updatePlayBtn(){
+    document.getElementById('playBtn').textContent = isPlaying ? '❚❚' : '▶';
+    document.getElementById('playBtn').classList.toggle('rec', isPlaying);
+}
+
+let rafId = null;
+function startBeatAnim(){
+    const tick = () => {
+        if (!isPlaying || !ctx){ resetPlayhead(); return; }
+        const elapsed = ctx.currentTime - seqAnchor;
+        let step = Math.floor(elapsed / secondsPerStep) % TOTAL_STEPS;
+        if (step < 0) step += TOTAL_STEPS;
+        const beat = Math.floor(step / 4) + 1;
+        setBeatDisplay(`${beat} / 4`);
+        setPlayhead(step);
+        rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+}
+function clearBeatAnim(){ cancelAnimationFrame(rafId); setPlayhead(-1); }
+
+function setPlayhead(step){
+    for (let ti = 0; ti < TRACKS.length; ti++){
+        for (let s = 0; s < TOTAL_STEPS; s++){
+            stepCells[ti][s].classList.toggle('playing', s === step);
+        }
+    }
+}
+function setBeatDisplay(txt){
+    document.getElementById('beatDisplay').textContent = txt == null ? '--' : txt;
+}
+function resetPlayhead(){ setPlayhead(-1); }
+
+/* controls */
+document.getElementById('playBtn').addEventListener('click', () => {
+    if (isPlaying) stop(); else play();
+});
+document.getElementById('stopBtn').addEventListener('click', stop);
+
+const bpmSlider = document.getElementById('bpm');
+bpmSlider.addEventListener('input', () => {
+    bpm = +bpmSlider.value;
+    secondsPerStep = 60 / bpm / 4;
+    document.getElementById('bpmVal').textContent = bpm;
+});
+
+const volSlider = document.getElementById('volume');
+volSlider.addEventListener('input', () => {
+    const v = +volSlider.value;
+    document.getElementById('volVal').textContent = v;
+    if (master) master.gain.value = (v / 100) * 0.9;
+    else masterPend = v;
+});
+let masterPend = 90;
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+    TRACKS.forEach(tr => pattern[tr.id] = new Array(TOTAL_STEPS).fill(false));
+    TRACKS.forEach((tr, ti) => {
+        for (let s = 0; s < TOTAL_STEPS; s++){
+            const cell = stepCells[ti][s];
+            cell.classList.remove('on'); cell.style.background = '';
+        }
+    });
+});
+document.getElementById('presetBtn').addEventListener('click', () => {
+    defaultPattern();
+    rebuildCellsFromPattern();
+    if (!isPlaying) play();
+});
+function rebuildCellsFromPattern(){
+    TRACKS.forEach((tr, ti) => {
+        for (let s = 0; s < TOTAL_STEPS; s++){
+            const on = pattern[tr.id][s];
+            const cell = stepCells[ti][s];
+            cell.classList.toggle('on', on);
+            cell.style.background = on ? hexToRgba(tr.color, .85) : '';
+        }
+    });
+}
+
+/* ============================================================
+   TABS
+============================================================ */
+const tabBtns = document.querySelectorAll('.tab-btn');
+tabBtns.forEach(b => b.addEventListener('click', () => {
+    tabBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    const tab = b.dataset.tab;
+    document.getElementById('panels-drums').classList.toggle('hidden', tab !== 'drums');
+    document.getElementById('panels-instruments').classList.toggle('hidden', tab !== 'instruments');
+}));
+
+/* ============================================================
+   INSTRUMENTS
+============================================================ */
+const KEY_MAP = {
+    a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8,
+    h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15, ';': 16
+};
+// white/black layout for notes 0..16 (C4..)
+const NOTE_TYPES = [0,1,0,1,0,0,1,0,1,0,1,0,0,1,0,1,0]; // 1 = black
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B','C','C#','D','D#','E'];
+
+const instruments = {
+    piano:  { name: 'Piano',  play: (m, wf) => Kit.piano(m) },
+    synth:  { name: 'Synth',  play: (m, wf) => Kit.synth(m, null, wf), waveform: true, defaultWf: 'sawtooth' },
+    bass:   { name: 'Bass',   play: (m, wf) => Kit.bass(m, null, wf), waveform: true, defaultWf: 'square' },
+    guitar: { name: 'Guitar', play: m => Kit.pluck(m) },
+    bells:  { name: 'Bells',  play: m => Kit.bells(m) },
+    strings:{ name: 'Strings',play: m => Kit.strings(m) },
+    drums:  { name: 'Pads',   play: () => {} }
+};
+let currentInst = 'piano';
+let octaveShift = 0;
+let currentWave = 'sawtooth';
+let activeComputerNote = {};
+
+const controlsWrap = document.getElementById('controlsWrap');
+const keyboard = document.getElementById('keyboard');
+const keyHint = document.getElementById('keyHint');
+const keyboardWrap = document.getElementById('keyboardWrap');
+const padsWrap = document.getElementById('padsWrap');
+
+const PAD_DEFS = [
+    { label: 'Kick',    sound: 'kick',    color: '#ff5733', key: 'q', icon: '🥁' },
+    { label: 'Snare',   sound: 'snare',   color: '#ff99c8', key: 'w', icon: '🥁' },
+    { label: 'Clap',    sound: 'clap',    color: '#ffe082', key: 'e', icon: '👏' },
+    { label: 'Ch Hat',  sound: 'hat',     color: '#33a2ff', key: 'r', icon: '🎩' },
+    { label: 'Op Hat',  sound: 'openhat', color: '#33a2ff', key: 't', icon: '⏰' },
+    { label: 'Tom',     sound: 'tom',     color: '#9be15d', key: 'y', icon: '🥁' },
+    { label: 'Rim',     sound: 'rim',     color: '#8a5cff', key: 'u', icon: '🔔' },
+    { label: 'Cowbell', sound: 'cow',     color: '#ffb347', key: 'i', icon: '🐮' },
+];
+
+function setTab(inst){
+    currentInst = inst;
+    document.querySelectorAll('.inst-btn').forEach(b => b.classList.toggle('active', b.dataset.inst === inst));
+    const isDrums = inst === 'drums';
+    keyboardWrap.classList.toggle('hidden', isDrums);
+    padsWrap.classList.toggle('hidden', !isDrums);
+    if (instruments[inst].defaultWf) currentWave = instruments[inst].defaultWf;
+    renderControls();
+    if (isDrums) renderPads(); else renderKeyboard();
+}
+
+function renderControls(){
+    const c = instruments[currentInst];
+    let html = '';
+    if (currentInst === 'piano'){
+        html += `<div class="text-xs text-gray-400 font-bold">🎹 Grand Piano — click the keys</div>`;
+    } else if (currentInst === 'guitar'){
+        html += `<div class="text-xs text-gray-400 font-bold">🎸 Plucked Strings — click the keys</div>`;
+    } else if (currentInst === 'bells'){
+        html += `<div class="text-xs text-gray-400 font-bold">🔔 Mallet Bells — click the keys</div>`;
+    } else if (currentInst === 'strings'){
+        html += `<div class="text-xs text-gray-400 font-bold">🎻 Strings Ensemble — click the keys</div>`;
+    }
+    if (c.waveform){
+        const wf = ['sawtooth', 'square', 'triangle', 'sine'];
+        const labels = ['Saw', 'Square', 'Tri', 'Sine'];
+        html += `<div class="flex items-center gap-2"><span class="text-xs font-bold text-gray-400">Wave</span>` +
+            wf.map((w, i) => `<button data-wave="${w}" class="wave-btn ${w===currentWave?'active':''} px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold">${labels[i]}</button>`).join('') + `</div>`;
+    }
+    if (currentInst !== 'drums'){
+        html += `<div class="flex items-center gap-2"><span class="text-xs font-bold text-gray-400">Octave</span>` +
+            `<button data-oct="-1" class="oct-btn px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold">−</button>` +
+            `<span id="octVal" class="text-[#ff99c8] font-extrabold w-6 text-center">${octaveShift}</span>` +
+            `<button data-oct="1" class="oct-btn px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-bold">+</button></div>`;
+    }
+    controlsWrap.innerHTML = html;
+
+    controlsWrap.querySelectorAll('.wave-btn').forEach(b => b.addEventListener('click', () => {
+        currentWave = b.dataset.wave;
+        controlsWrap.querySelectorAll('.wave-btn').forEach(x => x.classList.toggle('active', x === b));
+    }));
+    controlsWrap.querySelectorAll('.oct-btn').forEach(b => b.addEventListener('click', () => {
+        octaveShift = Math.max(-2, Math.min(2, octaveShift + (+b.dataset.oct)));
+        controlsWrap.querySelector('#octVal').textContent = octaveShift;
+        renderKeyboard();
+    }));
+}
+
+function renderKeyboard(){
+    keyboard.innerHTML = '';
+    const whiteKeys = [];
+    const blackKeys = [];
+    for (let i = 0; i < NOTE_TYPES.length; i++){
+        if (NOTE_TYPES[i] === 0){
+            whiteKeys.push(i);
+        } else {
+            blackKeys.push(i);
+        }
+    }
+    // white keys
+    whiteKeys.forEach(note => {
+        const midi = 60 + note + octaveShift * 12;
+        const keyLabel = keyLabelFor(note);
+        const el = document.createElement('div');
+        el.className = 'white-key';
+        el.dataset.note = midi;
+        el.innerHTML = `<span class="key-label">${keyLabel}</span>`;
+        el.addEventListener('pointerdown', e => { e.preventDefault(); pressNote(midi, el); });
+        el.addEventListener('pointerup', () => el.classList.remove('pressed'));
+        keyboard.appendChild(el);
+    });
+    // black keys positioned over the white key boundaries
+    blackKeys.forEach(note => {
+        const midi = 60 + note + octaveShift * 12;
+        const keyLabel = keyLabelFor(note);
+        const el = document.createElement('div');
+        el.className = 'black-key';
+        el.dataset.note = midi;
+        el.innerHTML = `<span class="key-label">${keyLabel}</span>`;
+        // position based on the white key before it
+        const whiteIdx = whiteKeys.indexOf(note - 1);
+        const leftPct = (whiteIdx + 1) / whiteKeys.length * 100;
+        el.style.left = leftPct + '%';
+        el.addEventListener('pointerdown', e => { e.preventDefault(); pressNote(midi, el); });
+        el.addEventListener('pointerup', () => el.classList.remove('pressed'));
+        keyboard.appendChild(el);
+    });
+
+    keyHint.textContent = `Computer keys: ${Object.keys(KEY_MAP).map(k => k.toUpperCase()).join(' ')} — shift octave then jam!`;
+}
+
+function keyLabelFor(note){
+    // find which computer key maps to this note (within base octave)
+    for (const [k, n] of Object.entries(KEY_MAP)){
+        if (n === note) return k.toUpperCase();
+    }
+    return '';
+}
+
+function pressNote(midi, el){
+    initAudio(); if (ctx.state === 'suspended') ctx.resume();
+    instruments[currentInst].play(midi, currentWave);
+    if (el){
+        el.classList.add('pressed');
+        // subtle shake
+        setTimeout(() => el.classList.remove('pressed'), 130);
+    }
+}
+
+function renderPads(){
+    padsWrap.innerHTML = '';
+    PAD_DEFS.forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'pad';
+        el.style.borderColor = p.color;
+        el.dataset.sound = p.sound;
+        el.innerHTML = `
+            <div class="text-2xl leading-none">${p.icon}</div>
+            <div class="text-xs font-bold">${p.label}</div>
+            <div class="text-[10px] text-gray-500 font-bold">${p.key.toUpperCase()}</div>`;
+        el.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            initAudio(); if (ctx.state === 'suspended') ctx.resume();
+            el.classList.add('pressed');
+            playPadSound(p.sound);
+            setTimeout(() => el.classList.remove('pressed'), 130);
+        });
+        padsWrap.appendChild(el);
+    });
+}
+
+function playPadSound(sound){
+    if (sound === 'hat') Kit.hat(null, false);
+    else if (sound === 'openhat') Kit.hat(null, true);
+    else Kit[sound]();
+}
+
+/* instrument selector */
+document.querySelectorAll('.inst-btn').forEach(b => b.addEventListener('click', () => setTab(b.dataset.inst)));
+
+/* ============================================================
+   COMPUTER KEYBOARD
+============================================================ */
+window.addEventListener('keydown', e => {
+    if (e.repeat) return;
+    initAudio(); if (ctx && ctx.state === 'suspended') ctx.resume();
+
+    // sequencer space toggles, but avoid when typing in inputs
+    if (e.target && (e.target.tagName === 'INPUT')) return;
+
+    if (e.code === 'Space'){ e.preventDefault(); isPlaying ? stop() : play(); return; }
+
+    // pads
+    if (currentInst === 'drums'){
+        const pad = PAD_DEFS.find(p => p.key === e.key.toLowerCase());
+        if (pad){
+            const el = padsWrap.querySelector(`[data-sound="${pad.sound}"]`);
+            if (el){ el.classList.add('pressed'); setTimeout(() => el.classList.remove('pressed'), 130); }
+            playPadSound(pad.sound);
+        }
+        return;
+    }
+
+    // melodic keyboard
+    const note = KEY_MAP[e.key.toLowerCase()];
+    if (note !== undefined && !activeComputerNote[note]){
+        activeComputerNote[note] = true;
+        const midi = 60 + note + octaveShift * 12;
+        instruments[currentInst].play(midi, currentWave);
+        const keyEl = keyboard.querySelector(`[data-note="${midi}"]`);
+        if (keyEl) keyEl.classList.add('pressed');
+    }
+});
+
+window.addEventListener('keyup', e => {
+    const note = KEY_MAP[e.key.toLowerCase()];
+    if (note !== undefined){
+        activeComputerNote[note] = false;
+        const midi = 60 + note + octaveShift * 12;
+        const keyEl = keyboard.querySelector(`[data-note="${midi}"]`);
+        if (keyEl) keyEl.classList.remove('pressed');
+    }
+});
+
+/* init */
+// Use capture phase so the audio context is ready before any child control plays a sound.
+document.addEventListener('pointerdown', () => { initAudio(); if (ctx && ctx.state === 'suspended') ctx.resume(); }, { capture: true });
+buildGrid();
+renderKeyboard();
+renderPads();
+setTab('piano');
+</script>
+</body>
+</html>

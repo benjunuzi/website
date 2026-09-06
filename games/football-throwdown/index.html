@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Throwdown</title>
+    <style>
+        :root {
+            --bg: #071417;
+            --panel: #0d282c;
+            --panel-2: #123b3e;
+            --text: #f1f8f5;
+            --muted: #9ec5c2;
+            --gold: #ffd166;
+            --green: #2ec27e;
+            --red: #ef476f;
+            --blue: #4cc9f0;
+            --white: #f8f9fa;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 15% 8%, rgba(255, 209, 102, 0.13), transparent 35%),
+                radial-gradient(circle at 88% 0%, rgba(76, 201, 240, 0.16), transparent 42%),
+                var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        #game {
+            width: min(940px, 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .topbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        .brand {
+            min-width: 200px;
+            padding: 14px 18px;
+            background: var(--panel);
+            border: 1px solid rgba(255, 209, 102, 0.32);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            color: var(--gold);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+        }
+
+        .football-icon {
+            width: 30px;
+            height: 22px;
+            background: #9e5a3b;
+            border-radius: 50%;
+            transform: rotate(-18deg);
+            position: relative;
+            flex: 0 0 auto;
+            box-shadow: inset -4px -4px 8px rgba(0, 0, 0, 0.22);
+        }
+
+        .football-icon::before,
+        .football-icon::after {
+            content: "";
+            position: absolute;
+            top: -2px;
+            bottom: -2px;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .football-icon::before {
+            left: 7px;
+        }
+
+        .football-icon::after {
+            right: 7px;
+        }
+
+        .scoreboard {
+            flex: 1 1 480px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            overflow: hidden;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .stat {
+            background: var(--panel);
+            text-align: center;
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .stat-value {
+            font-size: clamp(18px, 4vw, 27px);
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .stat-value.score {
+            color: var(--gold);
+        }
+
+        .stat-value.down {
+            color: var(--green);
+        }
+
+        .field-shell {
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.34);
+            background: var(--green);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+            background: var(--green);
+        }
+
+        #message-banner {
+            position: absolute;
+            left: 50%;
+            top: 14px;
+            transform: translateX(-50%);
+            max-width: 84%;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(3, 20, 17, 0.84);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            color: #fff;
+            font-weight: 800;
+            text-align: center;
+            letter-spacing: 0.02em;
+            pointer-events: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            backdrop-filter: blur(6px);
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: stretch;
+        }
+
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button {
+            border: 0;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            color: var(--text);
+            background: var(--panel-2);
+            border-radius: 14px;
+            padding: 13px 18px;
+            font-size: 14px;
+            transition: transform 0.08s ease, background 0.12s ease, box-shadow 0.12s ease;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+        }
+
+        button:hover {
+            background: #1a4a4d;
+        }
+
+        button:active {
+            transform: translateY(2px);
+        }
+
+        #action-btn {
+            flex: 1 1 220px;
+            font-size: 18px;
+            color: #201500;
+            background: linear-gradient(180deg, #ffd970, #f6b73c);
+            box-shadow: 0 8px 22px rgba(246, 183, 60, 0.25);
+        }
+
+        #action-btn:hover {
+            background: linear-gradient(180deg, #ffe087, #ffc24f);
+        }
+
+        #action-btn.run {
+            color: #e9fbff;
+            background: linear-gradient(180deg, #4cc9f0, #1b8faf);
+            box-shadow: 0 8px 22px rgba(27, 143, 175, 0.24);
+        }
+
+        #action-btn.run:hover {
+            background: linear-gradient(180deg, #67d5f5, #2ba3c4);
+        }
+
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 48px);
+            grid-template-rows: repeat(3, 48px);
+            gap: 5px;
+            flex: 0 0 auto;
+        }
+
+        .dpad button {
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dpad .up {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .dpad .left {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        .dpad .center {
+            grid-column: 2;
+            grid-row: 2;
+            background: transparent;
+            box-shadow: none;
+            cursor: default;
+        }
+
+        .dpad .right {
+            grid-column: 3;
+            grid-row: 2;
+        }
+
+        .dpad .down {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .rules {
+            padding: 14px 16px;
+            background: var(--panel);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
+        .rules strong {
+            color: var(--text);
+        }
+
+        @media (max-width: 620px) {
+            body {
+                padding: 8px;
+                align-items: flex-start;
+            }
+
+            .brand {
+                min-width: 100%;
+            }
+
+            .scoreboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .control-row {
+                align-items: stretch;
+            }
+
+            .dpad {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div class="topbar">
+            <div class="brand">
+                <span class="football-icon" aria-hidden="true"></span>
+                <span>FOOTBALL THROWDOWN</span>
+            </div>
+
+            <div class="scoreboard" aria-label="Football scoreboard">
+                <div class="stat">
+                    <span class="stat-label">Score</span>
+                    <span class="stat-value score" id="stat-score">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Down</span>
+                    <span class="stat-value down" id="stat-down">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Drive</span>
+                    <span class="stat-value" id="stat-drive">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Play</span>
+                    <span class="stat-value" id="stat-play">THROW</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="field-shell">
+            <canvas id="field" width="840" height="640" aria-label="Football field"></canvas>
+            <div id="message-banner">Press Start Game to play!</div>
+        </div>
+
+        <div class="control-row">
+            <div class="buttons">
+                <button id="action-btn" type="button">START GAME</button>
+                <button id="restart-btn" type="button">NEW GAME</button>
+                <button id="sound-btn" type="button">SOUND: ON</button>
+            </div>
+
+            <div class="dpad" aria-label="Movement controls">
+                <button class="up" data-dir="up" type="button" aria-label="Move up">▲</button>
+                <button class="left" data-dir="left" type="button" aria-label="Move left">◀</button>
+                <div class="center"></div>
+                <button class="right" data-dir="right" type="button" aria-label="Move right">▶</button>
+                <button class="down" data-dir="down" type="button" aria-label="Move down">▼</button>
+            </div>
+        </div>
+
+        <div class="rules">
+            <strong>How to play:</strong> Move your mouse or tap to highlight a receiver, then press <strong>Space</strong>, click/tap the field, or press <strong>THROW</strong>.
+            After the catch, run with <strong>Arrow Keys / WASD</strong> or the on-screen pad. Reach the end zone for a touchdown.
+            Press <strong>STIFF ARM</strong> while running to shove a nearby defender. You have four downs per drive.
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            const canvas = document.getElementById("field");
+            const ctx = canvas.getContext("2d");
+
+            const W = 840;
+            const H = 640;
+            const ENDZONE_BOTTOM = 92;
+            const FIELD_BOTTOM = H;
+            const QB_X = W / 2;
+            const QB_Y = 575;
+            const totalDrives = 5;
+
+            const ui = {
+                score: document.getElementById("stat-score"),
+                down: document.getElementById("stat-down"),
+                drive: document.getElementById("stat-drive"),
+                play: document.getElementById("stat-play"),
+                message: document.getElementById("message-banner"),
+                action: document.getElementById("action-btn"),
+                restart: document.getElementById("restart-btn"),
+                sound: document.getElementById("sound-btn")
+            };
+
+            let state = "menu"; // menu | throw | flight | run | result | gameover
+            let score = 0;
+            let down = 1;
+            let drive = 1;
+            let resultTimer = 0;
+            let pendingCallback = null;
+            let soundOn = true;
+            let lastTime = performance.now();
+            let pointerX = W / 2;
+            let pointerY = 300;
+            let stiffTimer = 0;
+            let tackleCooldown = 0;
+            let audioCtx = null;
+
+            const input = {
+                up: false,
+                down: false,
+                left: false,
+                right: false
+            };
+
+            let receivers = [];
+            let defenders = [];
+            let ball = {
+                state: "idle", // idle | flight | carried
+                x: QB_X,
+                y: QB_Y,
+                vx: 0,
+                vy: 0,
+                target: null,
+                spin: 0
+            };
+            let carrier = null;
+
+            function clamp(value, min, max) {
+                return Math.max(min, Math.min(max, value));
+            }
+
+            function distance(ax, ay, bx, by) {
+                return Math.hypot(bx - ax, by - ay);
+            }
+
+            function randomBetween(min, max) {
+                return min + Math.random() * (max - min);
+            }
+
+            function playTone(freq, duration = 0.08, type = "sine", volume = 0.04, delay = 0) {
+                if (!soundOn) return;
+                try {
+                    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+                    gain.gain.setValueAtTime(volume, audioCtx.currentTime + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + delay + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(audioCtx.currentTime + delay);
+                    osc.stop(audioCtx.currentTime + delay + duration);
+                } catch (err) {
+                    // Audio is optional.
+                }
+            }
+
+            function soundThrow() {
+                playTone(340, 0.07, "triangle", 0.035);
+                playTone(440, 0.08, "triangle", 0.03, 0.05);
+            }
+
+            function soundCatch() {
+                playTone(540, 0.08, "square", 0.04);
+                playTone(680, 0.1, "square", 0.04, 0.07);
+            }
+
+            function soundTouchdown() {
+                playTone(440, 0.1, "square", 0.05);
+                playTone(590, 0.12, "square", 0.05, 0.09);
+                playTone(740, 0.2, "square", 0.05, 0.18);
+                playTone(880, 0.25, "square", 0.05, 0.27);
+            }
+
+            function soundTackle() {
+                playTone(120, 0.12, "sawtooth", 0.04);
+                playTone(75, 0.16, "triangle", 0.04, 0.06);
+            }
+
+            function soundTurnover() {
+                playTone(220, 0.09, "triangle", 0.035);
+                playTone(160, 0.16, "triangle", 0.035, 0.08);
+            }
+
+            function setMessage(text) {
+                ui.message.textContent = text;
+            }
+
+            function updateUI() {
+                ui.score.textContent = score;
+                ui.down.textContent = state === "gameover" ? "-" : down;
+                ui.drive.textContent = state === "gameover" ? "-" : drive;
+                if (state === "run") {
+                    ui.play.textContent = "RUN";
+                } else if (state === "throw" || state === "flight") {
+                    ui.play.textContent = "THROW";
+                } else if (state === "menu") {
+                    ui.play.textContent = "READY";
+                } else if (state === "result") {
+                    ui.play.textContent = "BREAK";
+                } else {
+                    ui.play.textContent = "FINAL";
+                }
+            }
+
+            function updateActionButton() {
+                if (state === "menu") {
+                    ui.action.textContent = "START GAME";
+                    ui.action.className = "";
+                } else if (state === "throw" || state === "flight") {
+                    ui.action.textContent = state === "flight" ? "IN AIR..." : "THROW";
+                    ui.action.className = "";
+                } else if (state === "run") {
+                    ui.action.textContent = "STIFF ARM";
+                    ui.action.className = "run";
+                } else if (state === "result") {
+                    ui.action.textContent = "CONTINUE";
+                    ui.action.className = "";
+                } else {
+                    ui.action.textContent = "PLAY AGAIN";
+                    ui.action.className = "";
+                }
+            }
+
+            function startGame() {
+                score = 0;
+                drive = 1;
+                startDrive();
+            }
+
+            function startDrive() {
+                down = 1;
+                startPlay();
+            }
+
+            function startPlay() {
+                state = "throw";
+                ball.state = "idle";
+                ball.target = null;
+                ball.x = QB_X;
+                ball.y = QB_Y;
+                carrier = null;
+                stiffTimer = 0;
+                tackleCooldown = 0;
+                createReceivers();
+                createDefenders();
+                updateUI();
+                updateActionButton();
+                setMessage("Aim at a receiver, then throw!");
+            }
+
+            function createReceivers() {
+                receivers = [
+                    { name: "Wide", x: 160, baseX: 160, baseY: 430, y: 430, color: "#ffd166", route: "go", phase: 0 },
+                    { name: "Slot", x: 420, baseX: 420, baseY: 390, y: 390, color: "#4cc9f0", route: "slant", phase: 1 },
+                    { name: "Deep", x: 680, baseX: 680, baseY: 450, y: 450, color: "#f472b6", route: "curl", phase: 2 }
+                ];
+            }
+
+            function createDefenders() {
+                defenders = [
+                    { x: 220, y: 520, color: "#ef476f" },
+                    { x: 420, y: 490, color: "#ef476f" },
+                    { x: 620, y: 520, color: "#ef476f" },
+                    { x: 320, y: 550, color: "#ef476f" }
+                ];
+            }
+
+            function nearestReceiverTo(x, y) {
+                let best = null;
+                let bestDistance = Infinity;
+                for (const receiver of receivers) {
+                    const d = distance(x, y, receiver.x, receiver.y);
+                    if (d < bestDistance) {
+                        bestDistance = d;
+                        best = receiver;
+                    }
+                }
+                return best;
+            }
+
+            function highlightedReceiver() {
+                return nearestReceiverTo(pointerX, pointerY);
+            }
+
+            function throwToTarget(target) {
+                if (state !== "throw") return;
+                if (!target) target = highlightedReceiver();
+                if (!target) return;
+
+                state = "flight";
+                ball.state = "flight";
+                ball.target = target;
+                ball.x = QB_X;
+                ball.y = QB_Y;
+                soundThrow();
+                updateUI();
+                updateActionButton();
+                setMessage("Pass in the air!");
+            }
+
+            function completeCatch(target) {
+                ball.state = "carried";
+                carrier = target;
+                carrier.isPlayer = true;
+                tackleCooldown = 0.45;
+                state = "run";
+                soundCatch();
+                updateUI();
+                updateActionButton();
+                setMessage("Caught! Run to the end zone!");
+            }
+
+            function intercept() {
+                ball.state = "idle";
+                carrier = null;
+                soundTurnover();
+                startResult("Intercepted!", () => {
+                    down += 1;
+                    if (down > 4) {
+                        setMessage("Turnover on downs.");
+                        afterDrive();
+                    } else {
+                        startPlay();
+                    }
+                });
+            }
+
+            function touchdown() {
+                score += 7;
+                ball.state = "idle";
+                carrier = null;
+                soundTouchdown();
+                updateUI();
+                startResult("TOUCHDOWN! +7", () => {
+                    drive += 1;
+                    if (drive > totalDrives) {
+                        endGame();
+                    } else {
+                        startDrive();
+                    }
+                });
+            }
+
+            function tackle() {
+                ball.state = "idle";
+                carrier = null;
+                soundTackle();
+                startResult("Tackled!", () => {
+                    down += 1;
+                    if (down > 4) {
+                        setMessage("Turnover on downs.");
+                        afterDrive();
+                    } else {
+                        startPlay();
+                    }
+                });
+            }
+
+            function stiffArm() {
+                if (state !== "run" || !carrier) return;
+                stiffTimer = 0.38;
+                let nearest = null;
+                let nearestDistance = 60;
+                for (const defender of defenders) {
+                    const d = distance(carrier.x, carrier.y, defender.x, defender.y);
+                    if (d < nearestDistance) {
+                        nearestDistance = d;
+                        nearest = defender;
+                    }
+                }
+                if (nearest) {
+                    const dx = nearest.x - carrier.x;
+                    const dy = nearest.y - carrier.y;
+                    const d = Math.max(1, Math.hypot(dx, dy));
+                    nearest.x += (dx / d) * 54;
+                    nearest.y += (dy / d) * 54;
+                    nearest.x = clamp(nearest.x, 20, W - 20);
+                    nearest.y = clamp(nearest.y, ENDZONE_BOTTOM + 4, FIELD_BOTTOM - 20);
+                    setMessage("Stiff arm!");
+                    playTone(300, 0.05, "square", 0.03);
+                }
+            }
+
+            function startResult(message, callback) {
+                state = "result";
+                resultTimer = 1.05;
+                pendingCallback = callback;
+                setMessage(message);
+                updateUI();
+                updateActionButton();
+            }
+
+            function afterDrive() {
+                state = "result";
+                resultTimer = 1.05;
+                pendingCallback = () => {
+                    drive += 1;
+                    if (drive > totalDrives) {
+                        endGame();
+                    } else {
+                        startDrive();
+                    }
+                };
+                updateUI();
+                updateActionButton();
+            }
+
+            function endGame() {
+                state = "gameover";
+                ball.state = "idle";
+                carrier = null;
+                updateUI();
+                updateActionButton();
+                if (score >= 21) {
+                    setMessage("GREAT GAME! Final score " + score);
+                    soundTouchdown();
+                } else {
+                    setMessage("Final score " + score + ". Try again!");
+                    soundTurnover();
+                }
+            }
+
+            function action() {
+                if (state === "menu" || state === "gameover") {
+                    startGame();
+                } else if (state === "throw") {
+                    throwToTarget();
+                } else if (state === "flight") {
+                    // The pass is already in the air.
+                } else if (state === "run") {
+                    stiffArm();
+                } else if (state === "result") {
+                    if (pendingCallback) {
+                        const callback = pendingCallback;
+                        pendingCallback = null;
+                        callback();
+                    }
+                }
+            }
+
+            function updateReceivers(dt) {
+                for (const receiver of receivers) {
+                    receiver.phase += dt;
+                    if (receiver.route === "go") {
+                        receiver.x = receiver.baseX + Math.sin(receiver.phase * 0.7) * 24;
+                        receiver.y = receiver.baseY - 95 + Math.sin(receiver.phase * 0.5) * 68;
+                    } else if (receiver.route === "slant") {
+                        receiver.x = receiver.baseX + Math.sin(receiver.phase * 0.65) * 90;
+                        receiver.y = receiver.baseY - 45 + Math.cos(receiver.phase * 0.8) * 48;
+                    } else {
+                        receiver.x = receiver.baseX;
+                        receiver.y = receiver.baseY - 75 + Math.sin(receiver.phase * 0.5) * 82;
+                    }
+                    receiver.x = clamp(receiver.x, 26, W - 26);
+                    receiver.y = clamp(receiver.y, ENDZONE_BOTTOM + 16, FIELD_BOTTOM - 24);
+                }
+            }
+
+            function moveDefenderToward(defender, targetX, targetY, speed, dt) {
+                const dx = targetX - defender.x;
+                const dy = targetY - defender.y;
+                const d = Math.hypot(dx, dy);
+                if (d < 0.1) return;
+                const step = Math.min(speed * dt * 60, d);
+                defender.x += (dx / d) * step;
+                defender.y += (dy / d) * step;
+                defender.x = clamp(defender.x, 18, W - 18);
+                defender.y = clamp(defender.y, ENDZONE_BOTTOM + 8, FIELD_BOTTOM - 16);
+            }
+
+            function updateThrow(dt) {
+                updateReceivers(dt);
+                for (let i = 0; i < defenders.length; i++) {
+                    const target = nearestReceiverTo(defenders[i].x, defenders[i].y);
+                    if (target) moveDefenderToward(defenders[i], target.x, target.y, 1.55, dt);
+                }
+            }
+
+            function updateFlight(dt) {
+                updateReceivers(dt);
+                const target = ball.target;
+                if (!target) {
+                    intercept();
+                    return;
+                }
+
+                const dx = target.x - ball.x;
+                const dy = target.y - ball.y;
+                const d = Math.hypot(dx, dy);
+                if (d < 12) {
+                    completeCatch(target);
+                    return;
+                }
+
+                ball.vx = (dx / d) * 12.5;
+                ball.vy = (dy / d) * 12.5;
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+                ball.spin += 0.38;
+
+                for (const defender of defenders) {
+                    moveDefenderToward(defender, ball.x, ball.y, 2.45, dt);
+                    if (distance(defender.x, defender.y, ball.x, ball.y) < 20) {
+                        intercept();
+                        return;
+                    }
+                }
+            }
+
+            function updateRun(dt) {
+                if (!carrier) {
+                    startPlay();
+                    return;
+                }
+
+                const speed = 4.5;
+                if (input.up) carrier.y -= speed;
+                if (input.down) carrier.y += speed;
+                if (input.left) carrier.x -= speed;
+                if (input.right) carrier.x += speed;
+                carrier.x = clamp(carrier.x, 20, W - 20);
+                carrier.y = clamp(carrier.y, ENDZONE_BOTTOM, FIELD_BOTTOM - 18);
+                ball.x = carrier.x;
+                ball.y = carrier.y - 13;
+
+                if (tackleCooldown > 0) tackleCooldown -= dt;
+                if (stiffTimer > 0) stiffTimer -= dt;
+
+                if (carrier.y <= ENDZONE_BOTTOM) {
+                    touchdown();
+                    return;
+                }
+
+                for (const defender of defenders) {
+                    moveDefenderToward(defender, carrier.x, carrier.y, 2.15, dt);
+                    if (tackleCooldown <= 0 && distance(defender.x, defender.y, carrier.x, carrier.y) < 21) {
+                        tackle();
+                        return;
+                    }
+                }
+            }
+
+            function update(dt) {
+                const seconds = dt / 1000;
+
+                if (state === "throw") {
+                    updateThrow(seconds);
+                } else if (state === "flight") {
+                    updateFlight(seconds);
+                } else if (state === "run") {
+                    updateRun(seconds);
+                } else if (state === "result") {
+                    resultTimer -= seconds;
+                    if (resultTimer <= 0) {
+                        state = "idle";
+                        const callback = pendingCallback;
+                        pendingCallback = null;
+                        if (callback) callback();
+                    }
+                }
+            }
+
+            function drawField() {
+                ctx.fillStyle = "#1a7a43";
+                ctx.fillRect(0, 0, W, H);
+
+                const stripeHeight = 36;
+                ctx.fillStyle = "rgba(255,255,255,0.05)";
+                for (let y = ENDZONE_BOTTOM; y < FIELD_BOTTOM; y += stripeHeight * 2) {
+                    ctx.fillRect(0, y, W, stripeHeight);
+                }
+
+                // End zone
+                ctx.fillStyle = "#0d5732";
+                ctx.fillRect(0, 0, W, ENDZONE_BOTTOM);
+                ctx.strokeStyle = "#ffd166";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(3, 3, W - 6, ENDZONE_BOTTOM - 6);
+                ctx.fillStyle = "#ffd166";
+                ctx.font = "900 24px 'Trebuchet MS'";
+                ctx.textAlign = "center";
+                ctx.fillText("END ZONE", W / 2, 59);
+
+                // Yard lines
+                ctx.strokeStyle = "rgba(255,255,255,0.45)";
+                ctx.lineWidth = 2;
+                for (let y = ENDZONE_BOTTOM + 44; y < FIELD_BOTTOM; y += 44) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(W, y);
+                    ctx.stroke();
+                }
+
+                // Side boundaries
+                ctx.strokeStyle = "rgba(255,255,255,0.75)";
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(14, ENDZONE_BOTTOM);
+                ctx.lineTo(14, FIELD_BOTTOM);
+                ctx.moveTo(W - 14, ENDZONE_BOTTOM);
+                ctx.lineTo(W - 14, FIELD_BOTTOM);
+                ctx.stroke();
+            }
+
+            function drawPlayer(x, y, color, isPlayer, isBallCarrier, label) {
+                ctx.save();
+                if (isBallCarrier) {
+                    ctx.shadowColor = "#ffffff";
+                    ctx.shadowBlur = 14;
+                }
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(x, y, 16, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                ctx.strokeStyle = isPlayer ? "#ffffff" : "rgba(0,0,0,0.4)";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(x, y, 16, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.fillStyle = "rgba(0,0,0,0.25)";
+                ctx.beginPath();
+                ctx.arc(x - 3, y - 2, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (label) {
+                    ctx.fillStyle = "#ffffff";
+                    ctx.font = "800 9px 'Trebuchet MS'";
+                    ctx.textAlign = "center";
+                    ctx.fillText(label, x, y + 3);
+                }
+            }
+
+            function drawBall() {
+                if (ball.state === "idle") return;
+                ctx.save();
+                ctx.translate(ball.x, ball.y);
+                ctx.rotate(ball.spin);
+                ctx.fillStyle = "#9e5a3b";
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 9, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(255,255,255,0.8)";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(0, -6);
+                ctx.lineTo(0, 6);
+                ctx.moveTo(-8, 0);
+                ctx.lineTo(8, 0);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function drawQB() {
+                const isThrowing = state === "flight";
+                drawPlayer(QB_X, QB_Y, "#f1f8f5", false, false, "QB");
+                if (isThrowing) {
+                    ctx.strokeStyle = "#ffffff";
+                    ctx.lineWidth = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(QB_X + 14, QB_Y - 16);
+                    ctx.lineTo(QB_X + 34, QB_Y - 34);
+                    ctx.stroke();
+                }
+            }
+
+            function drawReceivers() {
+                const highlight = state === "throw" ? highlightedReceiver() : null;
+                for (const receiver of receivers) {
+                    if (highlight === receiver) {
+                        ctx.save();
+                        ctx.strokeStyle = "#ffffff";
+                        ctx.lineWidth = 3;
+                        ctx.setLineDash([6, 5]);
+                        ctx.beginPath();
+                        ctx.arc(receiver.x, receiver.y, 25, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                    drawPlayer(receiver.x, receiver.y, receiver.color, receiver === carrier, receiver === carrier, receiver.name[0]);
+                }
+            }
+
+            function drawDefenders() {
+                for (let i = 0; i < defenders.length; i++) {
+                    drawPlayer(defenders[i].x, defenders[i].y, defenders[i].color, false, false, "D");
+                }
+            }
+
+            function render() {
+                ctx.clearRect(0, 0, W, H);
+                drawField();
+                drawDefenders();
+                drawQB();
+                drawReceivers();
+                drawBall();
+
+                if (state === "throw") {
+                    const target = highlightedReceiver();
+                    if (target) {
+                        ctx.strokeStyle = "rgba(255,255,255,0.25)";
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([4, 8]);
+                        ctx.beginPath();
+                        ctx.moveTo(QB_X, QB_Y - 16);
+                        ctx.lineTo(target.x, target.y);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }
+            }
+
+            function frame(now) {
+                const dt = Math.min(50, now - lastTime);
+                lastTime = now;
+                update(dt);
+                render();
+                requestAnimationFrame(frame);
+            }
+
+            function toggleSound() {
+                soundOn = !soundOn;
+                ui.sound.textContent = "SOUND: " + (soundOn ? "ON" : "OFF");
+                if (soundOn) playTone(540, 0.06, "sine", 0.04);
+            }
+
+            function setPointer(clientX, clientY) {
+                const rect = canvas.getBoundingClientRect();
+                pointerX = ((clientX - rect.left) / rect.width) * W;
+                pointerY = ((clientY - rect.top) / rect.height) * H;
+            }
+
+            function setDirection(dir, pressed) {
+                if (dir === "up") input.up = pressed;
+                if (dir === "down") input.down = pressed;
+                if (dir === "left") input.left = pressed;
+                if (dir === "right") input.right = pressed;
+            }
+
+            ui.action.addEventListener("click", action);
+            ui.restart.addEventListener("click", startGame);
+            ui.sound.addEventListener("click", toggleSound);
+
+            canvas.addEventListener("pointermove", (event) => {
+                setPointer(event.clientX, event.clientY);
+            });
+
+            canvas.addEventListener("pointerdown", (event) => {
+                event.preventDefault();
+                setPointer(event.clientX, event.clientY);
+                action();
+            });
+
+            document.querySelectorAll("[data-dir]").forEach((button) => {
+                button.addEventListener("pointerdown", (event) => {
+                    event.preventDefault();
+                    setDirection(button.dataset.dir, true);
+                });
+                button.addEventListener("pointerup", () => {
+                    setDirection(button.dataset.dir, false);
+                });
+                button.addEventListener("pointerleave", () => {
+                    setDirection(button.dataset.dir, false);
+                });
+            });
+
+            window.addEventListener("keydown", (event) => {
+                const key = event.key.toLowerCase();
+                if (["arrowup", "w"].includes(key)) {
+                    event.preventDefault();
+                    input.up = true;
+                } else if (["arrowdown", "s"].includes(key)) {
+                    event.preventDefault();
+                    input.down = true;
+                } else if (["arrowleft", "a"].includes(key)) {
+                    event.preventDefault();
+                    input.left = true;
+                } else if (["arrowright", "d"].includes(key)) {
+                    event.preventDefault();
+                    input.right = true;
+                } else if (event.code === "Space" || event.code === "Enter") {
+                    event.preventDefault();
+                    action();
+                }
+            });
+
+            window.addEventListener("keyup", (event) => {
+                const key = event.key.toLowerCase();
+                if (["arrowup", "w"].includes(key)) input.up = false;
+                if (["arrowdown", "s"].includes(key)) input.down = false;
+                if (["arrowleft", "a"].includes(key)) input.left = false;
+                if (["arrowright", "d"].includes(key)) input.right = false;
+            });
+
+            updateUI();
+            updateActionButton();
+            requestAnimationFrame(frame);
+        })();
+    </script>
+</body>
+</html>
