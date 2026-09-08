@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ben's Awesome Games!</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#04060d">
+    <title>ben.junuzi.com · Play • Explore • Have Fun</title>
+
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-S7RQ3NVLF4"></script>
     <script>
@@ -16,270 +17,814 @@
 
     <!-- Tailwind CSS for Modern Responsive Design -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brandDark: '#1a1a2e',
-                        brandNav: '#0f4c75',
-                        brandCard: '#2c394b',
-                        brandInner: '#1a233b',
-                        brandPink: '#ff99c8',
-                        brandYellow: '#ffe082',
-                        brandOrange: '#ff5733',
-                        brandOrangeHover: '#c70039',
-                        brandBlue: '#33a2ff',
-                    }
-                }
-            }
-        }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
+        :root {
+            --accent: #2f7bff;
+            --accent2: #4aa8ff;
+        }
+
+        * { -webkit-tap-highlight-color: transparent; }
+
+        html { scroll-behavior: smooth; }
+
+        html, body {
+            overflow-x: hidden;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1a1a2e;
+            background-color: #04060d;
+            background-image:
+                radial-gradient(1100px 620px at 82% -8%, rgba(47,120,255,.22), transparent 60%),
+                radial-gradient(900px 560px at -8% 26%, rgba(122,47,255,.16), transparent 60%),
+                radial-gradient(760px 520px at 60% 110%, rgba(0,180,219,.12), transparent 60%);
+            background-attachment: fixed;
+            color: #e9eef9;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
-        /* Custom scrollbar for game cards list */
-        ::-webkit-scrollbar {
-            width: 8px;
+
+        /* App shell */
+        .app-shell {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-        ::-webkit-scrollbar-track {
-            background: #1a1a2e;
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #04060d; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(79,140,255,.6); }
+
+        ::selection { background: var(--accent); color: #04060d; }
+
+        /* Surface cards */
+        .surface {
+            background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.08);
+            backdrop-filter: blur(8px);
         }
-        ::-webkit-scrollbar-thumb {
-            background: #2c394b;
-            border-radius: 4px;
+        .surface-strong {
+            background: rgba(13,22,44,.72);
+            border: 1px solid rgba(255,255,255,.09);
+            backdrop-filter: blur(12px);
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #33a2ff;
+
+        /* Glowing primary button */
+        .btn-primary {
+            background: linear-gradient(135deg, #2b6bff, #3fa2ff);
+            box-shadow: 0 12px 34px rgba(48,120,255,.5), inset 0 1px 0 rgba(255,255,255,.25);
+            position: relative;
+            overflow: hidden;
         }
+        .btn-primary::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+            transform: translateX(-120%);
+            transition: transform .6s ease;
+        }
+        .btn-primary:hover::after { transform: translateX(120%); }
+        .btn-primary:active { transform: scale(.98); }
+
+        /* Brand wordmark */
+        .wordmark {
+            background: linear-gradient(135deg, #ffffff 0%, #cfe1ff 55%, #4aa8ff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Game thumbnail gradients (per category) */
+        .th-sports{ background: linear-gradient(135deg,#0ea54c,#00b4db); }
+        .th-arcade{ background: linear-gradient(135deg,#7b2ff7,#f107a3); }
+        .th-action{ background: linear-gradient(135deg,#f7971e,#ff5f6d); }
+        .th-music { background: linear-gradient(135deg,#ee0979,#ff6a00); }
+        .th-other { background: linear-gradient(135deg,#1e5799,#2989d8); }
+        .thumb {
+            position: relative;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            isolation: isolate;
+        }
+        .thumb::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.34), transparent 46%),
+                radial-gradient(120% 90% at 90% 110%, rgba(0,0,0,.28), transparent 50%);
+            z-index: 1;
+        }
+        .thumb .emoji { position: relative; z-index: 2; filter: drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
+
+        /* Featured hero */
+        .featured-hero {
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(120% 140% at 90% -20%, rgba(64,180,255,.5), transparent 55%),
+                linear-gradient(120deg, #0a1230 0%, #0c2c6e 100%);
+        }
+        .featured-hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(300px 300px at 80% 60%, rgba(0,229,255,.25), transparent 70%);
+            z-index: 0;
+        }
+        .featured-hero > * { position: relative; z-index: 2; }
+
+        /* Pills / chips */
+        .pill {
+            transition: all .18s ease;
+            border: 1px solid rgba(255,255,255,.12);
+        }
+        .pill:hover { border-color: rgba(79,140,255,.7); }
+        .pill.active {
+            background: linear-gradient(135deg,#2b6bff,#3fa2ff);
+            color: #04060d;
+            border-color: transparent;
+            box-shadow: 0 8px 22px rgba(48,120,255,.45);
+        }
+
+        .cat-pill.sports{ background: rgba(14,142,74,.16); color:#6ff0b0; border-color: rgba(20,180,110,.4); }
+        .cat-pill.arcade{ background: rgba(123,47,247,.16); color:#d3b6ff; border-color: rgba(150,80,255,.4); }
+        .cat-pill.action{ background: rgba(247,151,30,.16); color:#ffc98a; border-color: rgba(255,150,50,.4); }
+        .cat-pill.music { background: rgba(238,9,121,.16); color:#ff9cc9; border-color: rgba(255,60,150,.4); }
+        .cat-pill.other { background: rgba(41,137,216,.16); color:#9ccdff; border-color: rgba(60,150,230,.4); }
+
+        /* Game row (All Games list) */
+        .game-row { transition: all .18s ease; }
+        .game-row:hover { background: rgba(79,140,255,.08); transform: translateX(2px); }
+        .game-row:hover .chevron { transform: translateX(3px); opacity: 1; }
+        .chevron { transition: all .18s ease; opacity: .6; }
+
+        /* Bottom tab bar */
+        .bottom-nav {
+            background: rgba(6,10,22,.82);
+            backdrop-filter: blur(18px);
+            border-top: 1px solid rgba(255,255,255,.08);
+        }
+        .tab-item { color: #8b93ab; transition: color .18s ease; }
+        .tab-item.active, .tab-item.active:hover { color: #fff; }
+        .tab-item.active .tab-ico {
+            filter: drop-shadow(0 0 10px rgba(79,140,255,.9));
+        }
+
+        /* Top nav (desktop) */
+        .top-nav {
+            background: rgba(6,10,22,.72);
+            backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(255,255,255,.07);
+        }
+        .nav-link { transition: color .18s ease; color:#aab2c9; }
+        .nav-link:hover, .nav-link.active { color: #fff; }
+        .nav-link.active { color: var(--accent2); }
+
+        .search-box {
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.1);
+        }
+        .search-box:focus-within { border-color: rgba(79,140,255,.7); box-shadow: 0 0 0 3px rgba(79,140,255,.18); }
+
+        input, button { outline: none; }
+        button { cursor: pointer; }
+
+        .view { animation: fadeUp .35s ease both; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: none;} }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .glow-ring { box-shadow: 0 0 0 1px rgba(79,140,255,.4), 0 10px 40px rgba(20,60,160,.4); }
+
+        .empty-state { border: 2px dashed rgba(255,255,255,.14); background: rgba(255,255,255,.03); }
     </style>
 </head>
-<body class="text-white min-h-screen flex flex-col justify-between selection:bg-brandPink selection:text-brandDark">
+<body>
+<div class="app-shell">
 
-    <!-- Header Section -->
-    <header class="container mx-auto px-4 mt-6 max-w-6xl">
-        <div class="bg-brandNav p-6 md:p-8 rounded-2xl shadow-2xl border border-blue-900/30 text-center relative overflow-hidden">
-            <div class="absolute -top-10 -left-10 w-40 h-40 bg-brandPink/10 rounded-full blur-3xl"></div>
-            <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-brandBlue/10 rounded-full blur-3xl"></div>
+    <!-- =====================  DESKTOP TOP NAV  ===================== -->
+    <header class="top-nav sticky top-0 z-40 hidden lg:block">
+        <div class="mx-auto max-w-6xl px-6 h-16 flex items-center justify-between gap-6">
+            <a href="#" onclick="goHome(event)" class="flex items-center gap-2 shrink-0">
+                <span class="inline-grid place-items-center w-9 h-9 rounded-xl bg-gradient-to-br from-[#2b6bff] to-[#3fa2ff] shadow-lg shadow-blue-500/30">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 6v12a2 2 0 002 2h3a2 2 0 002-2V6a2 2 0 00-2-2h-3a2 2 0 00-2 2zM2 8v8a2 2 0 002 2h2a2 2 0 002-2V8a2 2 0 00-2-2H4a2 2 0 00-2 2zM4 4a2 2 0 100 4 2 2 0 000-4zM20 4a2 2 0 100 4 2 2 0 000-4zM8 2h8v4H8zM4 14h4M16 10h4M6 18h2"/></svg>
+                </span>
+                <span class="wordmark font-extrabold text-lg tracking-tight">ben.junuzi.com</span>
+            </a>
 
-            <div class="relative z-10 flex flex-col items-center">
-                <img src="/logo.svg" alt="Ben's Website" width="640" height="180" class="w-full max-w-md h-auto mb-2" />
-                <p class="text-gray-300 text-lg md:text-xl font-medium">
-                    Hi! I'm <span class="text-brandYellow font-semibold underline decoration-brandOrange decoration-2">Ben</span>, and I love making games!
-                </p>
-                <p class="text-xs text-gray-400 mt-2 mb-4">Explore, play, and challenge yourself!</p>
-                
-                <!-- Added Forum CTA Button -->
-                <a href="/forum/index.html" class="inline-flex items-center gap-2 bg-brandPink hover:bg-pink-300 text-brandDark font-extrabold px-6 py-2.5 rounded-xl shadow-lg hover:shadow-brandPink/30 hover:scale-[1.04] transition-all duration-300 transform">
-                    <span>💬</span> Visit Community Forum
-                </a>
+            <nav class="flex items-center gap-1 text-sm font-semibold">
+                <button data-nav="home" class="nav-link active px-4 py-2 rounded-lg" onclick="setView('home')">Home</button>
+                <button data-nav="games" class="nav-link px-4 py-2 rounded-lg" onclick="setView('games')">Games</button>
+                <button data-nav="categories" class="nav-link px-4 py-2 rounded-lg" onclick="setView('categories')">Categories</button>
+                <button data-nav="search" class="nav-link px-4 py-2 rounded-lg" onclick="setView('search')">Search</button>
+                <button data-nav="profile" class="nav-link px-4 py-2 rounded-lg" onclick="setView('profile')">Profile</button>
+            </nav>
+
+            <div class="flex items-center gap-3 shrink-0">
+                <div class="search-box flex items-center gap-2 px-3 py-2 rounded-full w-56 focus-within:w-72 transition-all duration-200">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input id="top-search" type="text" placeholder="Search games..." class="bg-transparent w-full text-sm text-white placeholder-slate-400" oninput="onSearch(this.value)">
+                </div>
+                <button onclick="setView('profile')" class="w-9 h-9 rounded-full bg-gradient-to-br from-[#2b6bff] to-[#3fa2ff] grid place-items-center text-white font-extrabold shadow-lg shadow-blue-500/30 hover:scale-110 transition-transform">
+                    B
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Content Area -->
-    <main class="container mx-auto px-4 py-8 max-w-6xl flex-grow">
-        
-        <!-- Search & Category Filters Row -->
-        <div class="bg-brandCard p-4 rounded-xl shadow-lg mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-gray-700/50">
-            <div class="relative flex-grow max-w-md">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+    <!-- =====================  MOBILE APP HEADER  ===================== -->
+    <header class="lg:hidden sticky top-0 z-40 px-4 pt-3 pb-2" style="background:rgba(4,6,13,.72); backdrop-filter:blur(18px);">
+        <div class="flex items-center justify-between">
+            <button onclick="goHome(event)" class="flex items-center gap-1.5">
+                <span class="inline-grid place-items-center w-7 h-7 rounded-lg bg-gradient-to-br from-[#2b6bff] to-[#3fa2ff] shadow-md shadow-blue-500/30">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 6v12a2 2 0 002 2h3a2 2 0 002-2V6a2 2 0 00-2-2h-3a2 2 0 00-2 2zM2 8v8a2 2 0 002 2h2a2 2 0 002-2V8a2 2 0 00-2-2H4a2 2 0 00-2 2zM4 4a2 2 0 100 4 2 2 0 000-4zM20 4a2 2 0 100 4 2 2 0 000-4zM8 2h8v4H8zM4 14h4M16 10h4M6 18h2"/></svg>
                 </span>
-                <input type="text" id="search-input" placeholder="Search games by name..." class="w-full pl-10 pr-4 py-2 bg-brandInner border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-brandBlue text-white transition-all">
+                <span class="wordmark font-extrabold text-[17px] tracking-tight">ben.junuzi.com</span>
+            </button>
+            <div class="flex items-center gap-2.5">
+                <button onclick="setView('search')" class="w-9 h-9 grid place-items-center rounded-full surface text-slate-300 hover:text-white transition-colors">
+                    <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </button>
+                <button onclick="setView('profile')" class="w-9 h-9 rounded-full bg-gradient-to-br from-[#2b6bff] to-[#3fa2ff] grid place-items-center text-white font-extrabold shadow-md shadow-blue-500/30">B</button>
             </div>
-
-            <!-- Categories filter (populated via JS) -->
-            <div class="flex flex-wrap gap-2" id="category-container"></div>
         </div>
+    </header>
 
-        <!-- Games Grid (populated via JS) -->
-        <div id="games-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    <!-- =====================  MAIN  ===================== -->
+    <main class="flex-1 w-full">
 
-        <!-- Loading State -->
-        <div id="loading-view" class="text-center py-16 bg-brandCard rounded-2xl border border-dashed border-gray-700 max-w-md mx-auto my-8">
-            <p class="text-brandBlue text-xl font-semibold mb-2 animate-pulse">Loading Games...</p>
-        </div>
+        <!-- ---------------- VIEW: HOME ---------------- -->
+        <section id="view-home" class="view px-4 pt-2 lg:pt-8">
+            <div class="mx-auto max-w-6xl">
 
-        <!-- No Games Found Fallback -->
-        <div id="no-games-view" class="hidden text-center py-16 bg-brandCard rounded-2xl border border-dashed border-gray-700 max-w-md mx-auto my-8">
-            <p class="text-brandPink text-xl font-semibold mb-2">No games found 👾</p>
-            <p class="text-gray-400 text-sm">Try adjusting your search query or filters.</p>
-        </div>
-
-        <!-- Error View -->
-        <div id="error-view" class="hidden text-center py-16 bg-brandCard rounded-2xl border border-dashed border-red-700 max-w-md mx-auto my-8">
-            <p class="text-red-400 text-xl font-semibold mb-2">Error Loading CSV ❌</p>
-            <p class="text-gray-400 text-sm px-4">Make sure you are running a local server (like Live Server). Browsers block loading local CSV files directly for security.</p>
-        </div>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-black/40 py-6 border-t border-gray-800 text-center text-sm text-gray-400 mt-12 w-full">
-        <p class="mb-1">Thanks for visiting my page! Have fun playing! 😊</p>
-        <p class="text-xs text-gray-500">Made with ❤️ by Ben</p>
-    </footer>
-
-    <script>
-        // Start with empty array. Data will be fetched from CSV.
-        let gamesData = [];
-
-        // Active filters state
-        let currentCategory = "All";
-        let searchQuery = "";
-
-        // Elements
-        const gamesGrid = document.getElementById("games-grid");
-        const loadingView = document.getElementById("loading-view");
-        const noGamesView = document.getElementById("no-games-view");
-        const errorView = document.getElementById("error-view");
-        const categoryContainer = document.getElementById("category-container");
-        const searchInput = document.getElementById("search-input");
-
-        // Category icons lookup table
-        const categoryIcons = {
-            "All": "🎮", "Arcade": "🕹️", "Sports": "⚽", "Action": "💥", "Music": "🎵", "Puzzle": "🧩"
-        };
-
-        // Initialize App on Load
-        window.addEventListener("DOMContentLoaded", () => {
-            loadGamesFromCSV();
-
-            // Set up search event
-            searchInput.addEventListener("input", (e) => {
-                searchQuery = e.target.value.toLowerCase().trim();
-                renderGames();
-            });
-        });
-
-        // Parse a raw CSV string into a 2D array robustly
-        function parseCSV(str) {
-            const arr = [];
-            let quote = false;
-            let row = 0, col = 0;
-            for (let c = 0; c < str.length; c++) {
-                let cc = str[c], nc = str[c+1];
-                arr[row] = arr[row] || [];
-                arr[row][col] = arr[row][col] || '';
-
-                if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
-                if (cc == '"') { quote = !quote; continue; }
-                if (cc == ',' && !quote) { ++col; continue; }
-                if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
-                if (cc == '\n' && !quote) { ++row; col = 0; continue; }
-                if (cc == '\r' && !quote) { ++row; col = 0; continue; }
-
-                arr[row][col] += cc;
-            }
-            return arr;
-        }
-
-        // Fetch and process CSV
-        async function loadGamesFromCSV() {
-            try {
-                // Fetch the CSV file from the root directory
-                const response = await fetch('games.csv');
-                if (!response.ok) throw new Error('Network response was not ok');
-                const csvText = await response.text();
-                
-                const rows = parseCSV(csvText);
-                
-                // If we have headers and data
-                if (rows.length > 1) {
-                    const headers = rows[0].map(h => h.trim().toLowerCase());
-                    gamesData = rows.slice(1).map(row => {
-                        const game = {};
-                        headers.forEach((header, index) => {
-                            game[header] = row[index] ? row[index].trim() : '';
-                        });
-                        return game;
-                    }).filter(game => game.title && game.title !== ""); // filter out empty rows
-                }
-
-                // Hide loader, show UI
-                loadingView.classList.add("hidden");
-                renderCategories();
-                renderGames();
-            } catch (err) {
-                console.error("Failed to load CSV", err);
-                loadingView.classList.add("hidden");
-                errorView.classList.remove("hidden");
-            }
-        }
-
-        // Generate Categories filter buttons
-        function renderCategories() {
-            const uniqueCategories = ["All", ...new Set(gamesData.map(g => g.category))];
-            
-            categoryContainer.innerHTML = uniqueCategories.map(cat => {
-                if(!cat) return '';
-                const icon = categoryIcons[cat] || "🎲";
-                const isSelected = currentCategory === cat;
-                return `
-                    <button onclick="setCategory('${cat}')" 
-                            class="px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm
-                            ${isSelected 
-                                ? 'bg-brandBlue text-brandDark ring-2 ring-blue-400' 
-                                : 'bg-brandInner hover:bg-gray-700 text-gray-300 border border-gray-700'}">
-                        <span>${icon}</span> ${cat}
-                    </button>
-                `;
-            }).join('');
-        }
-
-        function setCategory(cat) {
-            currentCategory = cat;
-            renderCategories();
-            renderGames();
-        }
-
-        function renderGames() {
-            const filteredGames = gamesData.filter(game => {
-                const matchesCategory = currentCategory === "All" || game.category === currentCategory;
-                const matchesSearch = game.title.toLowerCase().includes(searchQuery) || 
-                                      game.goal.toLowerCase().includes(searchQuery);
-                return matchesCategory && matchesSearch;
-            });
-
-            if (filteredGames.length === 0) {
-                gamesGrid.classList.add("hidden");
-                noGamesView.classList.remove("hidden");
-            } else {
-                gamesGrid.classList.remove("hidden");
-                noGamesView.classList.add("hidden");
-                
-                gamesGrid.innerHTML = filteredGames.map(game => {
-                    const icon = categoryIcons[game.category] || "🎲";
-                    return `
-                        <div class="bg-brandCard hover:scale-[1.02] transform transition-all duration-300 rounded-xl overflow-hidden shadow-lg border border-gray-700 hover:border-brandBlue/70 flex flex-col justify-between group">
-                            <div class="p-6">
-                                <div class="flex items-center justify-between mb-3">
-                                    <span class="text-xs font-semibold bg-brandInner px-2.5 py-1 rounded-full text-brandBlue flex items-center gap-1">
-                                        ${icon} ${game.category}
-                                    </span>
-                                    <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                                </div>
-                                <h3 class="text-xl font-bold text-brandYellow group-hover:text-white transition-colors mb-2">
-                                    ${game.title}
-                                </h3>
-                                <p class="text-sm text-gray-300 line-clamp-3">
-                                    <strong class="text-brandPink">Goal:</strong> ${game.goal}
-                                </p>
-                            </div>
-                            <div class="p-6 pt-0">
-                                <a href="${game.url}" class="block text-center bg-brandOrange hover:bg-brandOrangeHover text-white py-2.5 rounded-lg font-bold text-sm tracking-wide transition-all shadow-md hover:shadow-brandOrange/35 hover:shadow-lg">
-                                    PLAY NOW!
-                                </a>
+                <!-- Intro hero -->
+                <div class="surface-strong rounded-[26px] p-6 md:p-10 relative overflow-hidden mb-6 glow-ring">
+                    <div class="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-blue-500/20 blur-3xl"></div>
+                    <div class="absolute -left-10 -bottom-16 w-60 h-60 rounded-full bg-fuchsia-500/15 blur-3xl"></div>
+                    <div class="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
+                        <div class="flex-1">
+                            <p class="text-[11px] md:text-xs font-bold tracking-[0.3em] text-[#4aa8ff] mb-3">PLAY • EXPLORE • HAVE FUN</p>
+                            <h1 class="text-2xl sm:text-3xl md:text-5xl font-extrabold leading-tight tracking-tight">
+                                Hundreds of games.<br class="hidden md:block">
+                                <span class="wordmark">Endless fun.</span>
+                            </h1>
+                            <p class="text-slate-400 mt-4 max-w-md text-sm md:text-base leading-relaxed">
+                                From sports to arcade, action to music — there's a game for everyone. Jump in and start playing!
+                            </p>
+                            <div class="mt-6 flex flex-col sm:flex-row gap-3 items-start">
+                                <button onclick="scrollToGames()" class="btn-primary text-white font-extrabold px-7 py-3 rounded-2xl text-sm md:text-base flex items-center gap-2">
+                                    Get Started
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12"/></svg>
+                                </button>
+                                <button onclick="setView('profile')" class="text-slate-300 hover:text-white font-semibold text-sm px-2 py-3">Sign In</button>
                             </div>
                         </div>
-                    `;
-                }).join('');
-            }
+
+                        <!-- Logo mark (desktop) -->
+                        <div class="hidden md:flex shrink-0 flex-col items-center gap-3 pr-4">
+                            <div class="w-24 h-24 rounded-3xl grid place-items-center bg-gradient-to-br from-[#2b6bff] to-[#3fa2ff] shadow-2xl shadow-blue-600/40">
+                                <svg class="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 6v12a2 2 0 002 2h3a2 2 0 002-2V6a2 2 0 00-2-2h-3a2 2 0 00-2 2zM2 8v8a2 2 0 002 2h2a2 2 0 002-2V8a2 2 0 00-2-2H4a2 2 0 00-2 2zM4 4a2 2 0 100 4 2 2 0 000-4zM20 4a2 2 0 100 4 2 2 0 000-4zM8 2h8v4H8zM4 14h4M16 10h4M6 18h2"/></svg>
+                            </div>
+                            <p class="text-slate-400 text-xs tracking-widest uppercase font-semibold text-center">Daily<br>Games</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Featured -->
+                <div id="featured-wrap"></div>
+
+                <!-- Browse Games -->
+                <div class="mt-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg md:text-xl font-bold flex items-center gap-2">
+                            <span class="w-1.5 h-5 rounded-full bg-[#2b6bff] inline-block"></span>
+                            Browse Games
+                        </h2>
+                    </div>
+                    <div id="browse-pills" class="flex gap-3 overflow-x-auto no-scrollbar pb-1"></div>
+                </div>
+
+                <!-- Popular Games -->
+                <div class="mt-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg md:text-xl font-bold flex items-center gap-2">
+                            <span class="w-1.5 h-5 rounded-full bg-[#2b6bff] inline-block"></span>
+                            Popular Games
+                        </h2>
+                        <button onclick="setView('games')" class="text-sm font-semibold text-[#4aa8ff] hover:text-white hover:underline transition-colors">See All</button>
+                    </div>
+                    <div id="popular-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4"></div>
+                </div>
+
+                <!-- All Games highlight -->
+                <div class="mt-12">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg md:text-xl font-bold flex items-center gap-2">
+                            <span class="w-1.5 h-5 rounded-full bg-[#2b6bff] inline-block"></span>
+                            All Games
+                        </h2>
+                    </div>
+                    <div id="home-list" class="grid md:grid-cols-2 gap-2.5"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------------- VIEW: ALL GAMES ---------------- -->
+        <section id="view-games" class="view hidden px-4 pt-4 lg:pt-8">
+            <div class="mx-auto max-w-6xl">
+                <div class="flex items-center gap-4 mb-5">
+                    <button onclick="setView('home')" class="w-10 h-10 grid place-items-center rounded-full surface text-slate-300 hover:text-white hover:border-blue-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight flex-1">All Games</h1>
+                    <button onclick="setView('search')" class="w-10 h-10 grid place-items-center rounded-full surface text-slate-300 hover:text-white hover:border-blue-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </button>
+                </div>
+                <div id="games-pills" class="flex flex-wrap gap-2.5 mb-6"></div>
+                <div id="games-list" class="flex flex-col gap-2.5"></div>
+                <div id="games-empty" class="hidden empty-state rounded-2xl py-16 text-center text-slate-400">
+                    <div class="text-4xl mb-3">👾</div>
+                    No games found
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------------- VIEW: CATEGORIES ---------------- -->
+        <section id="view-categories" class="view hidden px-4 pt-4 lg:pt-8">
+            <div class="mx-auto max-w-6xl">
+                <div class="flex items-center gap-4 mb-6">
+                    <button onclick="setView('home')" class="w-10 h-10 grid place-items-center rounded-full surface text-slate-300 hover:text-white hover:border-blue-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">Categories</h1>
+                </div>
+                <div id="category-tiles" class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4"></div>
+            </div>
+        </section>
+
+        <!-- ---------------- VIEW: SEARCH ---------------- -->
+        <section id="view-search" class="view hidden px-4 pt-4 lg:pt-8">
+            <div class="mx-auto max-w-3xl">
+                <div class="flex items-center gap-4 mb-6">
+                    <button onclick="setView('home')" class="w-10 h-10 grid place-items-center rounded-full surface text-slate-300 hover:text-white hover:border-blue-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">Search</h1>
+                </div>
+                <div class="search-box flex items-center gap-3 px-4 py-3.5 rounded-2xl mb-6">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input id="search-input" type="text" placeholder="Search by game name or something to do..." class="bg-transparent w-full text-base text-white placeholder-slate-500" oninput="onSearch(this.value)">
+                    <button onclick="clearSearch()" class="text-slate-400 hover:text-white text-sm font-semibold shrink-0">Clear</button>
+                </div>
+                <div id="search-results" class="flex flex-col gap-2.5"></div>
+                <div id="search-empty" class="hidden empty-state rounded-2xl py-16 text-center text-slate-400">
+                    <div class="text-4xl mb-3">🔍</div>
+                    Try a different search
+                </div>
+            </div>
+        </section>
+
+        <!-- ---------------- VIEW: PROFILE ---------------- -->
+        <section id="view-profile" class="view hidden px-4 pt-4 lg:pt-8">
+            <div class="mx-auto max-w-2xl">
+                <div class="flex items-center gap-4 mb-6">
+                    <button onclick="setView('home')" class="w-10 h-10 grid place-items-center rounded-full surface text-slate-300 hover:text-white hover:border-blue-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">Profile</h1>
+                </div>
+
+                <div class="surface-strong rounded-[26px] p-8 text-center mb-5 glow-ring">
+                    <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-[#2b6bff] to-[#3fa2ff] grid place-items-center text-4xl font-extrabold text-white shadow-2xl shadow-blue-600/40">B</div>
+                    <h2 class="mt-4 text-2xl font-extrabold">Ben</h2>
+                    <p class="text-slate-400 text-sm mt-1">ben.junuzi.com · Game Maker</p>
+                    <div class="mt-6 grid grid-cols-3 gap-3">
+                        <div class="surface rounded-2xl py-4">
+                            <div class="text-2xl font-extrabold text-[#4aa8ff]" id="stat-games">0</div>
+                            <div class="text-xs text-slate-400 mt-1">Games</div>
+                        </div>
+                        <div class="surface rounded-2xl py-4">
+                            <div class="text-2xl font-extrabold text-[#ff9cc9]">0</div>
+                            <div class="text-xs text-slate-400 mt-1">Saved</div>
+                        </div>
+                        <div class="surface rounded-2xl py-4">
+                            <div class="text-2xl font-extrabold text-[#6ff0b0]">0</div>
+                            <div class="text-xs text-slate-400 mt-1">Played</div>
+                        </div>
+                    </div>
+                    <a href="/forum/index.html" class="btn-primary block mt-6 text-white font-extrabold py-3.5 rounded-2xl text-sm">💬  Visit Community Forum</a>
+                </div>
+
+                <div class="surface rounded-[26px] p-6">
+                    <h3 class="font-bold mb-3">Your Favorites</h3>
+                    <div id="profile-games" class="flex flex-col gap-2.5"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- =====================  FOOTER  ===================== -->
+    <footer class="hidden lg:block mt-14 border-t border-white/5 py-8 text-center text-sm text-slate-500">
+        <p class="mb-1">Thanks for visiting my page! Have fun playing! 😊</p>
+        <p class="text-xs">Made with ❤️ by Ben</p>
+    </footer>
+
+    <!-- =====================  MOBILE BOTTOM NAV  ===================== -->
+    <nav class="bottom-nav lg:hidden fixed bottom-0 inset-x-0 z-50">
+        <div class="grid grid-cols-5 h-[68px]" style="padding-bottom:env(safe-area-inset-bottom);">
+            <button data-tab="home" class="tab-item active flex flex-col items-center justify-center gap-1" onclick="setView('home')">
+                <span class="tab-ico">
+                    <svg class="w-[22px] h-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5L12 3l9 7.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 9.5V21h14V9.5"/></svg>
+                </span>
+                <span class="text-[10px] font-semibold">Home</span>
+            </button>
+            <button data-tab="games" class="tab-item flex flex-col items-center justify-center gap-1" onclick="setView('games')">
+                <span class="tab-ico">
+                    <svg class="w-[22px] h-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 9h16v3H4zM4 14h16v3H4zM7 11.5v3M12 11.5v3"/></svg>
+                </span>
+                <span class="text-[10px] font-semibold">Games</span>
+            </button>
+            <button data-tab="categories" class="tab-item flex flex-col items-center justify-center gap-1" onclick="setView('categories')">
+                <span class="tab-ico">
+                    <svg class="w-[22px] h-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                </span>
+                <span class="text-[10px] font-semibold">Categories</span>
+            </button>
+            <button data-tab="search" class="tab-item flex flex-col items-center justify-center gap-1" onclick="setView('search')">
+                <span class="tab-ico">
+                    <svg class="w-[22px] h-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </span>
+                <span class="text-[10px] font-semibold">Search</span>
+            </button>
+            <button data-tab="profile" class="tab-item flex flex-col items-center justify-center gap-1" onclick="setView('profile')">
+                <span class="tab-ico">
+                    <svg class="w-[22px] h-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 21a8 8 0 10-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+                </span>
+                <span class="text-[10px] font-semibold">Profile</span>
+            </button>
+        </div>
+    </nav>
+</div>
+
+<script>
+    let gamesData = [];
+    let currentCategory = "All";
+    let searchQuery = "";
+    let currentView = "home";
+    let featuredGames = [];
+    let featuredIndex = 0;
+    let featuredTimer = null;
+
+    const standardCats = ["Sports", "Arcade", "Action", "Music"];
+
+    const categoryMeta = {
+        "Sports":  { cls: "sports",  icon: "⚽", grad: "th-sports" },
+        "Arcade":  { cls: "arcade",  icon: "🕹️", grad: "th-arcade" },
+        "Action":  { cls: "action",  icon: "💥", grad: "th-action" },
+        "Music":   { cls: "music",   icon: "🎵", grad: "th-music" },
+    };
+
+    const gameEmoji = {
+        "number guessing": "🎲", "football": "🏈", "touchdown blitz": "🏈",
+        "nitro-racer": "🏎️", "go-kart": "🏎️", "retro ping pong": "🏓",
+        "retro hoop shootout": "🏀", "dodgeball": "🤾", "color echo": "🌈",
+        "golf": "⛳", "hyper hoop master": "🏀", "retro tennis game": "🎾",
+        "slime soccer": "🟢", "neon air hockey championshipneon": "🏒",
+        "basketball": "🏀", "soccer game": "⚽", "neon-air-hockey": "🏒",
+        "neon horizon": "🌆", "coin clicker": "🪙", "retro arcade": "🕹️",
+        "cosmic-defender": "👾", "tictacto": "❌", "space run": "🚀",
+        "f1": "🏁", "pacman": "🟡", "fighter-ship": "✈️",
+        "fast hands": "⚡", "ping pong": "🏓", "space adventure!": "🚀",
+        "classic snake": "🐍", "mini-strike": "🎯", "piano tiles": "🎹",
+        "pool game": "🎱", "soccer": "⚽", "soccer game v2": "⚽",
+        "cool baseball": "⚾", "baseball showdown": "⚾", "flappy bird": "🐦",
+        "dog food run": "🐕", "fruit catch frenzy": "🍎", "1v1 soccer": "⚽",
+        "music studio": "🎶",
+    };
+
+    const featuredPool = ["Soccer", "Football", "Touchdown Blitz", "Slime Soccer", "Fruit Catch Frenzy", "Piano Tiles"];
+
+    function normCat(cat) {
+        if (!cat) return "Other";
+        const c = cat.trim().toLowerCase();
+        if (standardCats.some(s => s.toLowerCase() === c)) return standardCats.find(s => s.toLowerCase() === c);
+        if (c === "only on computer") return "Sports";
+        return "Other";
+    }
+
+    function meta(cat) {
+        return categoryMeta[cat] || { cls: "other", icon: "🎮", grad: "th-other" };
+    }
+
+    function titleKey(t) { return (t || "").toLowerCase(); }
+
+    function thumb(g, cls) {
+        const m = meta(normCat(g.category));
+        const e = gameEmoji[titleKey(g.title)] || m.icon;
+        return `
+            <div class="thumb ${g._grad || m.grad} w-full aspect-square rounded-2xl">
+                <span class="emoji text-3xl md:text-4xl">${e}</span>
+            </div>`;
+    }
+
+    function catPill(cat) {
+        const m = meta(cat);
+        return `<span class="cat-pill ${m.cls} inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wide">
+            ${m.icon} ${cat}
+        </span>`;
+    }
+
+    function safeUrl(url) { return encodeURI((url || "#").trim()); }
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    }
+
+    function renderBrowsePills() {
+        const cats = buildCategoryList();
+        document.getElementById("browse-pills").innerHTML = cats.map(cat => {
+            const m = meta(cat);
+            const active = currentCategory === cat;
+            return `
+                <button onclick="setCategory('${cat}')" class="pill ${active ? 'active' : 'surface'} shrink-0 w-[76px] flex flex-col items-center gap-1.5 py-3 rounded-2xl">
+                    <span class="text-xl">${m.icon}</span>
+                    <span class="text-[11px] font-bold">${cat === "All" ? "All Games" : cat}</span>
+                </button>`;
+        }).join("");
+    }
+
+    function renderGamesPills() {
+        const cats = buildCategoryList();
+        document.getElementById("games-pills").innerHTML = cats.map(cat => {
+            const m = meta(cat);
+            const active = currentCategory === cat;
+            return `
+                <button onclick="setCategory('${cat}')" class="pill ${active ? 'active' : 'surface'} px-4 py-2 rounded-full text-xs md:text-sm font-bold">
+                    ${m.icon} ${cat}
+                </button>`;
+        }).join("");
+    }
+
+    function buildCategoryList() {
+        const present = [...new Set(gamesData.map(g => normCat(g.category)))];
+        const ordered = standardCats.filter(c => present.includes(c));
+        const others = present.filter(c => !standardCats.includes(c) && c !== "Other");
+        return ["All", ...ordered, ...others];
+    }
+
+    function filteredGames() {
+        return gamesData.filter(g => {
+            const c = normCat(g.category);
+            const matchesCat = currentCategory === "All" || c === currentCategory;
+            const q = searchQuery;
+            const matchesSearch = !q || titleKey(g.title).includes(q) || titleKey(g.goal).includes(q);
+            return matchesCat && matchesSearch;
+        });
+    }
+
+    function renderFeatured() {
+        const wrap = document.getElementById("featured-wrap");
+        if (!featuredGames.length) { wrap.innerHTML = ""; return; }
+        const g = featuredGames[featuredIndex];
+        const m = meta(normCat(g.category));
+        const dots = featuredGames.map((_, i) => `
+            <button onclick="stopFeaturedAuto();setFeatured(${i})" class="w-1.5 h-1.5 rounded-full transition-all ${i === featuredIndex ? 'bg-white w-5' : 'bg-white/40'}"></button>
+        `).join("");
+
+        wrap.innerHTML = `
+            <div class="featured-hero rounded-[26px] p-6 md:p-8 mt-8 glow-ring">
+                <div class="flex flex-col md:flex-row md:items-center gap-6">
+                    <div class="flex-1">
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-extrabold tracking-[0.2em] uppercase text-[#04060d] bg-gradient-to-r from-[#2b6bff] to-[#4aa8ff] px-2.5 py-1 rounded-md">
+                            Featured
+                        </span>
+                        <h3 class="mt-4 text-3xl md:text-5xl font-extrabold tracking-tight drop-shadow">${escapeHtml(g.title)}</h3>
+                        <p class="mt-2 text-slate-200 text-sm md:text-base">${escapeHtml(g.goal)}</p>
+                        <a href="${safeUrl(g.url)}" class="btn-primary inline-flex items-center gap-2 mt-5 text-white font-extrabold px-6 py-3 rounded-2xl text-sm">
+                            Play Now
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12"/></svg>
+                        </a>
+                    </div>
+                    <div class="shrink-0">
+                        <div class="thumb ${g._grad || m.grad} w-28 h-28 md:w-36 md:h-36 rounded-3xl shadow-2xl">
+                            <span class="emoji text-5xl md:text-6xl">${gameEmoji[titleKey(g.title)] || m.icon}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-5">${dots}</div>
+            </div>`;
+    }
+
+    function setFeatured(i) { featuredIndex = i; renderFeatured(); }
+
+    function startFeaturedAuto() {
+        stopFeaturedAuto();
+        if (featuredGames.length < 2) return;
+        featuredTimer = setInterval(() => {
+            featuredIndex = (featuredIndex + 1) % featuredGames.length;
+            renderFeatured();
+        }, 6000);
+    }
+
+    function stopFeaturedAuto() {
+        if (featuredTimer) { clearInterval(featuredTimer); featuredTimer = null; }
+    }
+
+    function renderPopular() {
+        const games = filteredGames().slice(0, 8);
+        const grid = document.getElementById("popular-grid");
+        grid.innerHTML = games.map(g => {
+            const m = meta(normCat(g.category));
+            return `
+                <a href="${safeUrl(g.url)}" class="group surface rounded-2xl p-2.5 hover:-translate-y-1 hover:border-blue-400/60 transition-all duration-200">
+                    <div class="thumb ${g._grad || m.grad} w-full aspect-[4/3] rounded-xl mb-2.5">
+                        <span class="emoji text-3xl md:text-4xl">${gameEmoji[titleKey(g.title)] || m.icon}</span>
+                    </div>
+                    <h4 class="text-sm font-bold leading-tight group-hover:text-white transition-colors line-clamp-2">${escapeHtml(g.title)}</h4>
+                    <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-2">${escapeHtml(g.goal)}</p>
+                </a>`;
+        }).join("");
+    }
+
+    function renderHomeList() {
+        const games = filteredGames().slice(0, 6);
+        document.getElementById("home-list").innerHTML = games.map(g => row(g)).join("");
+    }
+
+    function row(g, showCat = true) {
+        const m = meta(normCat(g.category));
+        return `
+            <a href="${safeUrl(g.url)}" class="game-row flex items-center gap-3 surface rounded-2xl p-2.5">
+                <div class="thumb ${g._grad || m.grad} w-14 h-14 rounded-xl shrink-0">
+                    <span class="emoji text-2xl">${gameEmoji[titleKey(g.title)] || m.icon}</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-bold text-sm truncate">${escapeHtml(g.title)}</h4>
+                    <p class="text-xs text-slate-400 truncate">${escapeHtml(g.goal)}</p>
+                </div>
+                ${showCat ? catPill(normCat(g.category)) : ""}
+                <svg class="chevron w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </a>`;
+    }
+
+    function renderGamesList() {
+        const games = filteredGames();
+        const el = document.getElementById("games-list");
+        const emp = document.getElementById("games-empty");
+        el.innerHTML = games.map(g => row(g, true)).join("");
+        emp.classList.toggle("hidden", games.length > 0);
+        el.classList.toggle("hidden", games.length === 0);
+    }
+
+    function renderCategoryTiles() {
+        const cats = buildCategoryList().filter(c => c !== "All");
+        const el = document.getElementById("category-tiles");
+        el.innerHTML = cats.map(cat => {
+            const m = meta(cat);
+            const count = gamesData.filter(g => normCat(g.category) === cat).length;
+            return `
+                <button onclick="setCategory('${cat}');setView('games')" class="group surface rounded-3xl p-5 text-left hover:border-blue-400/60 hover:-translate-y-1 transition-all">
+                    <div class="thumb ${m.grad} w-12 h-12 rounded-2xl mb-3">
+                        <span class="emoji text-2xl">${m.icon}</span>
+                    </div>
+                    <h3 class="font-extrabold text-lg">${cat}</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">${count} games</p>
+                </button>`;
+        }).join("");
+    }
+
+    function renderSearch() {
+        const games = filteredGames();
+        const el = document.getElementById("search-results");
+        const emp = document.getElementById("search-empty");
+        el.innerHTML = games.map(g => row(g, true)).join("");
+        const showEmpty = searchQuery && games.length === 0;
+        el.classList.toggle("hidden", !searchQuery || games.length === 0);
+        emp.classList.toggle("hidden", !showEmpty);
+    }
+
+    function renderProfile() {
+        document.getElementById("stat-games").textContent = gamesData.length;
+        const favs = gamesData.filter(g => ["Soccer", "Football", "Touchdown Blitz"].some(f => titleKey(g.title) === titleKey(f)));
+        const el = document.getElementById("profile-games");
+        el.innerHTML = (favs.length ? favs : gamesData.slice(0, 3)).map(g => row(g, true)).join("");
+    }
+
+    function renderAll() {
+        renderBrowsePills();
+        renderGamesPills();
+        renderPopular();
+        renderHomeList();
+        renderFeatured();
+        renderGamesList();
+        renderCategoryTiles();
+        renderSearch();
+        renderProfile();
+    }
+
+    // ---- View switching ----
+    function setView(view) {
+        currentView = view;
+        ["home","games","categories","search","profile"].forEach(v => {
+            const el = document.getElementById("view-" + v);
+            if (el) el.classList.toggle("hidden", v !== view);
+        });
+        document.querySelectorAll("[data-nav]").forEach(b => b.classList.toggle("active", b.dataset.nav === view));
+        document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === view));
+        if (view === "search") setTimeout(() => document.getElementById("search-input").focus(), 50);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function setCategory(cat) {
+        currentCategory = cat;
+        renderAll();
+    }
+
+    function onSearch(val) {
+        searchQuery = val.toLowerCase().trim();
+        if (currentView !== "search") setView("search");
+        const si = document.getElementById("search-input");
+        if (si && si.value !== val) si.value = val;
+        const ts = document.getElementById("top-search");
+        if (ts && ts.value !== val) ts.value = val;
+        renderSearch();
+        renderPopular();
+        renderHomeList();
+    }
+
+    function clearSearch() {
+        searchQuery = "";
+        document.getElementById("search-input").value = "";
+        const ts = document.getElementById("top-search"); if (ts) ts.value = "";
+        renderSearch();
+    }
+
+    function goHome(e) { e && e.preventDefault(); setView("home"); }
+
+    function scrollToGames() {
+        const wrap = document.getElementById("featured-wrap");
+        if (wrap) wrap.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    // ---- CSV loading ----
+    function parseCSV(str) {
+        const arr = [];
+        let quote = false, row = 0, col = 0;
+        for (let c = 0; c < str.length; c++) {
+            const cc = str[c], nc = str[c+1];
+            arr[row] = arr[row] || [];
+            arr[row][col] = arr[row][col] || '';
+            if (cc === '"' && quote && nc === '"') { arr[row][col] += cc; ++c; continue; }
+            if (cc === '"') { quote = !quote; continue; }
+            if (cc === ',' && !quote) { ++col; continue; }
+            if (cc === '\r' && nc === '\n' && !quote) { ++row; col = 0; ++c; continue; }
+            if (cc === '\n' && !quote) { ++row; col = 0; continue; }
+            if (cc === '\r' && !quote) { ++row; col = 0; continue; }
+            arr[row][col] += cc;
         }
-    </script>
+        return arr;
+    }
+
+    async function loadGames() {
+        try {
+            const res = await fetch("games.csv");
+            if (!res.ok) throw new Error("network");
+            const text = await res.text();
+            const rows = parseCSV(text);
+            if (rows.length > 1) {
+                const headers = rows[0].map(h => h.trim().toLowerCase());
+                gamesData = rows.slice(1).map(r => {
+                    const obj = {};
+                    headers.forEach((h, i) => { obj[h] = r[i] ? r[i].trim() : ""; });
+                    return obj;
+                }).filter(g => g.title);
+            }
+
+            const grads = ["th-sports","th-arcade","th-action","th-music","th-other"];
+            gamesData.forEach((g, i) => { g._grad = grads[i % grads.length]; });
+
+            featuredGames = featuredPool
+                .map(t => gamesData.find(g => titleKey(g.title) === titleKey(t)))
+                .filter(Boolean);
+            if (!featuredGames.length) featuredGames = gamesData.slice(0, 4);
+
+            renderAll();
+            startFeaturedAuto();
+        } catch (err) {
+            console.error("Failed to load CSV", err);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadGames);
+</script>
 </body>
 </html>
