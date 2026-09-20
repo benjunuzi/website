@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 182 182" width="182" height="182" role="img" aria-labelledby="logoTitle logoDesc">
+  <title id="logoTitle">ben.junuzi.com logo</title>
+  <desc id="logoDesc">A navy game controller wearing a gold crown, with a white directional pad and four colorful buttons.</desc>
+  <defs>
+    <linearGradient id="crownFill" x1="0" y1="13" x2="0" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f9d472"/>
+      <stop offset="1" stop-color="#efa239"/>
+    </linearGradient>
+    <linearGradient id="padFill" x1="0" y1="62" x2="0" y2="158" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0e2450"/>
+      <stop offset="1" stop-color="#061530"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="182" height="182" rx="42" fill="#f9f8f4"/>
+
+  <!-- gold crown -->
+  <path d="M54 27.5 L75 40.5 L90 13 L105 40.5 L124 27.5 L113 58 L65 58 Z"
+        fill="url(#crownFill)" stroke="url(#crownFill)" stroke-width="4.5" stroke-linejoin="round"/>
+
+  <!-- controller body -->
+  <path d="M89 69.5
+           C79 69.5 66 67 60 64.5
+           C56.5 63 54.5 62 52 62
+           C43 62 33 65.5 27.5 73.5
+           C19.5 85 13 102 13 123
+           C13 141 19 155.5 30 157.5
+           C38.5 159 46 152.5 52 141.5
+           C57 132 65 126.5 74 124
+           C79 122.8 84 122.2 89 122.2
+           C94 122.2 99 122.8 104 124
+           C113 126.5 121 132 126 141.5
+           C132 152.5 139.5 159 148 157.5
+           C159 155.5 165 141 165 123
+           C165 102 158.5 85 150.5 73.5
+           C145 65.5 135 62 126 62
+           C123.5 62 121.5 63 118 64.5
+           C112 67 99 69.5 89 69.5 Z"
+        fill="url(#padFill)"/>
+
+  <!-- directional pad -->
+  <g fill="#fbfbfd">
+    <rect x="36" y="93" width="32" height="11" rx="4"/>
+    <rect x="46.5" y="82" width="11" height="33" rx="4"/>
+  </g>
+
+  <!-- face buttons -->
+  <circle cx="126" cy="84" r="6.5" fill="#e8459b"/>
+  <circle cx="114" cy="96" r="6.5" fill="#4fc7f7"/>
+  <circle cx="138" cy="96" r="6.5" fill="#f5c945"/>
+  <circle cx="126" cy="109" r="6.5" fill="#6ada7c"/>
+</svg>
