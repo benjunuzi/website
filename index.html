@@ -162,6 +162,42 @@
         .cat-pill.music { background: rgba(238,9,121,.16); color:#ff9cc9; border-color: rgba(255,60,150,.4); }
         .cat-pill.other { background: rgba(41,137,216,.16); color:#9ccdff; border-color: rgba(60,150,230,.4); }
 
+        /* "NEW" badge for recently added games */
+        .new-badge {
+            background: linear-gradient(135deg,#2b6bff,#4aa8ff);
+            color: #04060d;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            line-height: 1;
+            padding: 3px 6px;
+            border-radius: 999px;
+            box-shadow: 0 4px 14px rgba(48,120,255,.45);
+        }
+
+        /* "PRACTICE" badge for player-made games from the Game Lab */
+        .practice-badge {
+            background: linear-gradient(135deg,#12b76a,#35e08a);
+            color: #04140c;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            line-height: 1;
+            padding: 3px 6px;
+            border-radius: 999px;
+            box-shadow: 0 4px 14px rgba(18,183,106,.45);
+        }
+        .cat-pill.practice { background: rgba(18,183,106,.16); color:#6ff0b0; border-color: rgba(20,180,110,.4); }
+
+        /* Add Games buttons */
+        .add-games-btn {
+            background: linear-gradient(135deg,#12b76a,#35e08a);
+            color: #04140c;
+            box-shadow: 0 8px 22px rgba(18,183,106,.4);
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+        .add-games-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 28px rgba(18,183,106,.5); }
+
         /* Game row (All Games list) */
         .game-row { transition: all .18s ease; }
         .game-row:hover { background: rgba(79,140,255,.08); transform: translateX(2px); }
@@ -229,6 +265,9 @@
             </nav>
 
             <div class="flex items-center gap-3 shrink-0">
+                <a href="add-game/index.html" class="add-games-btn text-[#04140c] font-extrabold px-4 py-2 rounded-full text-sm flex items-center gap-1.5">
+                    <span class="text-base leading-none">➕</span> Add Games
+                </a>
                 <div class="search-box flex items-center gap-2 px-3 py-2 rounded-full w-56 focus-within:w-72 transition-all duration-200">
                     <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <input id="top-search" type="text" placeholder="Search games..." class="bg-transparent w-full text-sm text-white placeholder-slate-400" oninput="onSearch(this.value)">
@@ -247,6 +286,7 @@
                 <img src="logo-game.webp" width="100" height="36" alt="ben.junuzi.com" class="h-9 w-auto drop-shadow-[0_4px_14px_rgba(20,60,160,.5)]">
             </button>
             <div class="flex items-center gap-2.5">
+                <a href="add-game/index.html" class="add-games-btn h-9 px-3 rounded-full grid place-items-center text-xs font-extrabold" aria-label="Add Games">➕ Add</a>
                 <button onclick="setView('search')" class="w-9 h-9 grid place-items-center rounded-full surface text-slate-300 hover:text-white transition-colors">
                     <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </button>
@@ -281,6 +321,9 @@
                                     Get Started
                                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12"/></svg>
                                 </button>
+                                <a href="add-game/index.html" class="add-games-btn font-extrabold px-7 py-3 rounded-2xl text-sm md:text-base flex items-center gap-2">
+                                    ➕ Add Games
+                                </a>
                                 <button onclick="setView('profile')" class="text-slate-300 hover:text-white font-semibold text-sm px-2 py-3">Sign In</button>
                             </div>
                         </div>
@@ -309,12 +352,12 @@
                     <div id="browse-pills" class="flex gap-3 overflow-x-auto no-scrollbar pb-1"></div>
                 </div>
 
-                <!-- Popular Games -->
+                <!-- New Games (most recently added first) -->
                 <div class="mt-8">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-lg md:text-xl font-bold flex items-center gap-2">
                             <span class="w-1.5 h-5 rounded-full bg-[#2b6bff] inline-block"></span>
-                            Popular Games
+                            New Games
                         </h2>
                         <button onclick="setView('games')" class="text-sm font-semibold text-[#4aa8ff] hover:text-white hover:underline transition-colors">See All</button>
                     </div>
@@ -331,6 +374,34 @@
                     </div>
                     <div id="home-list" class="grid md:grid-cols-2 gap-2.5"></div>
                 </div>
+
+                <!-- Practice Games (made by players in the Game Lab) -->
+                <div id="practice-section" class="mt-12 hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg md:text-xl font-bold flex items-center gap-2">
+                            <span class="w-1.5 h-5 rounded-full bg-[#35e08a] inline-block"></span>
+                            Practice Games
+                        </h2>
+                        <a href="add-game/index.html" class="text-sm font-semibold text-[#6ff0b0] hover:text-white hover:underline transition-colors">＋ Add Games</a>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">Made by players in the Game Lab and approved by Ben.</p>
+                    <div id="practice-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4"></div>
+                </div>
+
+                <!-- Add Games call to action -->
+                <div class="mt-12 surface rounded-[26px] p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-5">
+                    <div class="text-4xl md:text-5xl">🛠️</div>
+                    <div class="flex-1">
+                        <h2 class="text-xl md:text-2xl font-extrabold tracking-tight">Make your own game</h2>
+                        <p class="text-sm text-slate-400 mt-1.5 max-w-lg">
+                            Build a game in the Game Lab and send it to Ben. If Ben says it's good, it gets added to the games.
+                            If not, it gets deleted. Practice mode only — nothing gets published without your say-so.
+                        </p>
+                    </div>
+                    <a href="add-game/index.html" class="add-games-btn font-extrabold px-7 py-3.5 rounded-2xl text-sm md:text-base text-center shrink-0">
+                        ➕ Add Games
+                    </a>
+                </div>
             </div>
         </section>
 
@@ -345,6 +416,16 @@
                     <button onclick="setView('search')" class="w-10 h-10 grid place-items-center rounded-full surface text-slate-300 hover:text-white hover:border-blue-400 transition-colors">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </button>
+                </div>
+                <!-- Add your own game -->
+                <div class="surface rounded-2xl p-4 mb-5 flex flex-wrap items-center gap-3">
+                    <div class="text-3xl">➕</div>
+                    <div class="flex-1 min-w-[190px]">
+                        <h3 class="font-bold text-sm">Want your own game on here?</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Make one in the Game Lab and send it to Ben. If it's good, it gets added to the games.</p>
+                    </div>
+                    <a href="add-game/index.html" class="add-games-btn font-extrabold px-5 py-2.5 rounded-2xl text-sm">Add Games</a>
+                    <a href="add-game/index.html#review" class="text-xs font-semibold text-slate-400 hover:text-white">Ben's review desk →</a>
                 </div>
                 <div id="games-pills" class="flex flex-wrap gap-2.5 mb-6"></div>
                 <div id="games-list" class="flex flex-col gap-2.5"></div>
@@ -437,7 +518,7 @@
 
     <!-- =====================  MOBILE BOTTOM NAV  ===================== -->
     <nav class="bottom-nav lg:hidden fixed bottom-0 inset-x-0 z-50">
-        <div class="grid grid-cols-5 h-[68px]" style="padding-bottom:env(safe-area-inset-bottom);">
+        <div class="grid grid-cols-6 h-[68px]" style="padding-bottom:env(safe-area-inset-bottom);">
             <button data-tab="home" class="tab-item active flex flex-col items-center justify-center gap-1" onclick="setView('home')">
                 <span class="tab-ico">
                     <svg class="w-[22px] h-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10.5L12 3l9 7.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 9.5V21h14V9.5"/></svg>
@@ -468,10 +549,17 @@
                 </span>
                 <span class="text-[10px] font-semibold">Profile</span>
             </button>
+            <a href="add-game/index.html" class="tab-item flex flex-col items-center justify-center gap-1">
+                <span class="tab-ico text-[#6ff0b0]">
+                    <svg class="w-[22px] h-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8M8 12h8"/></svg>
+                </span>
+                <span class="text-[10px] font-semibold text-[#6ff0b0]">Add</span>
+            </a>
         </div>
     </nav>
 </div>
 
+<script src="practice-games.js"></script>
 <script>
     let gamesData = [];
     let currentCategory = "All";
@@ -505,11 +593,17 @@
         "pool game": "🎱", "soccer": "⚽", "soccer game v2": "⚽",
         "cool baseball": "⚾", "baseball showdown": "⚾", "flappy bird": "🐦",
         "dog food run": "🐕", "fruit catch frenzy": "🍎", "1v1 soccer": "⚽",
-        "music studio": "🎶",
+        "music studio": "🎶", "fc27": "⚽",
         "neon brick breaker": "🧱",
+        "hide and seek": "🙈",
+        "boxing tournament": "🥊",
+        "tetris": "🧱",
+        "pong arena": "🏓",
+        "turbo soccer": "⚽",
+        "neon flappy": "🐦",
     };
 
-    const featuredPool = ["Soccer", "Football", "Touchdown Blitz", "Slime Soccer", "Fruit Catch Frenzy", "Piano Tiles"];
+    const featuredPool = ["Boxing Tournament", "FC27", "Soccer", "Football", "Touchdown Blitz", "Slime Soccer", "Fruit Catch Frenzy", "Piano Tiles"];
 
     function normCat(cat) {
         if (!cat) return "Other";
@@ -525,9 +619,14 @@
 
     function titleKey(t) { return (t || "").toLowerCase(); }
 
+    function gameIcon(g) {
+        const m = meta(normCat(g.category));
+        return g._emoji || gameEmoji[titleKey(g.title)] || m.icon;
+    }
+
     function thumb(g, cls) {
         const m = meta(normCat(g.category));
-        const e = gameEmoji[titleKey(g.title)] || m.icon;
+        const e = gameIcon(g);
         return `
             <div class="thumb ${g._grad || m.grad} w-full aspect-square rounded-2xl">
                 <span class="emoji text-3xl md:text-4xl">${e}</span>
@@ -539,6 +638,11 @@
         return `<span class="cat-pill ${m.cls} inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wide">
             ${m.icon} ${cat}
         </span>`;
+    }
+
+    function newBadge(g) {
+        if (g._practice) return `<span class="practice-badge shrink-0">PRACTICE</span>`;
+        return g._new ? `<span class="new-badge shrink-0">NEW</span>` : "";
     }
 
     function safeUrl(url) { return encodeURI((url || "#").trim()); }
@@ -614,7 +718,7 @@
                     </div>
                     <div class="shrink-0">
                         <div class="thumb ${g._grad || m.grad} w-28 h-28 md:w-36 md:h-36 rounded-3xl shadow-2xl">
-                            <span class="emoji text-5xl md:text-6xl">${gameEmoji[titleKey(g.title)] || m.icon}</span>
+                            <span class="emoji text-5xl md:text-6xl">${gameIcon(g)}</span>
                         </div>
                     </div>
                 </div>
@@ -645,9 +749,11 @@
             return `
                 <a href="${safeUrl(g.url)}" class="group surface rounded-2xl p-2.5 hover:-translate-y-1 hover:border-blue-400/60 transition-all duration-200">
                     <div class="thumb ${g._grad || m.grad} w-full aspect-[4/3] rounded-xl mb-2.5">
-                        <span class="emoji text-3xl md:text-4xl">${gameEmoji[titleKey(g.title)] || m.icon}</span>
+                        <span class="emoji text-3xl md:text-4xl">${gameIcon(g)}</span>
                     </div>
-                    <h4 class="text-sm font-bold leading-tight group-hover:text-white transition-colors line-clamp-2">${escapeHtml(g.title)}</h4>
+                    <h4 class="text-sm font-bold leading-tight group-hover:text-white transition-colors line-clamp-2 flex items-start gap-1.5">
+                        <span class="line-clamp-2">${escapeHtml(g.title)}</span>${newBadge(g)}
+                    </h4>
                     <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-2">${escapeHtml(g.goal)}</p>
                 </a>`;
         }).join("");
@@ -663,10 +769,12 @@
         return `
             <a href="${safeUrl(g.url)}" class="game-row flex items-center gap-3 surface rounded-2xl p-2.5">
                 <div class="thumb ${g._grad || m.grad} w-14 h-14 rounded-xl shrink-0">
-                    <span class="emoji text-2xl">${gameEmoji[titleKey(g.title)] || m.icon}</span>
+                    <span class="emoji text-2xl">${gameIcon(g)}</span>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h4 class="font-bold text-sm truncate">${escapeHtml(g.title)}</h4>
+                    <h4 class="font-bold text-sm flex items-center gap-2 min-w-0">
+                        <span class="truncate">${escapeHtml(g.title)}</span>${newBadge(g)}
+                    </h4>
                     <p class="text-xs text-slate-400 truncate">${escapeHtml(g.goal)}</p>
                 </div>
                 ${showCat ? catPill(normCat(g.category)) : ""}
@@ -727,6 +835,57 @@
         renderCategoryTiles();
         renderSearch();
         renderProfile();
+    }
+
+    // ---- Player-made practice games (from the Game Lab) ----
+    // These are approved by Ben and live as data, so nothing is added to
+    // games.csv or the games/ folder. They show up as PRACTICE games.
+    let csvLoaded = false;
+
+    function practiceToGame(g) {
+        const cat = normCat(g.category || "Arcade");
+        return {
+            title: g.title,
+            goal: g.goal || "Have fun!",
+            url: "add-game/play.html?id=" + encodeURIComponent(g.id),
+            category: cat,
+            _practice: true,
+            _emoji: g.emoji || "🎮",
+            _grad: meta(cat).grad
+        };
+    }
+
+    function renderPracticeGrid(games) {
+        const section = document.getElementById("practice-section");
+        const grid = document.getElementById("practice-grid");
+        if (!section || !grid) return;
+        section.classList.toggle("hidden", games.length === 0);
+        grid.innerHTML = games.map(g => `
+            <a href="${safeUrl(g.url)}" class="group surface rounded-2xl p-2.5 hover:-translate-y-1 hover:border-emerald-400/60 transition-all duration-200">
+                <div class="thumb ${g._grad} w-full aspect-[4/3] rounded-xl mb-2.5">
+                    <span class="emoji text-3xl md:text-4xl">${gameIcon(g)}</span>
+                </div>
+                <h4 class="text-sm font-bold leading-tight group-hover:text-white transition-colors flex items-start gap-1.5">
+                    <span class="line-clamp-2">${escapeHtml(g.title)}</span>
+                    <span class="practice-badge shrink-0">PRACTICE</span>
+                </h4>
+                <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-2">${escapeHtml(g.goal)}</p>
+            </a>`).join("");
+    }
+
+    function applyPracticeGames() {
+        if (typeof PracticeGames === "undefined") return;
+        const approved = PracticeGames.approved().map(practiceToGame);
+        renderPracticeGrid(approved);
+        if (!csvLoaded) return;
+        let csvIndex = 0;
+        gamesData = approved.concat(gamesData.filter(g => !g._practice));
+        gamesData.forEach(g => {
+            if (g._practice) { g._new = false; return; }
+            g._new = csvIndex < 3;
+            csvIndex++;
+        });
+        renderAll();
     }
 
     // ---- View switching ----
@@ -810,17 +969,26 @@
             const grads = ["th-sports","th-arcade","th-action","th-music","th-other"];
             gamesData.forEach((g, i) => { g._grad = grads[i % grads.length]; });
 
+            // Newest uploads are appended to the bottom of games.csv, so flip the order
+            // once here and every list on the site shows the freshest games first.
+            gamesData.reverse();
+            gamesData.forEach((g, i) => { g._new = i < 3; });
+
             featuredGames = featuredPool
                 .map(t => gamesData.find(g => titleKey(g.title) === titleKey(t)))
                 .filter(Boolean);
             if (!featuredGames.length) featuredGames = gamesData.slice(0, 4);
 
+            csvLoaded = true;
+            applyPracticeGames();
             renderAll();
             startFeaturedAuto();
         } catch (err) {
             console.error("Failed to load CSV", err);
         }
     }
+
+    if (typeof PracticeGames !== "undefined") PracticeGames.ready(applyPracticeGames);
 
     document.addEventListener("DOMContentLoaded", loadGames);
 </script>
