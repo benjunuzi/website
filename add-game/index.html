@@ -77,6 +77,9 @@
     <main class="flex-1 px-4 py-5">
         <div class="mx-auto max-w-6xl">
 
+            <!-- Result of a YES / NO link from Ben's email -->
+            <div id="email-result" class="hidden rounded-2xl px-5 py-4 mb-5"></div>
+
             <!-- How it works -->
             <div class="grid sm:grid-cols-3 gap-3 mb-6">
                 <div class="surface rounded-2xl p-4">
@@ -152,6 +155,8 @@
                     <div id="theme-picks" class="flex items-center gap-3"></div>
 
                     <div id="form-msg" class="hidden mt-5 text-sm rounded-xl px-4 py-3"></div>
+                    <div id="send-actions" class="hidden mt-3 flex flex-wrap gap-2 items-center"></div>
+                    <p id="send-hint" class="hidden text-xs text-slate-400 mt-2"></p>
 
                     <div class="flex flex-col sm:flex-row gap-2.5 mt-6">
                         <button id="test-btn" class="btn-ghost text-white font-bold px-5 py-3 rounded-2xl text-sm flex-1">▶ Test play</button>
@@ -204,6 +209,7 @@
                 </div>
 
                 <div id="desk" class="hidden mt-4">
+                    <p id="email-hint" class="hidden text-xs text-amber-200 mb-3"></p>
                     <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-2">Waiting for a decision</h3>
                     <div id="pending-list" class="flex flex-col gap-3"></div>
                     <div id="pending-empty" class="surface rounded-2xl p-6 text-center text-sm text-slate-400">No games waiting right now. 🎉</div>
@@ -384,6 +390,38 @@
         box.classList.remove("hidden");
     }
 
+    /* After sending, offer to email the game straight to Ben. The email
+       carries a YES link (add it) and a NO link (delete it). */
+    function showSendActions(game) {
+        var box = $("send-actions"), hint = $("send-hint");
+        var href = PracticeGames.mailto(game);
+        box.innerHTML = "";
+        if (!href) {
+            box.classList.add("hidden");
+            hint.classList.add("hidden");
+            return;
+        }
+        var mail = document.createElement("a");
+        mail.href = href;
+        mail.className = "btn-ghost text-white font-bold px-4 py-2.5 rounded-xl text-sm";
+        mail.textContent = "✉️ Email it to Ben";
+        box.appendChild(mail);
+
+        var copy = document.createElement("button");
+        copy.className = "btn-ghost text-white font-bold px-4 py-2.5 rounded-xl text-sm";
+        copy.textContent = "Copy game code";
+        copy.addEventListener("click", function () { copyGameCode(game.id, copy); });
+        box.appendChild(copy);
+
+        box.classList.remove("hidden");
+        hint.textContent = "Your mail app should open with the game in it. Ben gets a YES button (add it) and a NO button (delete it).";
+        hint.classList.remove("hidden");
+
+        setTimeout(function () {
+            if (PracticeGames.email()) window.location.href = href;
+        }, 700);
+    }
+
     /* ------------------------- sending games ------------------------ */
 
     function statusBadge(game) {
@@ -392,6 +430,7 @@
     }
 
     function myGameCard(game) {
+        var mail = PracticeGames.mailto(game);
         return '<div class="surface rounded-2xl p-3 flex items-center gap-3">' +
             '<div class="w-12 h-12 rounded-xl grid place-items-center text-2xl shrink-0" style="background:rgba(79,140,255,.16)">' + esc(game.emoji || "🎮") + '</div>' +
             '<div class="flex-1 min-w-0">' +
@@ -401,6 +440,7 @@
             '</div>' +
             '<div class="flex flex-col gap-1.5 shrink-0">' +
                 '<a class="btn-ghost rounded-xl px-3 py-1.5 text-xs font-bold text-white text-center" href="' + PracticeGames.playerUrl(game) + '">Play</a>' +
+                (mail ? '<a class="btn-ghost rounded-xl px-3 py-1.5 text-xs font-bold text-white text-center" href="' + esc(mail) + '">✉️ Email</a>' : '') +
                 '<button class="btn-ghost rounded-xl px-3 py-1.5 text-xs font-bold text-white" data-copy="' + esc(game.id) + '">Copy code</button>' +
             '</div>' +
         '</div>';
@@ -467,6 +507,7 @@
         try { localStorage.setItem("gameLabName", cfg.by); } catch (e) { /* ignore */ }
         message("Sent! \u201c" + game.title + "\u201d is waiting for Ben's decision. " +
             (PracticeGames.status() === "live" ? "Ben will see it in his review desk." : "It's saved here — use \u201cCopy code\u201d to send the game to Ben."), true);
+        showSendActions(game);
         renderMine();
     });
 
@@ -516,6 +557,15 @@
         $("review-state").className = "badge " + (unlocked ? "live" : "off");
         $("lock-btn").classList.toggle("hidden", !unlocked);
         if (!unlocked) return;
+
+        var hint = $("email-hint");
+        if (PracticeGames.email()) {
+            hint.textContent = "Games can also arrive in your email with a YES button and a NO button.";
+            hint.classList.remove("hidden");
+        } else {
+            hint.textContent = "Ben: put your email address in practice-games.js (BEN_EMAIL) and every finished game lands in your inbox with a YES button (add it) and a NO button (delete it).";
+            hint.classList.remove("hidden");
+        }
 
         var pending = PracticeGames.pending();
         var approved = PracticeGames.approved();
@@ -596,6 +646,50 @@
         renderMine();
         renderDesk();
     });
+
+    /* ------------------- YES / NO links from the email ---------------- */
+
+    function queryParams() {
+        var out = {};
+        location.search.replace(/^\?/, "").split("&").forEach(function (pair) {
+            if (!pair) return;
+            var bits = pair.split("=");
+            out[decodeURIComponent(bits[0])] = decodeURIComponent((bits[1] || "").replace(/\+/g, " "));
+        });
+        return out;
+    }
+
+    function showEmailResult(res) {
+        var bar = $("email-result");
+        bar.classList.remove("hidden");
+
+        if (res.ok && res.action === "approve") {
+            bar.className = "rounded-2xl px-5 py-4 mb-5 bg-emerald-500/15 border border-emerald-400/40";
+            bar.innerHTML =
+                '<div class="font-extrabold text-emerald-200">✅ You said YES — \u201c' + esc(res.game.title) + '\u201d is now on the games list!</div>' +
+                '<div class="text-xs text-slate-300 mt-1.5">It shows up with a green PRACTICE badge. ' +
+                '<a class="underline text-[#4aa8ff]" href="../index.html">See it on the homepage</a> · ' +
+                '<a class="underline text-[#4aa8ff]" href="' + PracticeGames.playerUrl(res.game) + '">Play it</a></div>';
+        } else if (res.ok && res.action === "delete") {
+            bar.className = "rounded-2xl px-5 py-4 mb-5 bg-rose-500/15 border border-rose-400/40";
+            bar.innerHTML =
+                '<div class="font-extrabold text-rose-200">🗑 You said NO — \u201c' + esc(res.game.title) + '\u201d has been deleted.</div>' +
+                '<div class="text-xs text-slate-300 mt-1.5">It is gone from the review desk and it was never added to the games.</div>';
+        } else {
+            bar.className = "rounded-2xl px-5 py-4 mb-5 bg-amber-500/15 border border-amber-400/40";
+            bar.innerHTML =
+                '<div class="font-extrabold text-amber-100">Hmm, that YES / NO link did not work.</div>' +
+                '<div class="text-xs text-slate-300 mt-1.5">' + esc(res.message || "") +
+                ' Scroll down to <b>Add a game from a code</b> and paste the game code from the email.</div>';
+        }
+        if (bar.scrollIntoView) bar.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    (function handleEmailLink() {
+        var params = queryParams();
+        if (!params.do || !params.id) return;
+        PracticeGames.actOnLink(params, showEmailResult);
+    })();
 
     /* ---------------------------- start-up ------------------------- */
 

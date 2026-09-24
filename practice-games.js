@@ -22,6 +22,10 @@
        --------------------------------------------------------------- */
     var REVIEW_CODE = "ben";
 
+    /* Ben's email address. When this is filled in, every finished game can
+       be emailed to Ben with a YES link (add it) and a NO link (delete it). */
+    var BEN_EMAIL = "";
+
     /* Set this to false if you ever want game making to stay completely
        on each person's own device (no shared inbox at all). */
     var SHARE_IN_INBOX = true;
@@ -73,6 +77,13 @@
         return "game_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
     }
 
+    function newToken() {
+        var chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        var out = "";
+        for (var i = 0; i < 16; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+        return out;
+    }
+
     function clean(text, max) {
         return String(text == null ? "" : text).replace(/\s+/g, " ").trim().slice(0, max || 80);
     }
@@ -84,6 +95,18 @@
     function slugTitle(title) {
         var slug = clean(title, 60).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
         return slug || "practice-game";
+    }
+
+    /* Full web address of something in the Game Lab folder, so the links in
+       Ben's email work no matter who opens them. */
+    function here(file, query) {
+        var origin = (location.origin && location.origin !== "null") ? location.origin : "";
+        var dir = location.pathname.replace(/[^/]*$/, "");
+        return origin + dir + file + (query ? "?" + query : "");
+    }
+
+    function queryFor(game, action) {
+        return "do=" + action + "&id=" + encodeURIComponent(game.id) + "&token=" + encodeURIComponent(game.token || "");
     }
 
     /* ---------------------------- merging -------------------------- */
@@ -247,6 +270,7 @@
         submit: function (data) {
             var game = {
                 id: newId(),
+                token: newToken(),
                 title: clean(data.title, 60) || "My Practice Game",
                 goal: clean(data.goal, 120) || "Have fun!",
                 category: clean(data.category, 20) || "Arcade",
@@ -293,7 +317,7 @@
             if (!game) return "";
             var payload = {
                 t: game.title, g: game.goal, c: game.category, e: game.emoji,
-                b: game.by, h: game.html, s: game.status || "pending"
+                b: game.by, h: game.html, s: game.status || "pending", k: game.token || ""
             };
             return "BENGAME1:" + toBase64(JSON.stringify(payload));
         },
@@ -310,6 +334,7 @@
             if (!payload || !payload.h) return { ok: false, message: "That game code is missing the game." };
             var game = {
                 id: newId(),
+                token: clean(payload.k, 32) || newToken(),
                 title: clean(payload.t, 60) || "Practice Game",
                 goal: clean(payload.g, 120) || "Have fun!",
                 category: clean(payload.c, 20) || "Arcade",
@@ -356,6 +381,83 @@
 
         playerUrl: function (game) {
             return "play.html?id=" + encodeURIComponent(game.id) + "&name=" + slugTitle(game.title);
+        },
+
+        /* -------------------- emailing games to Ben -------------------- */
+
+        email: function () { return BEN_EMAIL; },
+
+        /* The "mailto" that opens the sender's mail app with the game,
+           plus a YES link and a NO link for Ben to click. */
+        mailto: function (game) {
+            if (!BEN_EMAIL || !game) return "";
+            var play = here("play.html", "id=" + encodeURIComponent(game.id) + "&name=" + slugTitle(game.title));
+            var yes = here("index.html", queryFor(game, "approve"));
+            var no = here("index.html", queryFor(game, "delete"));
+            var code = api.exportCode(game.id);
+            var lines = [
+                "Hi Ben!",
+                "",
+                game.by + " finished a game in the Game Lab.",
+                "",
+                "Game: " + game.title,
+                "Goal: " + game.goal,
+                "Category: " + game.category,
+                "",
+                "Play it:",
+                play,
+                "",
+                "------------------------------",
+                "YES - it is good, add it to the games:",
+                yes,
+                "",
+                "NO - it is not good, delete it:",
+                no,
+                "------------------------------",
+                "",
+                "If the links do not work, paste this game code into the Game Lab:",
+                code
+            ];
+            return "mailto:" + BEN_EMAIL +
+                "?subject=" + encodeURIComponent("New game: " + game.title + " (from " + game.by + ")") +
+                "&body=" + encodeURIComponent(lines.join("\n"));
+        },
+
+        /* Runs when Ben clicks YES or NO in the email. */
+        actOnLink: function (params, done) {
+            var id = params.id || "";
+            var token = params.token || "";
+            var action = params.do || "";
+            var tries = 0;
+
+            (function attempt() {
+                var game = api.byId(id);
+                if (!game && tries < 20 && status !== "solo") {
+                    tries++;
+                    setTimeout(attempt, 300); // give the shared inbox a moment
+                    return;
+                }
+                if (!game) {
+                    done({
+                        ok: false,
+                        message: "That game isn't in the inbox any more. Copy the game code from the email and paste it below."
+                    });
+                    return;
+                }
+                if (game.token && token !== game.token) {
+                    done({ ok: false, message: "That link doesn't match this game." });
+                    return;
+                }
+                if (action === "approve") {
+                    api.approve(id);
+                    done({ ok: true, action: "approve", game: game });
+                } else if (action === "delete") {
+                    api.removeGame(id);
+                    done({ ok: true, action: "delete", game: game });
+                } else {
+                    done({ ok: false, message: "That link didn't say yes or no." });
+                }
+            })();
         }
     };
 
