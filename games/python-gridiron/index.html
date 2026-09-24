@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050906">
+<title>Python Gridiron</title>
+<link rel="icon" type="image/svg+xml" href="../../logo-mark.svg">
+<style>
+    :root {
+        --bg: #040704;
+        --term: #070d08;
+        --term-2: #0a140c;
+        --green: #5cff9d;
+        --green-dim: #2f8f5d;
+        --green-deep: #14512f;
+        --amber: #ffcc66;
+        --amber-dim: #a8832f;
+        --white: #e7fff1;
+        --red: #ff6a72;
+        --blue: #6fd0ff;
+        --field: #17804b;
+        --field-2: #0e5c33;
+        --shadow: 0 0 18px rgba(92, 255, 157, .35);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+        margin: 0;
+        min-height: 100%;
+    }
+
+    body {
+        background:
+            radial-gradient(900px 600px at 50% -10%, rgba(92, 255, 157, .1), transparent 60%),
+            radial-gradient(700px 500px at 50% 120%, rgba(111, 208, 255, .08), transparent 60%),
+            var(--bg);
+        color: var(--green);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 14px;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ---------- CRT shell ---------- */
+    .crt {
+        position: relative;
+        width: min(880px, 100%);
+        background:
+            linear-gradient(180deg, rgba(92, 255, 157, .05), transparent 30%),
+            var(--term);
+        border: 1px solid rgba(92, 255, 157, .25);
+        border-radius: 14px;
+        box-shadow:
+            0 0 0 1px rgba(0, 0, 0, .6),
+            0 30px 80px rgba(0, 0, 0, .7),
+            inset 0 0 120px rgba(92, 255, 157, .05);
+        overflow: hidden;
+    }
+
+    .crt::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0) 0px,
+            rgba(0, 0, 0, 0) 2px,
+            rgba(0, 0, 0, .22) 3px,
+            rgba(0, 0, 0, .22) 4px
+        );
+        mix-blend-mode: multiply;
+        opacity: .55;
+        z-index: 5;
+    }
+
+    .crt::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 6;
+        background: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0, 0, 0, .55) 100%);
+    }
+
+    /* ---------- title bar ---------- */
+    .term-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        background: linear-gradient(180deg, #0d1a10, #081108);
+        border-bottom: 1px solid rgba(92, 255, 157, .18);
+        font-size: 12px;
+        color: var(--green-dim);
+        position: relative;
+        z-index: 7;
+    }
+
+    .dots { display: flex; gap: 6px; }
+    .dots i {
+        width: 10px; height: 10px; border-radius: 50%;
+        display: block;
+    }
+    .dots i:nth-child(1) { background: #ff5f57; }
+    .dots i:nth-child(2) { background: #febc2e; }
+    .dots i:nth-child(3) { background: #28c840; }
+
+    .term-bar .file { color: var(--green); opacity: .85; letter-spacing: .5px; }
+    .term-bar .spacer { flex: 1; }
+
+    .bar-btn {
+        background: rgba(92, 255, 157, .08);
+        border: 1px solid rgba(92, 255, 157, .28);
+        color: var(--green);
+        font: inherit;
+        font-size: 12px;
+        padding: 4px 9px;
+        border-radius: 6px;
+        cursor: pointer;
+        text-decoration: none;
+        line-height: 1.2;
+    }
+    .bar-btn:hover { background: rgba(92, 255, 157, .18); }
+
+    /* ---------- body ---------- */
+    .term-body {
+        padding: 16px clamp(12px, 3vw, 24px) 18px;
+        position: relative;
+        z-index: 7;
+    }
+
+    .banner {
+        color: var(--amber);
+        font-size: clamp(7.5px, 1.75vw, 12.5px);
+        line-height: 1.15;
+        white-space: pre;
+        margin: 2px 0 14px;
+        text-shadow: 0 0 10px rgba(255, 204, 102, .45);
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .banner::-webkit-scrollbar { display: none; }
+
+    /* ---------- scoreboard ---------- */
+    .scoreboard {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        background: rgba(92, 255, 157, .16);
+        border: 1px solid rgba(92, 255, 157, .22);
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+
+    .sb-cell {
+        background: linear-gradient(180deg, var(--term-2), #050a05);
+        padding: 8px 10px;
+        text-align: center;
+    }
+
+    .sb-cell .k {
+        display: block;
+        font-size: 9.5px;
+        letter-spacing: 1.6px;
+        color: var(--green-dim);
+        text-transform: uppercase;
+        margin-bottom: 3px;
+    }
+
+    .sb-cell .v {
+        display: block;
+        font-size: clamp(15px, 3vw, 22px);
+        font-weight: 700;
+        color: var(--amber);
+        text-shadow: 0 0 12px rgba(255, 204, 102, .4);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .sb-cell.me .v { color: var(--green); text-shadow: var(--shadow); }
+    .sb-cell.opp .v { color: var(--red); text-shadow: 0 0 12px rgba(255, 106, 114, .35); }
+
+    /* ---------- field ---------- */
+    .field {
+        position: relative;
+        height: 62px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid rgba(92, 255, 157, .25);
+        background:
+            repeating-linear-gradient(to right,
+                rgba(0, 0, 0, 0) 0,
+                rgba(0, 0, 0, 0) calc(10% - 1px),
+                rgba(231, 255, 241, .28) calc(10% - 1px),
+                rgba(231, 255, 241, .28) 10%),
+            linear-gradient(90deg, var(--field-2), var(--field));
+        margin-bottom: 12px;
+    }
+
+    .field .ez {
+        position: absolute;
+        top: 0; bottom: 0;
+        width: 7%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: rgba(4, 7, 4, .78);
+        font-weight: 700;
+        writing-mode: vertical-rl;
+        background: repeating-linear-gradient(45deg, #0c3f24 0 6px, #0a311c 6px 12px);
+        color: rgba(92, 255, 157, .85);
+    }
+    .field .ez.left { left: 0; }
+    .field .ez.right { right: 0; }
+
+    .field .track {
+        position: absolute;
+        left: 7%;
+        right: 7%;
+        top: 0;
+        bottom: 0;
+    }
+
+    .marker {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        transition: left .45s cubic-bezier(.22, 1, .36, 1);
+    }
+
+    .marker.fd { width: 2px; background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+    .marker.fd .tag {
+        position: absolute;
+        top: 2px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 8px;
+        color: var(--amber);
+        letter-spacing: 1px;
+    }
+
+    .marker.ball {
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 0;
+    }
+    .marker.ball .chip {
+        font-size: 19px;
+        filter: drop-shadow(0 0 8px rgba(255, 255, 255, .55));
+        animation: bob 1.4s ease-in-out infinite;
+    }
+    @keyframes bob {
+        0%, 100% { transform: translateY(-2px) rotate(-8deg); }
+        50% { transform: translateY(2px) rotate(8deg); }
+    }
+
+    .field .numbers {
+        position: absolute;
+        inset: auto 0 3px 0;
+        display: flex;
+        justify-content: space-between;
+        padding: 0 9%;
+        font-size: 9px;
+        color: rgba(231, 255, 241, .6);
+    }
+
+    /* ---------- log ---------- */
+    .screen {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .log {
+        height: clamp(230px, 40vh, 330px);
+        overflow-y: auto;
+        padding: 12px 12px 14px;
+        background: linear-gradient(180deg, #050a06, #040805);
+        border: 1px solid rgba(92, 255, 157, .18);
+        border-radius: 10px;
+        font-size: clamp(12px, 2.5vw, 14px);
+        line-height: 1.55;
+        scroll-behavior: smooth;
+        overscroll-behavior: contain;
+    }
+
+    .log::-webkit-scrollbar { width: 8px; }
+    .log::-webkit-scrollbar-track { background: transparent; }
+    .log::-webkit-scrollbar-thumb {
+        background: rgba(92, 255, 157, .25);
+        border-radius: 999px;
+    }
+
+    .log p {
+        margin: 0 0 5px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        text-shadow: 0 0 8px rgba(92, 255, 157, .25);
+    }
+
+    .log p.plain { color: var(--green); }
+    .log p.dim { color: var(--green-dim); }
+    .log p.amber { color: var(--amber); text-shadow: 0 0 10px rgba(255, 204, 102, .3); }
+    .log p.blue { color: var(--blue); text-shadow: 0 0 10px rgba(111, 208, 255, .3); }
+    .log p.bad { color: var(--red); text-shadow: 0 0 10px rgba(255, 106, 114, .3); }
+    .log p.good { color: var(--white); text-shadow: 0 0 12px rgba(255, 255, 255, .35); }
+    .log p.art { color: var(--green-deep); }
+
+    .log p .hi { color: var(--white); }
+    .log p .amber { color: var(--amber); }
+    .log p .red { color: var(--red); }
+    .log p .blue { color: var(--blue); }
+
+    .caret {
+        display: inline-block;
+        width: 8px;
+        height: 14px;
+        background: var(--green);
+        vertical-align: -2px;
+        animation: blink 1s steps(1) infinite;
+        box-shadow: var(--shadow);
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ---------- choices ---------- */
+    .prompt-line {
+        color: var(--green);
+        font-size: clamp(12px, 2.5vw, 14px);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 20px;
+    }
+    .prompt-line .caret { opacity: 0; }
+    .prompt-line.active .caret { opacity: 1; }
+
+    .choices {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .choice {
+        -webkit-appearance: none;
+        appearance: none;
+        background: linear-gradient(180deg, rgba(92, 255, 157, .09), rgba(92, 255, 157, .03));
+        border: 1px solid rgba(92, 255, 157, .3);
+        border-radius: 10px;
+        color: var(--green);
+        font: inherit;
+        font-size: clamp(11.5px, 2.4vw, 13.5px);
+        padding: 10px 8px 9px;
+        cursor: pointer;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        transition: transform .12s ease, background .15s ease, border-color .15s ease;
+    }
+
+    .choice .label { font-weight: 700; letter-spacing: .3px; }
+    .choice .sub { color: var(--green-dim); font-size: 10.5px; letter-spacing: .2px; }
+    .choice .key {
+        position: relative;
+        align-self: flex-start;
+        margin-top: 2px;
+        font-size: 10px;
+        color: var(--amber);
+        border: 1px solid rgba(255, 204, 102, .35);
+        border-radius: 4px;
+        padding: 1px 5px;
+    }
+
+    .choice:not(:disabled):hover,
+    .choice:hover:not([disabled]) {
+        background: linear-gradient(180deg, rgba(92, 255, 157, .22), rgba(92, 255, 157, .08));
+        border-color: rgba(92, 255, 157, .65);
+        box-shadow: 0 0 22px rgba(92, 255, 157, .18);
+    }
+
+    .choice:not(:disabled):active { transform: translateY(1px) scale(.995); }
+
+    .choice:disabled { opacity: .34; cursor: not-allowed; }
+
+    .choice.fg-in-range { border-color: rgba(255, 204, 102, .55); }
+    .choice.fg-in-range .sub { color: var(--amber-dim); }
+    .choice.fg-out-of-range .sub { color: var(--red); }
+
+    .footnote {
+        margin-top: 10px;
+        font-size: 10.5px;
+        color: var(--green-deep);
+        letter-spacing: .4px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        align-items: center;
+    }
+    .footnote kbd {
+        font: inherit;
+        color: var(--green-dim);
+        border: 1px solid rgba(92, 255, 157, .22);
+        border-radius: 4px;
+        padding: 0 4px;
+    }
+
+    /* ---------- python source ---------- */
+    details.src {
+        margin-top: 14px;
+        border: 1px dashed rgba(92, 255, 157, .22);
+        border-radius: 10px;
+        padding: 8px 12px;
+        background: rgba(92, 255, 157, .03);
+    }
+
+    details.src summary {
+        cursor: pointer;
+        color: var(--green-dim);
+        font-size: 11.5px;
+        letter-spacing: .6px;
+    }
+
+    details.src pre {
+        margin: 10px 0 2px;
+        max-height: 300px;
+        overflow: auto;
+        font-size: 11.5px;
+        line-height: 1.5;
+        color: var(--green-dim);
+        white-space: pre;
+    }
+
+    /* ---------- final overlay ---------- */
+    .final {
+        display: none;
+        border: 1px solid rgba(255, 204, 102, .45);
+        background:
+            radial-gradient(600px 260px at 50% 0%, rgba(255, 204, 102, .12), transparent 70%),
+            linear-gradient(180deg, #0b130d, #050a06);
+        border-radius: 12px;
+        padding: 18px 16px;
+        text-align: center;
+        box-shadow: 0 0 40px rgba(255, 204, 102, .12) inset;
+    }
+
+    .final.show { display: block; animation: pop .35s ease; }
+    @keyframes pop {
+        from { opacity: 0; transform: translateY(8px) scale(.98); }
+        to { opacity: 1; transform: none; }
+    }
+
+    .final .head {
+        font-size: clamp(12px, 2.6vw, 15px);
+        letter-spacing: 3px;
+        color: var(--amber);
+        margin-bottom: 10px;
+    }
+
+    .final .score {
+        font-size: clamp(26px, 7vw, 42px);
+        font-weight: 700;
+        color: var(--white);
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 0 22px rgba(231, 255, 241, .35);
+    }
+    .final .score .me { color: var(--green); }
+    .final .score .opp { color: var(--red); }
+
+    .final .verdict {
+        margin-top: 12px;
+        font-size: clamp(12.5px, 2.8vw, 15px);
+        color: var(--green);
+    }
+
+    .final .verdict.win { color: var(--amber); }
+    .final .verdict.loss { color: var(--red); }
+
+    .final .box {
+        display: inline-block;
+        margin-top: 14px;
+        font-size: clamp(9px, 2vw, 12px);
+        white-space: pre;
+        color: var(--green-dim);
+        text-align: left;
+    }
+
+    .again {
+        margin-top: 16px;
+        background: rgba(92, 255, 157, .12);
+        border: 1px solid rgba(92, 255, 157, .45);
+        color: var(--green);
+        font: inherit;
+        font-size: clamp(12px, 2.6vw, 14px);
+        padding: 10px 20px;
+        border-radius: 999px;
+        cursor: pointer;
+        letter-spacing: .6px;
+    }
+    .again:hover { background: rgba(92, 255, 157, .24); box-shadow: 0 0 24px rgba(92, 255, 157, .2); }
+
+    @media (max-width: 620px) {
+        .choices { grid-template-columns: 1fr; }
+        .choice { flex-direction: row; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .choice .sub { flex-basis: 100%; }
+        .choice .key { margin-top: 0; }
+        .scoreboard { grid-template-columns: repeat(2, 1fr); }
+        .field { height: 54px; }
+    }
+
+    @media (max-width: 380px) {
+        .scoreboard { grid-template-columns: 1fr 1fr; }
+        .field .numbers { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .marker, .marker.ball .chip { transition: none; animation: none; }
+    }
+</style>
+</head>
+<body>
+<div class="crt">
+    <div class="term-bar">
+        <span class="dots"><i></i><i></i><i></i></span>
+        <span class="file">python gridiron.py — /games/python-gridiron</span>
+        <span class="spacer"></span>
+        <button class="bar-btn" id="soundBtn" type="button" aria-pressed="true">🔊 sound</button>
+        <button class="bar-btn" id="restartBtn" type="button">↻ restart</button>
+        <a class="bar-btn" href="../../">← site</a>
+    </div>
+
+    <div class="term-body">
+        <pre class="banner" aria-hidden="true">╔══════════════════════════════════════════════════════════╗
+║   P Y T H O N   G R I D I R O N   ·   ·   ·   [ 🏈 ]     ║
+║   4 downs · 10 yards · 4 quarters · no mercy             ║
+╚══════════════════════════════════════════════════════════╝</pre>
+
+        <div class="scoreboard" aria-live="polite">
+            <div class="sb-cell me">
+                <span class="k">You</span>
+                <span class="v" id="sb-you">0</span>
+            </div>
+            <div class="sb-cell opp">
+                <span class="k">Opponent</span>
+                <span class="v" id="sb-opp">0</span>
+            </div>
+            <div class="sb-cell">
+                <span class="k">Quarter</span>
+                <span class="v" id="sb-quarter">1/4</span>
+            </div>
+            <div class="sb-cell">
+                <span class="k">Situation</span>
+                <span class="v" id="sb-situation">1st &amp; 10</span>
+            </div>
+        </div>
+
+        <div class="field" id="field">
+            <div class="ez left">Own EZ</div>
+            <div class="track" id="track">
+                <div class="marker fd" id="fdMarker"><span class="tag">1ST</span></div>
+                <div class="marker ball" id="ballMarker"><span class="chip">🏈</span></div>
+            </div>
+            <div class="ez right">End Zone</div>
+            <div class="numbers">
+                <span>0</span><span>20</span><span>40</span><span>50</span><span>40</span><span>20</span><span>0</span>
+            </div>
+        </div>
+
+        <div class="screen">
+            <div class="log" id="log" role="log" aria-live="polite" aria-label="Play by play"></div>
+
+            <div class="prompt-line" id="promptLine">
+                <span>&gt; Enter your choice (1, 2, or 3):</span>
+                <span class="caret"></span>
+            </div>
+
+            <div class="choices">
+                <button class="choice" type="button" data-play="1" disabled>
+                    <span class="label">1. Run Play</span>
+                    <span class="sub">safer · steady yards (-2 to 7)</span>
+                    <span class="key">1</span>
+                </button>
+                <button class="choice" type="button" data-play="2" disabled>
+                    <span class="label">2. Pass Play</span>
+                    <span class="sub">high risk · high reward (5 to 25)</span>
+                    <span class="key">2</span>
+                </button>
+                <button class="choice" type="button" data-play="3" id="fgChoice" disabled>
+                    <span class="label">3. Field Goal</span>
+                    <span class="sub" id="fgSub">only if close enough</span>
+                    <span class="key">3</span>
+                </button>
+            </div>
+
+            <div class="footnote">
+                <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> pick a play</span>
+                <span><kbd>any key</kbd> skip the typing</span>
+                <span><kbd>M</kbd> mute</span>
+                <span><kbd>R</kbd> restart</span>
+            </div>
+
+            <div class="final" id="final">
+                <div class="head">========================================<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;FINAL SCORE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>========================================</div>
+                <div class="score"><span class="me" id="final-you">0</span> <span style="color:var(--green-deep)">—</span> <span class="opp" id="final-opp">0</span></div>
+                <div class="verdict" id="final-verdict"></div>
+                <pre class="box" id="final-box"></pre>
+                <br>
+                <button class="again" type="button" id="againBtn">▶ PLAY AGAIN</button>
+            </div>
+        </div>
+
+        <details class="src">
+            <summary>▸ show the original python source (gridiron.py)</summary>
+            <pre id="srcCode"></pre>
+        </details>
+    </div>
+</div>
+
+<script>
+(() => {
+    "use strict";
+
+    /* ============================================================
+       Original python rules, ported line for line.
+         score            = 0
+         opponent_score   = random.randint(7, 21)
+         yard_line        = 20
+         downs            = 1
+         yards_to_go      = 10
+         quarter          = 1
+       ============================================================ */
+
+    const START_YARD = 20;
+    const FG_RANGE = 45;          // 100 - yard_line <= 45
+    const TYPE_SPEED = 9;         // ms per character at full speed
+
+    const PY_SOURCE = [
+        'import random',
+        '',
+        'def play_football():',
+        '    print("========================================")',
+        '    print("     WELCOME TO PYTHON GRIDIRON!        ")',
+        '    print("========================================")',
+        '    print("Your goal: Drive down the field and score!")',
+        '    print("You have 4 downs to gain 10 yards for a 1st down.")',
+        '    print("----------------------------------------\\n")',
+        '',
+        '    score = 0',
+        '    opponent_score = random.randint(7, 21)',
+        '    yard_line = 20  # Starting at your own 20-yard line',
+        '    downs = 1',
+        '    yards_to_go = 10',
+        '    quarter = 1',
+        '',
+        '    while quarter <= 4:',
+        '        print(f"--- QUARTER {quarter} ---")',
+        '        print(f"Field Position: Your own {yard_line}-yard line")',
+        '        print(f"Down: {downs} | Yards to go: {yards_to_go} | Score: You {score} - Opponent {opponent_score}")',
+        '        print("\\nChoose your play:")',
+        '        print("1. Run Play (Safer, steady yards)")',
+        '        print("2. Pass Play (High risk, high reward)")',
+        '        print("3. Field Goal Attempt (Only if close enough!)")',
+        '',
+        '        choice = input("Enter your choice (1, 2, or 3): ").strip()',
+        '        print()',
+        '',
+        '        yards_gained = 0',
+        '',
+        "        if choice == '1':",
+        '            yards_gained = random.randint(-2, 7)',
+        '            print(f"You hand the ball off... gain of {yards_gained} yards!")',
+        "        elif choice == '2':",
+        '            success = random.choice([True, True, False])',
+        '            if success:',
+        '                yards_gained = random.randint(5, 25)',
+        '                print(f"Pass complete! Big gain of {yards_gained} yards!")',
+        '            else:',
+        '                yards_gained = 0',
+        '                print("Pass incomplete! The defense shut it down.")',
+        "        elif choice == '3':",
+        '            distance_to_endzone = 100 - yard_line',
+        '            if distance_to_endzone <= 45:',
+        "                print(\"The kicker lines up... IT'S GOOD! 3 points!\")",
+        '                score += 3',
+        '                yard_line = 20',
+        '                downs = 1',
+        '                yards_to_go = 10',
+        '                quarter += 1',
+        '                continue',
+        '            else:',
+        '                print("Too far away! Missed field goal! Turnover on downs.")',
+        '                yard_line = 100 - yard_line',
+        '                downs = 1',
+        '                yards_to_go = 10',
+        '                continue',
+        '        else:',
+        '            print("Invalid choice, you waste a down running into your own sideline!")',
+        '            yards_gained = -5',
+        '',
+        '        # Update field position and downs',
+        '        yard_line += yards_gained',
+        '        yards_to_go -= yards_gained',
+        '',
+        '        if yard_line >= 100:',
+        '            print("\\nTOUCHDOWN!! Absolute masterclass drive!")',
+        '            score += 7',
+        '            yard_line = 20',
+        '            downs = 1',
+        '            yards_to_go = 10',
+        '            quarter += 1',
+        '            continue',
+        '',
+        '        if yard_line <= 0:',
+        '            print("\\nOh no! Safety! ... Opponent gets 2 points.")',
+        '            opponent_score += 2',
+        '            yard_line = 20',
+        '            downs = 1',
+        '            yards_to_go = 10',
+        '            continue',
+        '',
+        '        if yards_to_go <= 0:',
+        '            print("--> FIRST DOWN! Keep the drive alive!\\n")',
+        '            downs = 1',
+        '            yards_to_go = 10',
+        '        else:',
+        '            downs += 1',
+        '',
+        '        if downs > 4:',
+        '            print("\\nTurnover on downs! The defense holds strong and takes over.")',
+        '            yard_line = max(10, 100 - yard_line)',
+        '            downs = 1',
+        '            yards_to_go = 10',
+        '            quarter += 1'
+    ].join("\n");
+
+    document.getElementById("srcCode").textContent = PY_SOURCE;
+
+    /* ---------------- element refs ---------------- */
+    const logEl = document.getElementById("log");
+    const promptLine = document.getElementById("promptLine");
+    const finalEl = document.getElementById("final");
+    const choiceBtns = Array.from(document.querySelectorAll(".choice"));
+    const fgChoice = document.getElementById("fgChoice");
+    const fgSub = document.getElementById("fgSub");
+    const soundBtn = document.getElementById("soundBtn");
+    const sb = {
+        you: document.getElementById("sb-you"),
+        opp: document.getElementById("sb-opp"),
+        quarter: document.getElementById("sb-quarter"),
+        situation: document.getElementById("sb-situation")
+    };
+    const ballMarker = document.getElementById("ballMarker");
+    const fdMarker = document.getElementById("fdMarker");
+
+    /* ---------------- helpers ---------------- */
+    const randInt = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+    const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const ordinal = n => (["1st", "2nd", "3rd", "4th"][n - 1] || n + "th");
+
+    /* ---------------- audio ---------------- */
+    let audioCtx = null;
+    let muted = false;
+
+    function ctx() {
+        if (muted) return null;
+        if (!audioCtx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return null;
+            audioCtx = new AC();
+        }
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        return audioCtx;
+    }
+
+    function tone(freq, dur, type = "square", gain = 0.05, delay = 0) {
+        const ac = ctx();
+        if (!ac) return;
+        const t0 = ac.currentTime + delay;
+        const osc = ac.createOscillator();
+        const g = ac.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, t0);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(gain, t0 + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(g).connect(ac.destination);
+        osc.start(t0);
+        osc.stop(t0 + dur + 0.02);
+    }
+
+    const sfx = {
+        tick() { tone(1400 + Math.random() * 500, 0.012, "square", 0.006); },
+        select() { tone(660, 0.06, "square", 0.045); tone(990, 0.07, "square", 0.035, 0.05); },
+        run() { tone(180, 0.12, "sawtooth", 0.05); tone(140, 0.16, "sawtooth", 0.04, 0.06); },
+        pass() { tone(520, 0.08, "triangle", 0.05); tone(880, 0.12, "triangle", 0.05, 0.07); tone(1200, 0.14, "triangle", 0.04, 0.16); },
+        incomplete() { tone(320, 0.1, "square", 0.045); tone(180, 0.18, "square", 0.04, 0.08); },
+        good() { [523, 659, 784].forEach((f, i) => tone(f, 0.2, "triangle", 0.055, i * 0.11)); },
+        bad() { [300, 232, 180].forEach((f, i) => tone(f, 0.24, "sawtooth", 0.05, i * 0.14)); },
+        touchdown() { [523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, 0.22, "square", 0.055, i * 0.1)); },
+        turnover() { [420, 340, 260, 190].forEach((f, i) => tone(f, 0.2, "sawtooth", 0.045, i * 0.1)); },
+        whistle() { tone(2100, 0.5, "sine", 0.05); tone(2600, 0.5, "sine", 0.03, 0.04); }
+    };
+
+    soundBtn.addEventListener("click", () => {
+        muted = !muted;
+        soundBtn.textContent = muted ? "🔇 muted" : "🔊 sound";
+        soundBtn.setAttribute("aria-pressed", String(!muted));
+        if (!muted) sfx.select();
+    });
+
+    /* ---------------- state ---------------- */
+    const S = {};
+    let awaitingPlay = false;
+    let choiceResolver = null;
+    let typing = false;
+    let skipRequested = false;
+    let runId = 0;
+
+    function resetState() {
+        S.score = 0;
+        S.opponent = randInt(7, 21);
+        S.yard = START_YARD;
+        S.downs = 1;
+        S.toGo = 10;
+        S.quarter = 1;
+    }
+
+    /* ---------------- rendering ---------------- */
+    function ballOnText() {
+        if (S.yard === 50) return "50";
+        if (S.yard > 50) return "OPP " + (100 - S.yard);
+        return "OWN " + S.yard;
+    }
+
+    function updateHud() {
+        sb.you.textContent = S.score;
+        sb.opp.textContent = S.opponent;
+        sb.quarter.textContent = clamp(S.quarter, 1, 4) + "/4";
+        sb.situation.textContent = ordinal(S.downs) + " & " + Math.max(1, S.toGo) + " · " + ballOnText();
+
+        const pct = clamp(S.yard, 0, 100);
+        ballMarker.style.left = pct + "%";
+
+        const fdPct = clamp(S.yard + Math.max(S.toGo, 0), 0, 100);
+        fdMarker.style.left = fdPct + "%";
+        fdMarker.style.opacity = S.toGo >= 100 || S.toGo <= 0 ? "0" : "1";
+
+        const dist = 100 - S.yard;
+        const inRange = dist <= FG_RANGE;
+        fgChoice.classList.toggle("fg-in-range", inRange);
+        fgChoice.classList.toggle("fg-out-of-range", !inRange);
+        fgSub.textContent = inRange
+            ? "in range · " + (dist + 17) + " yd attempt"
+            : "out of range (" + dist + " yd to pay dirt)";
+    }
+
+    function clearLog() {
+        logEl.innerHTML = "";
+        finalEl.classList.remove("show");
+    }
+
+    /* ---------------- typewriter ---------------- */
+    function typeInto(node, text, speed) {
+        return new Promise(resolve => {
+            let i = 0;
+            const step = () => {
+                if (skipRequested || i >= text.length) {
+                    node.textContent = text;
+                    resolve();
+                    return;
+                }
+                const take = skipRequested ? text.length : 2;
+                i = Math.min(text.length, i + take);
+                node.textContent = text.slice(0, i);
+                if (!skipRequested && i % 6 < 2) sfx.tick();
+                logEl.scrollTop = logEl.scrollHeight;
+                setTimeout(step, speed);
+            };
+            step();
+        });
+    }
+
+    /**
+     * line("plain text") or line([["text","hi"],["more","red"]], "plain")
+     */
+    async function line(text, cls = "plain", speed = TYPE_SPEED) {
+        const p = document.createElement("p");
+        p.className = cls;
+        const segments = Array.isArray(text) ? text : [[text, null]];
+        const spans = [];
+        for (const [chunk, spanCls] of segments) {
+            const span = document.createElement("span");
+            if (spanCls) span.className = spanCls;
+            p.appendChild(span);
+            spans.push([span, chunk]);
+        }
+        logEl.appendChild(p);
+        logEl.scrollTop = logEl.scrollHeight;
+        typing = true;
+        for (const [span, chunk] of spans) {
+            await typeInto(span, chunk, speed);
+        }
+        typing = false;
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    const blank = () => line("", "dim", 0);
+
+    /* ---------------- play loop ---------------- */
+    function setChoices(enabled) {
+        choiceBtns.forEach(b => { b.disabled = !enabled; });
+        promptLine.classList.toggle("active", enabled);
+    }
+
+    function waitForPlay() {
+        awaitingPlay = true;
+        setChoices(true);
+        updateHud();
+        return new Promise(resolve => {
+            choiceResolver = choice => {
+                awaitingPlay = false;
+                setChoices(false);
+                choiceResolver = null;
+                resolve(choice);
+            };
+        });
+    }
+
+    function choose(play) {
+        if (!awaitingPlay || !choiceResolver) return;
+        sfx.select();
+        const resolve = choiceResolver;
+        resolve(play);
+    }
+
+    choiceBtns.forEach(btn => {
+        btn.addEventListener("click", () => choose(Number(btn.dataset.play)));
+    });
+
+    async function quarterHeader(q) {
+        skipRequested = false;
+        await line("--- QUARTER " + q + " ---", "amber");
+        await line("Field position: " + ballOnText() + " yard line", "dim");
+        await line("Down: " + S.downs + " | Yards to go: " + S.toGo +
+                   " | Score: You " + S.score + " - Opponent " + S.opponent, "dim");
+        await line("Choose your play:", "dim");
+        await line(" 1. Run Play      (safer, steady yards)", "dim", 5);
+        await line(" 2. Pass Play     (high risk, high reward)", "dim", 5);
+        await line(" 3. Field Goal    (only if close enough!)", "dim", 5);
+        await blank();
+    }
+
+    async function resolvePlay(choice) {
+        skipRequested = false;
+        let yardsGained = 0;
+
+        if (choice === 1) {
+            yardsGained = randInt(-2, 7);
+            sfx.run();
+            await line("You hand the ball off... gain of " + yardsGained + " yards!", "plain");
+        } else if (choice === 2) {
+            const success = pick([true, true, false]);   // 2/3 chance complete
+            if (success) {
+                yardsGained = randInt(5, 25);
+                sfx.pass();
+                await line("Pass complete! Big gain of " + yardsGained + " yards!", "blue");
+            } else {
+                yardsGained = 0;
+                sfx.incomplete();
+                await line("Pass incomplete! The defense shut it down.", "bad");
+            }
+        } else if (choice === 3) {
+            const distanceToEndzone = 100 - S.yard;
+            if (distanceToEndzone <= FG_RANGE) {
+                await line("The kicker lines up... IT'S GOOD! 3 points!", "amber");
+                sfx.good();
+                S.score += 3;
+                S.yard = START_YARD;
+                S.downs = 1;
+                S.toGo = 10;
+                S.quarter += 1;
+                updateHud();
+                await blank();
+                return;
+            } else {
+                await line("Too far away! Missed field goal! Turnover on downs.", "bad");
+                sfx.bad();
+                S.yard = 100 - S.yard;
+                S.downs = 1;
+                S.toGo = 10;
+                updateHud();
+                await line("The defense takes over at their " + (100 - S.yard) + " yard line.", "dim");
+                await blank();
+                return;
+            }
+        } else {
+            await line("Invalid choice, you waste a down running into your own sideline!", "bad");
+            yardsGained = -5;
+        }
+
+        // Update field position and downs
+        S.yard += yardsGained;
+        S.toGo -= yardsGained;
+        await sleep(yardsGained !== 0 ? 260 : 120);
+        updateHud();
+        logEl.scrollTop = logEl.scrollHeight;
+        if (S.yard > 0 && S.yard < 100) {
+            const dist = 100 - S.yard;
+            await line("  → Ball on " + (S.yard >= 50 ? "opponent " + (100 - S.yard) : "your own " + S.yard) +
+                       " | " + (dist <= FG_RANGE ? "field goal range!" : "outside FG range"), "dim", 5);
+        }
+
+        // Touchdown
+        if (S.yard >= 100) {
+            await blank();
+            await line("TOUCHDOWN!! Absolute masterclass drive!", "amber");
+            sfx.touchdown();
+            S.score += 7;
+            S.yard = START_YARD;
+            S.downs = 1;
+            S.toGo = 10;
+            S.quarter += 1;
+            updateHud();
+            await blank();
+            return;
+        }
+
+        // Safety
+        if (S.yard <= 0) {
+            await blank();
+            await line("Oh no! Safety! The defense tackles you in your own end zone. Opponent gets 2 points.", "bad");
+            sfx.bad();
+            S.opponent += 2;
+            S.yard = START_YARD;
+            S.downs = 1;
+            S.toGo = 10;
+            updateHud();
+            await blank();
+            return;
+        }
+
+        // First down
+        if (S.toGo <= 0) {
+            await line("--> FIRST DOWN! Keep the drive alive!", "good");
+            sfx.good();
+            S.downs = 1;
+            S.toGo = 10;
+        } else {
+            S.downs += 1;
+        }
+
+        // Turnover on downs
+        if (S.downs > 4) {
+            await blank();
+            await line("Turnover on downs! The defense holds strong and takes over.", "bad");
+            sfx.turnover();
+            S.yard = Math.max(10, 100 - S.yard);
+            S.downs = 1;
+            S.toGo = 10;
+            S.quarter += 1;
+            updateHud();
+            await blank();
+            return;
+        }
+
+        updateHud();
+        await blank();
+    }
+
+    async function intro(myRun) {
+        await line("========================================", "dim", 4);
+        await line("     WELCOME TO PYTHON GRIDIRON!        ", "good", 4);
+        await line("========================================", "dim", 4);
+        await line("Your goal: Drive down the field and score!", "plain");
+        await line("You have 4 downs to gain 10 yards for a 1st down.", "plain");
+        await line("----------------------------------------", "dim", 4);
+        await blank();
+        await line("      [O]                [X] [X]", "art", 4);
+        await line("      /|\\      🏈        [X] [X]", "art", 4);
+        await line("      / \\                [X] [X]", "art", 4);
+        await line("   line of scrimmage", "art", 4);
+        await blank();
+        await line("Opponent scouted: they'll put up " + S.opponent + " points today.", "dim");
+        await blank();
+        if (myRun !== runId) return;
+    }
+
+    async function finish(myRun) {
+        if (myRun !== runId) return;
+        await line("========================================", "dim", 4);
+        await line("            FINAL SCORE                 ", "amber", 4);
+        await line("   You: " + S.score + " | Opponent: " + S.opponent, "good", 4);
+        await line("========================================", "dim", 4);
+        await blank();
+
+        let verdict, cls;
+        if (S.score > S.opponent) {
+            verdict = "Congratulations! You won the game! 🏆";
+            cls = "win";
+            sfx.whistle();
+            sfx.touchdown();
+        } else if (S.score === S.opponent) {
+            verdict = "It's a tie game! What a thriller! 🤝";
+            cls = "";
+            sfx.whistle();
+        } else {
+            verdict = "A tough loss, but you'll get 'em next season! 🏈";
+            cls = "loss";
+            sfx.bad();
+        }
+        await line(verdict, cls === "loss" ? "bad" : "amber");
+
+        if (myRun !== runId) return;
+        document.getElementById("final-you").textContent = S.score;
+        document.getElementById("final-opp").textContent = S.opponent;
+        const fv = document.getElementById("final-verdict");
+        fv.textContent = verdict;
+        fv.className = "verdict " + cls;
+        const innerWidth = 30;
+        const pad = s => s + " ".repeat(Math.max(0, innerWidth - s.length));
+        const drive = S.score > S.opponent
+            ? "CHAMPIONSHIP FORM"
+            : (S.score === S.opponent ? "DEAD HEAT" : "DEVELOPING...");
+        const boxLines = [
+            "  YOU " + S.score + "        OPPONENT " + S.opponent,
+            "  DRIVE: " + drive
+        ];
+        document.getElementById("final-box").textContent =
+            "+" + "-".repeat(innerWidth) + "+\n" +
+            boxLines.map(l => "|" + pad(l) + "|").join("\n") + "\n" +
+            "+" + "-".repeat(innerWidth) + "+";
+        finalEl.classList.add("show");
+        finalEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        setChoices(false);
+        promptLine.classList.remove("active");
+    }
+
+    async function runGame() {
+        const myRun = ++runId;
+        clearLog();
+        resetState();
+        updateHud();
+        setChoices(false);
+        promptLine.classList.remove("active");
+
+        await intro(myRun);
+        if (myRun !== runId) return;
+
+        while (S.quarter <= 4) {
+            await quarterHeader(S.quarter);
+            if (myRun !== runId) return;
+            const choice = await waitForPlay();
+            if (myRun !== runId) return;
+            await blank();
+            await resolvePlay(choice);
+            if (myRun !== runId) return;
+            await sleep(160);
+        }
+
+        await finish(myRun);
+    }
+
+    /* ---------------- input ---------------- */
+    document.addEventListener("keydown", e => {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+        if (typing) {
+            skipRequested = true;
+            return;
+        }
+
+        const k = e.key;
+        if (k === "1" || k === "2" || k === "3") {
+            choose(Number(k));
+            return;
+        }
+        if (k === "m" || k === "M") {
+            soundBtn.click();
+            return;
+        }
+        if (k === "r" || k === "R" || k === "Enter") {
+            if (!awaitingPlay) runGame();
+        }
+    });
+
+    document.addEventListener("pointerdown", () => {
+        if (typing) skipRequested = true;
+    }, { passive: true });
+
+    document.getElementById("restartBtn").addEventListener("click", runGame);
+    document.getElementById("againBtn").addEventListener("click", runGame);
+
+    runGame();
+})();
+</script>
+</body>
+</html>
