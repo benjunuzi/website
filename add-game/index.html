@@ -196,6 +196,21 @@
                     <span id="everyone-count" class="text-[11px] text-slate-400">newest first</span>
                 </div>
                 <p class="text-xs text-slate-400 mb-3">All the games anyone has sent in, from every device — not just yours.</p>
+
+                <!-- Only Ben can say yes or no -->
+                <div id="ben-bar" class="flex flex-wrap items-center gap-2.5 mb-3">
+                    <button id="ben-show" class="btn-ghost rounded-xl px-4 py-2 text-xs font-bold text-white">🔒 Ben: turn on yes / no</button>
+                    <div id="ben-form" class="hidden flex flex-wrap items-center gap-2">
+                        <input id="ben-code" type="password" placeholder="Your code" class="rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 w-36">
+                        <button id="ben-unlock" class="btn-primary text-white font-bold px-4 py-2 rounded-xl text-xs">Unlock</button>
+                        <span id="ben-msg" class="text-xs text-slate-400"></span>
+                    </div>
+                    <div id="ben-on" class="hidden flex flex-wrap items-center gap-2.5">
+                        <span class="badge live">🔓 YES / NO TURNED ON</span>
+                        <button id="ben-lock-btn" class="text-xs font-bold text-slate-300 hover:text-white">turn off</button>
+                    </div>
+                </div>
+
                 <div id="everyone-msg" class="hidden rounded-2xl px-4 py-3 mb-3 text-sm"></div>
                 <div id="all-games" class="grid sm:grid-cols-2 gap-2.5"></div>
                 <div id="all-empty" class="surface rounded-2xl p-6 text-center text-sm text-slate-400">No games have been sent in yet — be the first!</div>
@@ -415,6 +430,10 @@
        to see what people have made. */
     function answerButtons(game) {
         var approved = game.status === "approved";
+        /* only Ben sees the yes / no buttons */
+        if (!PracticeGames.isReviewer()) {
+            return '<div class="flex flex-wrap items-center gap-2 mt-2">' + statusBadge(game) + '</div>';
+        }
         return '<div class="flex flex-wrap items-center gap-2 mt-2">' +
             statusBadge(game) +
             (approved
@@ -425,6 +444,43 @@
     }
 
     var everyoneTimer = null;
+
+    function renderBenBar() {
+        var on = PracticeGames.isReviewer();
+        $("ben-show").classList.toggle("hidden", on);
+        $("ben-on").classList.toggle("hidden", !on);
+        if (on) {
+            $("ben-form").classList.add("hidden");
+        }
+    }
+
+    $("ben-show").addEventListener("click", function () {
+        $("ben-show").classList.add("hidden");
+        $("ben-form").classList.remove("hidden");
+        $("ben-msg").textContent = "";
+        $("ben-code").value = "";
+        $("ben-code").focus();
+    });
+
+    function tryUnlock() {
+        if (PracticeGames.unlock($("ben-code").value)) {
+            $("ben-form").classList.add("hidden");
+            $("ben-msg").textContent = "";
+            renderBenBar();
+            renderEveryone();
+        } else {
+            $("ben-msg").textContent = "That is not the right code.";
+        }
+    }
+
+    $("ben-unlock").addEventListener("click", tryUnlock);
+    $("ben-code").addEventListener("keydown", function (e) { if (e.key === "Enter") tryUnlock(); });
+
+    $("ben-lock-btn").addEventListener("click", function () {
+        PracticeGames.lock();
+        renderBenBar();
+        renderEveryone();
+    });
 
     function everyoneMessage(text, ok) {
         var box = $("everyone-msg");
@@ -567,6 +623,7 @@
     });
 
     PracticeGames.ready(function () {
+        renderBenBar();
         renderEveryone();
         renderWaitingStrip();
     });
