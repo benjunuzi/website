@@ -595,9 +595,7 @@
         "neon brick breaker": "🧱",
         "hide and seek": "🙈",
         "boxing tournament": "🥊",
-        "tetris": "🧱",
         "pong arena": "🏓",
-        "turbo soccer": "⚽",
         "neon flappy": "🐦",
     };
 
@@ -951,7 +949,9 @@
 
     async function loadGames() {
         try {
-            const res = await fetch("games.csv");
+            // no-store: GitHub Pages sends games.csv with a 10-minute cache header,
+            // so without this the browser can keep showing an outdated games list.
+            const res = await fetch("games.csv", { cache: "no-store" });
             if (!res.ok) throw new Error("network");
             const text = await res.text();
             const rows = parseCSV(text);
