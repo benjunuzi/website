@@ -201,18 +201,6 @@
                 <div id="all-empty" class="surface rounded-2xl p-6 text-center text-sm text-slate-400">No games have been sent in yet — be the first!</div>
             </section>
 
-            <!-- ============ MY GAMES ============ -->
-            <section class="mt-8">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-lg font-extrabold tracking-tight">Sent from this device</h2>
-                    <span class="text-[11px] text-slate-400">only this browser</span>
-                </div>
-                <div id="my-games" class="flex flex-col gap-2.5"></div>
-                <div id="my-empty" class="surface rounded-2xl p-6 text-center text-sm text-slate-400">
-                    You haven't sent a game yet. Make one above and press 🚀 Send to Ben.
-                </div>
-            </section>
-
         </div>
     </main>
 
@@ -504,33 +492,6 @@
         $("waiting-sub").textContent = pending + " waiting for Ben to say yes or no · " + approved + " on the games list";
     }
 
-    function myGameCard(game) {
-        var mail = PracticeGames.mailto(game);
-        return '<div class="surface rounded-2xl p-3 flex items-center gap-3">' +
-            '<div class="w-12 h-12 rounded-xl grid place-items-center text-2xl shrink-0" style="background:rgba(79,140,255,.16)">' + esc(game.emoji || "🎮") + '</div>' +
-            '<div class="flex-1 min-w-0">' +
-                '<div class="font-bold text-sm truncate">' + esc(game.title) + '</div>' +
-                '<div class="text-[11px] text-slate-400 truncate">' + esc(game.goal) + '</div>' +
-                '<div class="mt-1.5">' + statusBadge(game) + '</div>' +
-            '</div>' +
-            '<div class="flex flex-col gap-1.5 shrink-0">' +
-                '<a class="btn-ghost rounded-xl px-3 py-1.5 text-xs font-bold text-white text-center" href="' + PracticeGames.playerUrl(game) + '">Play</a>' +
-                (mail ? '<a class="btn-ghost rounded-xl px-3 py-1.5 text-xs font-bold text-white text-center" href="' + esc(mail) + '">✉️ Email</a>' : '') +
-                '<button class="btn-ghost rounded-xl px-3 py-1.5 text-xs font-bold text-white" data-copy="' + esc(game.id) + '">Copy code</button>' +
-            '</div>' +
-        '</div>';
-    }
-
-    function renderMine() {
-        var games = PracticeGames.mine().slice().sort(function (a, b) { return b.createdAt - a.createdAt; });
-        var box = $("my-games");
-        box.innerHTML = games.map(myGameCard).join("");
-        $("my-empty").classList.toggle("hidden", games.length > 0);
-        Array.prototype.forEach.call(box.querySelectorAll("[data-copy]"), function (btn) {
-            btn.addEventListener("click", function () { copyGameCode(btn.dataset.copy, btn); });
-        });
-    }
-
     function copyGameCode(id, btn) {
         var code = PracticeGames.exportCode(id);
         if (!code) return;
@@ -583,7 +544,6 @@
         message("Sent! \u201c" + game.title + "\u201d is waiting for Ben's decision. " +
             (PracticeGames.status() === "live" ? "Ben will get it in his email." : "It's saved here — use \u201cCopy code\u201d to send the game to Ben."), true);
         showSendActions(game);
-        renderMine();
     });
 
     /* Games are answered from Ben's email, not from this page. */
@@ -609,7 +569,6 @@
     PracticeGames.ready(function () {
         renderEveryone();
         renderWaitingStrip();
-        renderMine();
     });
 
     /* ------------------- YES / NO links from the email ---------------- */
