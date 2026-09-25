@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070b14">
+<title>Endless Runner 🏃 · ben.junuzi.com</title>
+<link rel="icon" href="../../logo-mark.svg">
+<link rel="apple-touch-icon" href="../../logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #070b14;
+    --panel: rgba(255,255,255,.045);
+    --line: rgba(255,255,255,.10);
+    --text: #e9eef9;
+    --muted: #93a0c4;
+    --accent: #ff9f43;
+    --accent2: #2f7bff;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body { margin: 0; min-height: 100%; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(900px 520px at 80% -12%, rgba(255,159,67,.16), transparent 62%),
+      radial-gradient(760px 480px at -8% 26%, rgba(47,123,255,.16), transparent 62%),
+      radial-gradient(700px 460px at 55% 116%, rgba(255,209,102,.08), transparent 62%);
+    background-attachment: fixed;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--accent); color: #070b14; }
+
+  .app {
+    margin: auto;
+    width: 100%;
+    max-width: 1180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .topbar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 13px 7px 9px;
+    border-radius: 999px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    transition: border-color .18s ease, transform .18s ease;
+  }
+  .brand:hover { border-color: rgba(255,159,67,.6); transform: translateY(-1px); }
+  .brand img { width: 22px; height: 22px; display: block; }
+
+  .title {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .mute {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 16px;
+    cursor: pointer;
+    transition: border-color .18s ease, transform .18s ease;
+  }
+  .mute:hover { border-color: rgba(255,159,67,.6); transform: translateY(-1px); }
+  .mute.off { opacity: .55; }
+
+  .stage {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .field {
+    position: relative;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: #9fd8f4;
+    box-shadow:
+      0 22px 60px rgba(0,0,0,.6),
+      0 0 0 1px rgba(255,159,67,.14),
+      0 0 70px rgba(255,159,67,.10);
+    overflow: hidden;
+    touch-action: none;
+    cursor: pointer;
+  }
+  .field canvas { display: block; width: 100%; height: 100%; }
+
+  .hud {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 170px;
+    flex: 0 0 auto;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 9px 11px 10px;
+    backdrop-filter: blur(8px);
+    min-width: 0;
+  }
+
+  .k {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .v {
+    margin-top: 2px;
+    font-size: 22px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .v.small { font-size: 15px; }
+
+  .two { display: flex; gap: 8px; }
+  .two .panel { flex: 1 1 0; }
+  .two .score .v { color: var(--accent); }
+  .two .best  .v { color: #ffd166; }
+
+  .best-tag {
+    margin-top: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #7fe0a3;
+    opacity: 0;
+    transition: opacity .2s ease;
+  }
+  .best-tag.on { opacity: 1; }
+
+  .keys {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 10px;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.7;
+    padding: 0 2px;
+  }
+  .keys b { color: #dbe6ff; font-weight: 700; }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    place-items: center;
+    padding: 18px;
+    background: radial-gradient(700px 420px at 50% 40%, rgba(8,12,24,.72), rgba(8,12,24,.9));
+    backdrop-filter: blur(3px);
+    text-align: center;
+  }
+  .overlay.show { display: grid; }
+
+  .overlay h2 {
+    margin: 0 0 6px;
+    font-size: clamp(22px, 4.2vw, 34px);
+    font-weight: 900;
+    letter-spacing: -.01em;
+  }
+  .overlay p {
+    margin: 0 auto;
+    max-width: 420px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #c7d2ea;
+  }
+  .overlay .eyebrow {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .24em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .overlay .hint { display: none; }
+  .final {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 14px 0 4px;
+  }
+  .final .box {
+    min-width: 86px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid var(--line);
+  }
+  .final .box .k { font-size: 8px; }
+  .final .box .v { font-size: 20px; }
+
+  .ov-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    appearance: none;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 26px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #1c1206;
+    background: linear-gradient(135deg, #ffc066, #ff9130);
+    box-shadow: 0 10px 26px rgba(255,145,48,.32);
+    cursor: pointer;
+    transition: transform .16s ease, box-shadow .16s ease;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 14px 30px rgba(255,145,48,.4); }
+  .btn:active { transform: translateY(1px); }
+
+  .btn.ghost {
+    background: rgba(255,255,255,.06);
+    border: 1px solid var(--line);
+    color: var(--text);
+    box-shadow: none;
+  }
+  .btn.ghost:hover { border-color: rgba(255,159,67,.6); }
+
+  /* Short fields (a phone in portrait): keep the whole panel inside the box. */
+  .overlay.tiny { padding: 10px; overflow-y: auto; }
+  .overlay.tiny .eyebrow { display: none; }
+  .overlay.tiny h2 { font-size: 17px; margin-bottom: 2px; }
+  .overlay.tiny p { font-size: 10.5px; line-height: 1.4; max-width: 330px; }
+  .overlay.tiny .hint {
+    display: block;
+    margin: 7px auto 0;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .overlay.tiny.final-state p { display: none; }
+  .overlay.tiny .final { margin: 6px 0 0; gap: 6px; }
+  .overlay.tiny .final .box { min-width: 58px; padding: 4px 9px; border-radius: 9px; }
+  .overlay.tiny .final .box .k { font-size: 7px; }
+  .overlay.tiny .final .box .v { font-size: 15px; }
+  .overlay.tiny .ov-actions { margin-top: 7px; gap: 8px; }
+  .overlay.tiny .btn { padding: 7px 15px; font-size: 11px; border-radius: 9px; }
+
+  .controls {
+    display: none;
+    width: 100%;
+    gap: 10px;
+  }
+  .controls button {
+    flex: 1 1 0;
+    padding: 16px 0;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,.06);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
+  }
+  .controls button.jump { border-color: rgba(255,159,67,.5); color: #ffd0a1; }
+  .controls button:active { background: rgba(255,159,67,.18); }
+
+  .credit {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .credit a { color: #c7d2ea; text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,.25); }
+
+  @media (max-width: 860px) {
+    .stage { flex-direction: column; align-items: center; }
+    .hud { width: 100%; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    .hud .two { flex: 1 1 46%; gap: 6px; }
+    .hud .panel { padding: 6px 9px 7px; }
+    .hud .keys { display: none; }
+    .hud .speedPanel { display: none; }
+    .controls { display: flex; }
+    .title { display: none; }
+    .k { font-size: 8px; letter-spacing: .1em; }
+    .v { font-size: 16px; }
+  }
+
+  @media (max-width: 480px) {
+    body { padding: 10px 10px calc(10px + env(safe-area-inset-bottom)); }
+    .panel { padding: 7px 9px 8px; }
+    .k { font-size: 8px; letter-spacing: .1em; }
+    .v { font-size: 16px; }
+  }
+
+  /* Short screens (a phone held sideways): trim the frame so the field wins. */
+  @media (max-height: 520px) and (max-width: 900px) {
+    body { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
+    .app { gap: 7px; }
+    .stage { gap: 7px; }
+    .brand { padding: 5px 11px 5px 7px; font-size: 12px; }
+    .brand img { width: 18px; height: 18px; }
+    .mute { width: 32px; height: 32px; font-size: 14px; }
+    .hud .panel { padding: 5px 8px 6px; }
+    .hud .best-tag { display: none; }
+    .controls button { padding: 11px 0; font-size: 12px; }
+    .credit { display: none; }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <a class="brand" href="../../index.html">
+      <img src="../../logo-mark.svg" alt="">
+      ben.junuzi.com
+    </a>
+    <div class="title">🏃 Endless Runner</div>
+    <button class="mute" id="mute" title="Toggle sound" aria-label="Toggle sound">🔊</button>
+  </header>
+
+  <main class="stage">
+
+    <div class="field" id="field">
+      <canvas id="scene"></canvas>
+
+      <div class="overlay show" id="overlay">
+        <div>
+          <div class="eyebrow" id="ovEyebrow">Endless Runner</div>
+          <h2 id="ovTitle">How far can you run?</h2>
+          <p id="ovText">Jump the blocks, slide under the flying bars, and grab the coins. It keeps getting faster.</p>
+          <p class="hint">Bigger view: turn your phone sideways</p>
+          <div class="final" id="ovFinal" style="display:none"></div>
+          <div class="ov-actions">
+            <button class="btn" id="ovBtn" type="button">Play</button>
+            <a class="btn ghost" id="ovHome" href="../../index.html" style="display:none;text-decoration:none">Home</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="hud">
+      <div class="two">
+        <div class="panel score">
+          <div class="k">Score</div>
+          <div class="v" id="score">0</div>
+        </div>
+        <div class="panel best">
+          <div class="k">Best</div>
+          <div class="v" id="best">0</div>
+          <div class="best-tag" id="bestTag">New best!</div>
+        </div>
+      </div>
+
+      <div class="two">
+        <div class="panel">
+          <div class="k">Distance</div>
+          <div class="v small" id="dist">0 m</div>
+        </div>
+        <div class="panel">
+          <div class="k">Coins</div>
+          <div class="v small" id="coins">0</div>
+        </div>
+      </div>
+
+      <div class="panel speedPanel">
+        <div class="k">Speed</div>
+        <div class="v small" id="speed">39 km/h</div>
+      </div>
+
+      <div class="keys">
+        <span><b>Space / ↑ / Tap</b> jump</span>
+        <span><b>↓ / S</b> slide</span>
+        <span><b>P</b> pause</span>
+        <span><b>Enter</b> restart</span>
+      </div>
+    </aside>
+
+  </main>
+
+  <div class="controls" id="controls">
+    <button class="jump" data-act="jump" type="button">Jump</button>
+    <button data-act="slide" type="button">Slide</button>
+  </div>
+
+  <div class="credit">
+    Part of <a href="../../index.html">ben.junuzi.com</a> · 🏃 Endless Runner
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+(function () {
+
+  /* =========================
+     SETUP
+  ========================= */
+
+  const canvas  = document.getElementById("scene");
+  const ctx     = canvas.getContext("2d");
+  const fieldEl = document.getElementById("field");
+  const appEl   = document.querySelector(".app");
+  const stageEl = document.querySelector(".stage");
+  const hudEl   = document.querySelector(".hud");
+
+  const overlay   = document.getElementById("overlay");
+  const ovEyebrow = document.getElementById("ovEyebrow");
+  const ovTitle   = document.getElementById("ovTitle");
+  const ovText    = document.getElementById("ovText");
+  const ovFinal   = document.getElementById("ovFinal");
+  const ovBtn     = document.getElementById("ovBtn");
+  const ovHome    = document.getElementById("ovHome");
+  const controls  = document.getElementById("controls");
+  const muteEl    = document.getElementById("mute");
+
+  const scoreEl  = document.getElementById("score");
+  const bestEl   = document.getElementById("best");
+  const bestTag  = document.getElementById("bestTag");
+  const distEl   = document.getElementById("dist");
+  const coinEl   = document.getElementById("coins");
+  const speedEl  = document.getElementById("speed");
+
+  // Logical play field. Everything below is in these units.
+  const W = 960;
+  const H = 360;
+  const GROUND_Y = 306;
+  const GROUND_H = H - GROUND_Y;
+
+  // Fixed 60 Hz simulation, so a 120 Hz screen does not run at double speed.
+  const STEP = 1000 / 60;
+
+  // Runner physics, in units per step.
+  const GRAVITY   = 0.72;
+  const JUMP_V    = -12.0;                            // peak ≈ 100 px up
+  const AIR_STEPS = 2 * Math.abs(JUMP_V) / GRAVITY;   // ≈ 33 steps ≈ 0.55 s aloft
+
+  const P_X = 132;
+  const P_W = 40;
+  const P_H = 50;
+  const P_SLIDE_H = 26;
+  const HIT_PAD = 5;
+
+  const SPEED_START = 6.5;
+  const SPEED_MAX   = 12.5;
+  const SPEED_RAMP  = 2200;
+
+  const COIN_R = 9;
+
+  const BEST_KEY = "endlessRunnerBest";
+  const MUTE_KEY = "endlessRunnerMuted";
+
+  // localStorage can throw (private windows, storage disabled), so never let it break a run.
+  const store = {
+    get(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { window.localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
+  };
+
+  /* =========================
+     STATE
+  ========================= */
+
+  let state = "ready";            // ready | playing | paused | over
+  let manual = false;             // test hook: drive the sim with step()
+  let view = { scale: 1, ox: 0, oy: 0 };
+  let rafId = 0;
+  let last = 0;
+  let acc = 0;
+  let elapsed = 0;
+
+  let distance = 0;
+  let speed = SPEED_START;
+  let coinsTaken = 0;
+  let nextMilestone = 100;
+
+  let obstacles = [];
+  let coins = [];
+  let particles = [];
+  let floaters = [];
+  let nextSpawn = 0;
+
+  let shake = 0;
+  let flashText = "";
+  let flashLife = 0;
+  let runPhase = 0;
+  let skyShift = 0;
+
+  let best = Number(store.get(BEST_KEY) || 0) || 0;
+  if (!Number.isFinite(best) || best < 0) best = 0;
+
+  let muted = store.get(MUTE_KEY) === "1";
+
+  const player = {
+    x: P_X,
+    y: GROUND_Y - P_H,
+    vy: 0,
+    h: P_H,
+    onGround: true,
+    sliding: false,
+    slideHold: false,
+    coyote: 0,
+    buffer: 0,
+    dead: false
+  };
+
+  /* =========================
+     AUDIO (small and gesture-gated)
+  ========================= */
+
+  let actx = null;
+
+  function audio() {
+    if (muted) return null;
+    try {
+      if (!actx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        actx = new AC();
+      }
+      if (actx.state === "suspended") actx.resume();
+      return actx;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function tone(freq, freq2, dur, type, gain) {
+    const ac = audio();
+    if (!ac) return;
+    const osc = ac.createOscillator();
+    const amp = ac.createGain();
+    const t0 = ac.currentTime;
+
+    osc.type = type || "square";
+    osc.frequency.setValueAtTime(freq, t0);
+    if (freq2) osc.frequency.exponentialRampToValueAtTime(Math.max(40, freq2), t0 + dur);
+
+    amp.gain.setValueAtTime(0.0001, t0);
+    amp.gain.exponentialRampToValueAtTime(gain || 0.05, t0 + 0.012);
+    amp.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+    osc.connect(amp).connect(ac.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  }
+
+  const sfx = {
+    jump()  { tone(430, 690, 0.11, "square", 0.045); },
+    slide() { tone(300, 170, 0.13, "sawtooth", 0.028); },
+    coin()  { tone(1050, 0, 0.07, "sine", 0.05); setTimeout(() => tone(1560, 0, 0.09, "sine", 0.04), 55); },
+    point() { tone(700, 980, 0.09, "triangle", 0.035); },
+    cash()  { tone(880, 1320, 0.14, "triangle", 0.05); },
+    hit()   { tone(240, 60, 0.34, "sawtooth", 0.07); }
+  };
+
+  /* =========================
+     HELPERS
+  ========================= */
+
+  const clamp = (n, a, b) => (n < a ? a : n > b ? b : n);
+
+  function roundRect(c, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    c.beginPath();
+    if (c.roundRect) {
+      c.roundRect(x, y, w, h, rr);
+      return;
+    }
+    c.moveTo(x + rr, y);
+    c.arcTo(x + w, y, x + w, y + h, rr);
+    c.arcTo(x + w, y + h, x, y + h, rr);
+    c.arcTo(x, y + h, x, y, rr);
+    c.arcTo(x, y, x + w, y, rr);
+    c.closePath();
+  }
+
+  function score() {
+    return Math.floor(distance / 12) + coinsTaken * 5;
+  }
+
+  function bump(text, x, y, color) {
+    floaters.push({ x, y, text, life: 1, color: color || "#ffd166" });
+  }
+
+  function burst(x, y, n, color, spread) {
+    for (let i = 0; i < n; i++) {
+      particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * (spread || 3.4),
+        vy: -Math.random() * 2.6 - 0.4,
+        life: 1,
+        size: 2 + Math.random() * 3,
+        color
+      });
+    }
+  }
+
+  /* =========================
+     SPAWNING
+     Gaps are measured in pixels of travel and are always wider than a full
+     jump arc, so every pattern can be cleared from the ground.
+  ========================= */
+
+  function makeBlock() {
+    const h = 30 + Math.random() * 16;              // 30 - 46
+    return { kind: "block", w: 30 + Math.random() * 12, h, y: GROUND_Y - h };
+  }
+
+  function makeWide() {
+    const h = 32 + Math.random() * 12;              // 32 - 44
+    return { kind: "wide", w: 62 + Math.random() * 22, h, y: GROUND_Y - h };
+  }
+
+  function makeTall() {
+    const h = 58 + Math.random() * 8;               // 58 - 66
+    return { kind: "tall", w: 30 + Math.random() * 8, h, y: GROUND_Y - h };
+  }
+
+  function makeHover() {
+    const h = 30;
+    return { kind: "hover", w: 48 + Math.random() * 16, h, y: GROUND_Y - 68 };
+  }
+
+  function pushObstacle(o) {
+    o.x = W + 40;
+    o.passed = false;
+    obstacles.push(o);
+    return o;
+  }
+
+  function coinArcOver(obstacle) {
+    // A shallow dome a little wider than the block. Any jump that clears the
+    // block stays in this band, so the coins reward the jump instead of one
+    // exact takeoff frame.
+    const n = 5;
+    const x0 = obstacle.x - 26;
+    const span = obstacle.w + 52;
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1);
+      const dome = Math.sin(t * Math.PI);              // 0 at the ends, 1 in the middle
+      coins.push({
+        x: x0 + span * t,
+        y: GROUND_Y - 72 - dome * 20,                  // 72 -> 92 px above the ground
+        r: COIN_R,
+        taken: false,
+        spin: Math.random() * 6
+      });
+    }
+  }
+
+  function coinRow() {
+    const x0 = W + 60;
+    const y = GROUND_Y - 26;
+    for (let i = 0; i < 5; i++) {
+      coins.push({ x: x0 + i * 40, y, r: COIN_R, taken: false, spin: Math.random() * 6 });
+    }
+  }
+
+  function spawn() {
+    const reach = AIR_STEPS * speed;          // how far a full jump carries you
+    const roll = Math.random();
+    const early = distance < 900;
+
+    let obstacle = null;
+
+    if (early) {
+      obstacle = pushObstacle(makeBlock());
+    } else if (roll < 0.30) {
+      obstacle = pushObstacle(makeBlock());
+    } else if (roll < 0.52) {
+      obstacle = pushObstacle(makeTall());
+    } else if (roll < 0.70) {
+      obstacle = pushObstacle(makeWide());
+    } else if (roll < 0.88) {
+      obstacle = pushObstacle(makeHover());
+    } else {
+      coinRow();
+    }
+
+    const width = obstacle ? obstacle.w : 60;
+    const breathing = 78 + Math.random() * 90;
+    const tightener = Math.min(60, speed * 5);        // a touch tighter as it speeds up
+
+    nextSpawn = distance + reach + width + Math.max(70, breathing - tightener);
+
+    // Reward lines: coins over a jumpable block, or a coin row in an open stretch.
+    const jumpable = obstacle && (obstacle.kind === "block" || obstacle.kind === "wide");
+    if (jumpable && Math.random() < 0.45) {
+      coinArcOver(obstacle);
+    } else if (!obstacle && Math.random() < 0.5) {
+      coinRow();
+    }
+  }
+
+  /* =========================
+     INPUT
+  ========================= */
+
+  function requestJump() {
+    if (state === "ready" || state === "over") { startRun(); return; }
+    if (state === "paused") { resume(); return; }
+    player.buffer = 8;
+  }
+
+  function jumpNow() {
+    if (!player.onGround && player.coyote <= 0) return;
+    // Standing up out of a slide must lift the feet, otherwise the taller
+    // hitbox starts below the ground and the jump is cancelled instantly.
+    player.y = Math.min(player.y, GROUND_Y - P_H);
+    player.vy = JUMP_V;
+    player.onGround = false;
+    player.coyote = 0;
+    player.sliding = false;
+    player.h = P_H;
+    player.buffer = 0;
+    burst(player.x + P_W / 2, GROUND_Y - 2, 6, "#e9f3ff", 2.6);
+    sfx.jump();
+  }
+
+  function setSlide(on) {
+    const wasHeld = player.slideHold;
+    player.slideHold = on;
+
+    if (on && state === "playing") {
+      if (player.onGround && !player.sliding) sfx.slide();
+      // One extra downward push per press, so held keys do not stack into a slam.
+      if (!wasHeld && !player.onGround && player.vy < 4) player.vy += 6.5;
+    }
+  }
+
+  /* =========================
+     FLOW
+  ========================= */
+
+  function resetRun() {
+    distance = 0;
+    speed = SPEED_START;
+    coinsTaken = 0;
+    nextMilestone = 100;
+    obstacles = [];
+    coins = [];
+    particles = [];
+    floaters = [];
+    nextSpawn = 520;
+    shake = 0;
+    flashText = "";
+    flashLife = 0;
+    runPhase = 0;
+    skyShift = 0;
+
+    player.x = P_X;
+    player.y = GROUND_Y - P_H;
+    player.vy = 0;
+    player.h = P_H;
+    player.onGround = true;
+    player.sliding = false;
+    player.slideHold = false;
+    player.coyote = 0;
+    player.buffer = 0;
+    player.dead = false;
+
+    bestTag.classList.remove("on");
+    updateHud();
+  }
+
+  function startRun() {
+    resetRun();
+    state = "playing";
+    hideOverlay();
+    startLoop();
+  }
+
+  function pause() {
+    if (state !== "playing") return;
+    state = "paused";
+    stopLoop();
+    showOverlay({
+      eyebrow: "Paused",
+      title: "Take a breather",
+      text: "Score " + score() + " at " + Math.round(distance / 10) + " m. Ready when you are.",
+      button: "Resume",
+      home: false
+    });
+  }
+
+  function resume() {
+    if (state !== "paused") return;
+    state = "playing";
+    hideOverlay();
+    startLoop();
+  }
+
+  function die(kind) {
+    if (state !== "playing") return;
+    player.dead = true;
+    state = "over";
+    stopLoop();
+
+    shake = 16;
+    burst(player.x + P_W / 2, player.y + player.h / 2, 22, "#ff9f43", 5.2);
+    burst(player.x + P_W / 2, player.y + player.h / 2, 10, "#ffffff", 3.4);
+    sfx.hit();
+
+    const final = score();
+    const isBest = final > best;
+    if (isBest) best = final;
+    store.set(BEST_KEY, String(best));
+    bestEl.textContent = best;
+    bestTag.classList.toggle("on", isBest);
+
+    draw();
+
+    showOverlay({
+      eyebrow: kind === "hit" ? "Game over" : "Run finished",
+      title: isBest ? "New best run!" : "So close!",
+      text: isBest
+        ? "That is a personal best. Run it again and see how much further you can push."
+        : "Your best is still " + best + ". Jump early over the tall blocks, slide under the flying bars.",
+      button: "Play again",
+      home: true,
+      final: true
+    });
+  }
+
+  /* =========================
+     OVERLAY
+  ========================= */
+
+  function showOverlay(cfg) {
+    ovEyebrow.textContent = cfg.eyebrow || "Endless Runner";
+    ovTitle.textContent = cfg.title || "";
+    ovText.textContent = cfg.text || "";
+    ovBtn.textContent = cfg.button || "Play";
+    ovHome.style.display = cfg.home ? "inline-block" : "none";
+    overlay.classList.toggle("final-state", !!cfg.final);
+
+    if (cfg.final) {
+      ovFinal.style.display = "flex";
+      ovFinal.innerHTML =
+        '<div class="box"><div class="k">Score</div><div class="v">' + score() + '</div></div>' +
+        '<div class="box"><div class="k">Distance</div><div class="v">' + Math.round(distance / 10) + 'm</div></div>' +
+        '<div class="box"><div class="k">Coins</div><div class="v">' + coinsTaken + '</div></div>';
+    } else {
+      ovFinal.style.display = "none";
+      ovFinal.innerHTML = "";
+    }
+
+    overlay.classList.add("show");
+  }
+
+  function hideOverlay() {
+    overlay.classList.remove("show");
+    ovFinal.innerHTML = "";
+  }
+
+  /* =========================
+     SIM
+  ========================= */
+
+  function step() {
+    elapsed++;
+    runPhase++;
+    skyShift += speed * 0.02;
+
+    if (state !== "playing") {
+      updateParticles();
+      return;
+    }
+
+    speed = SPEED_START + Math.min(SPEED_MAX - SPEED_START, distance / SPEED_RAMP);
+    distance += speed;
+
+    if (distance >= nextSpawn) {
+      spawn();
+    }
+
+    /* --- player --- */
+    const wantSlide = player.slideHold && player.onGround;
+    player.sliding = wantSlide;
+    player.h = wantSlide ? P_SLIDE_H : P_H;
+
+    if (player.buffer > 0) player.buffer--;
+
+    if (player.onGround) {
+      player.coyote = 6;
+      player.y = GROUND_Y - player.h;
+      player.vy = 0;
+    }
+
+    if (player.buffer > 0 && (player.onGround || player.coyote > 0)) jumpNow();
+
+    if (!player.onGround) {
+      player.vy += GRAVITY;
+      player.y += player.vy;
+      if (player.coyote > 0) player.coyote--;
+
+      if (player.y >= GROUND_Y - player.h) {
+        player.y = GROUND_Y - player.h;
+        player.vy = 0;
+        player.onGround = true;
+        burst(player.x + P_W / 2, GROUND_Y - 2, 5, "#e9f3ff", 2.2);
+      }
+    }
+
+    if (player.onGround && runPhase % 6 === 0) {
+      particles.push({
+        x: player.x + 4, y: GROUND_Y - 2,
+        vx: -1.6 - Math.random(), vy: -Math.random() * 0.9,
+        life: 0.7, size: 2 + Math.random() * 2, color: "#d8ead9"
+      });
+    }
+
+    /* --- obstacles --- */
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      const o = obstacles[i];
+      o.x -= speed;
+
+      if (!o.passed && o.x + o.w < player.x) {
+        o.passed = true;
+        if (o.kind !== "hover") sfx.point();
+      }
+      if (o.x + o.w < -60) obstacles.splice(i, 1);
+    }
+
+    /* --- coins --- */
+    for (let i = coins.length - 1; i >= 0; i--) {
+      const c = coins[i];
+      c.x -= speed;
+      c.spin += 0.16;
+      if (c.x < -40) coins.splice(i, 1);
+    }
+
+    /* --- pickups and collisions --- */
+    const box = playerBox();
+
+    for (const c of coins) {
+      if (c.taken) continue;
+      const nx = clamp(c.x, box.x, box.x + box.w);
+      const ny = clamp(c.y, box.y, box.y + box.h);
+      const dx = c.x - nx, dy = c.y - ny;
+      if (dx * dx + dy * dy <= (c.r + 3) * (c.r + 3)) {
+        c.taken = true;
+        coinsTaken++;
+        burst(c.x, c.y, 7, "#ffd166", 2.6);
+        bump("+5", c.x, c.y - 12, "#ffd166");
+        sfx.coin();
+      }
+    }
+
+    for (const o of obstacles) {
+      if (box.x < o.x + o.w && box.x + box.w > o.x && box.y < o.y + o.h && box.y + box.h > o.y) {
+        die("hit");
+        return;
+      }
+    }
+
+    /* --- milestones --- */
+    if (score() >= nextMilestone) {
+      flashText = nextMilestone + " points!";
+      flashLife = 1;
+      nextMilestone += 100;
+      sfx.cash();
+    }
+
+    updateParticles();
+
+    if (flashLife > 0) flashLife -= 0.012;
+    if (shake > 0) shake *= 0.86;
+
+    updateHud();
+  }
+
+  function playerBox() {
+    return {
+      x: player.x + HIT_PAD,
+      y: player.y + HIT_PAD * 0.6,
+      w: P_W - HIT_PAD * 2,
+      h: player.h - HIT_PAD
+    };
+  }
+
+  function updateParticles() {
+    const drift = state === "playing" ? speed * 0.25 : 0;
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life -= 0.03;
+      p.x += p.vx - drift;
+      p.y += p.vy;
+      p.vy += 0.08;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    for (let i = floaters.length - 1; i >= 0; i--) {
+      const f = floaters[i];
+      f.life -= 0.02;
+      f.x -= state === "playing" ? speed : 0;
+      f.y -= 0.55;
+      if (f.life <= 0) floaters.splice(i, 1);
+    }
+  }
+
+  function updateHud() {
+    scoreEl.textContent = score();
+    bestEl.textContent = best;
+    distEl.textContent = Math.round(distance / 10) + " m";
+    coinEl.textContent = coinsTaken;
+    speedEl.textContent = Math.round(speed * 6) + " km/h";
+  }
+
+  /* =========================
+     RENDER
+  ========================= */
+
+  function draw() {
+    ctx.save();
+
+    if (shake > 0.4) {
+      ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+    }
+
+    drawSky();
+    drawHills();
+    drawClouds();
+    drawGround();
+    drawCoins();
+    drawObstacles();
+    drawPlayer();
+    drawParticles();
+    drawFloaters();
+
+    if (flashLife > 0) {
+      ctx.globalAlpha = clamp(flashLife, 0, 1);
+      ctx.fillStyle = "#fff";
+      ctx.font = "900 40px Inter, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(flashText, W / 2, 140);
+      ctx.globalAlpha = 1;
+      ctx.textAlign = "left";
+    }
+
+    ctx.restore();
+  }
+
+  function drawSky() {
+    const g = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+    g.addColorStop(0, "#5fb4ea");
+    g.addColorStop(0.55, "#9ed7f3");
+    g.addColorStop(1, "#dff1fb");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, GROUND_Y + 2);
+
+    const pulse = 1 + Math.sin(elapsed * 0.02) * 0.03;
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = "#fff3cf";
+    ctx.beginPath();
+    ctx.arc(796, 74, 46 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.9;
+    ctx.beginPath();
+    ctx.arc(796, 74, 30, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHills() {
+    const layers = [
+      { off: skyShift * 0.14, color: "#a9d6c6", base: GROUND_Y - 26, amp: 40, wl: 300 },
+      { off: skyShift * 0.30, color: "#8cc4ad", base: GROUND_Y - 8,  amp: 56, wl: 210 }
+    ];
+
+    for (const L of layers) {
+      ctx.fillStyle = L.color;
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y + 2);
+      for (let x = 0; x <= W; x += 12) {
+        const y = L.base
+          - Math.sin((x + L.off) / L.wl * Math.PI * 2) * L.amp * 0.5
+          - Math.cos((x + L.off) / (L.wl * 1.9) * Math.PI * 2) * L.amp * 0.3;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W, GROUND_Y + 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  function drawClouds() {
+    const puffs = [
+      { x: 120, y: 66, s: 1.0 },
+      { x: 420, y: 42, s: 0.8 },
+      { x: 690, y: 96, s: 1.15 },
+      { x: 900, y: 54, s: 0.7 }
+    ];
+    const span = W + 260;
+
+    ctx.fillStyle = "rgba(255,255,255,.78)";
+    for (const p of puffs) {
+      const x = ((p.x - skyShift * 0.5) % span + span) % span - 130;
+      const s = p.s;
+      ctx.beginPath();
+      ctx.arc(x, p.y, 22 * s, 0, Math.PI * 2);
+      ctx.arc(x + 26 * s, p.y - 8 * s, 17 * s, 0, Math.PI * 2);
+      ctx.arc(x + 50 * s, p.y + 2 * s, 20 * s, 0, Math.PI * 2);
+      ctx.arc(x + 22 * s, p.y + 10 * s, 18 * s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawGround() {
+    const g = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+    g.addColorStop(0, "#4e7d52");
+    g.addColorStop(1, "#2b4b31");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, GROUND_Y, W, GROUND_H);
+
+    ctx.fillStyle = "#7ec27f";
+    ctx.fillRect(0, GROUND_Y, W, 5);
+    ctx.fillStyle = "rgba(0,0,0,.16)";
+    ctx.fillRect(0, GROUND_Y + 5, W, 2);
+
+    // Dashes scroll with the world.
+    const period = 90;
+    const off = distance % period;
+    ctx.fillStyle = "rgba(255,255,255,.14)";
+    for (let x = -period; x < W + period; x += period) {
+      ctx.fillRect(x - off, GROUND_Y + 18, 34, 4);
+      ctx.fillRect(x - off + 46, GROUND_Y + 34, 20, 3);
+    }
+
+    const t = (speed - SPEED_START) / (SPEED_MAX - SPEED_START);
+    if (t > 0.15) {
+      ctx.strokeStyle = "rgba(255,255,255," + (0.10 + t * 0.22).toFixed(3) + ")";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 5; i++) {
+        const y = GROUND_Y - 190 + i * 40;      // low sky, reads as ground rush
+        const len = 40 + t * 90;
+        const x = W - ((distance * (1.5 + i * 0.35)) % (W + 400)) + 200;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + len, y);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function drawObstacles() {
+    for (const o of obstacles) {
+      ctx.fillStyle = "rgba(0,0,0,.18)";
+      ctx.beginPath();
+      ctx.ellipse(o.x + o.w / 2, GROUND_Y + 6, o.w * 0.55, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (o.kind === "hover") {
+        // A wire holding the bar up, so it reads as "duck under me".
+        ctx.strokeStyle = "rgba(255,255,255,.35)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(o.x + o.w / 2, 0);
+        ctx.lineTo(o.x + o.w / 2, o.y);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(255,255,255,.5)";
+        ctx.fillRect(o.x + o.w / 2 - 3, o.y - 8, 6, 8);
+      }
+
+      const g = ctx.createLinearGradient(o.x, o.y, o.x + o.w, o.y + o.h);
+      if (o.kind === "hover") {
+        g.addColorStop(0, "#6f7bff");
+        g.addColorStop(1, "#3b3fa8");
+      } else if (o.kind === "tall") {
+        g.addColorStop(0, "#e05a4b");
+        g.addColorStop(1, "#a5251b");
+      } else {
+        g.addColorStop(0, "#e0705f");
+        g.addColorStop(1, "#b33027");
+      }
+      ctx.fillStyle = g;
+      roundRect(ctx, o.x, o.y, o.w, o.h, 7);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(255,255,255,.22)";
+      roundRect(ctx, o.x + 4, o.y + 4, Math.max(4, o.w - 8), 5, 3);
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(0,0,0,.28)";
+      ctx.lineWidth = 2;
+      roundRect(ctx, o.x, o.y, o.w, o.h, 7);
+      ctx.stroke();
+    }
+  }
+
+  function drawCoins() {
+    for (const c of coins) {
+      if (c.taken) continue;
+
+      const squash = Math.abs(Math.cos(c.spin));
+      const w = 2 + c.r * 1.05 * squash;
+
+      ctx.fillStyle = "rgba(0,0,0,.14)";
+      ctx.beginPath();
+      ctx.ellipse(c.x, GROUND_Y + 4, c.r * 0.8, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const g = ctx.createLinearGradient(c.x - w, c.y - c.r, c.x + w, c.y + c.r);
+      g.addColorStop(0, "#ffe9a3");
+      g.addColorStop(0.5, "#ffc53d");
+      g.addColorStop(1, "#e29a10");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y, w, c.r, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(255,255,255,.75)";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.ellipse(c.x, c.y, w, c.r, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  function drawPlayer() {
+    const h = player.h;
+    const y = player.y;
+    const w = P_W;
+
+    const air = clamp((GROUND_Y - (y + h)) / 110, 0, 1);
+    ctx.fillStyle = "rgba(0,0,0,.22)";
+    ctx.beginPath();
+    ctx.ellipse(player.x + w / 2, GROUND_Y + 6, w * 0.62 * (1 - air * 0.35), 7 * (1 - air * 0.4), 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (!player.dead) {
+      ctx.fillStyle = "#243b53";
+      if (player.onGround && !player.sliding) {
+        const swing = Math.sin(runPhase * 0.32) * 7;
+        ctx.fillRect(player.x + 7, GROUND_Y - 12 + swing * 0.3, 8, 12 - Math.abs(swing) * 0.3);
+        ctx.fillRect(player.x + 24, GROUND_Y - 12 - swing * 0.3, 8, 12 - Math.abs(swing) * 0.3);
+      } else if (!player.sliding) {
+        ctx.fillRect(player.x + 7, y + h - 4, 9, 8);
+        ctx.fillRect(player.x + 24, y + h - 10, 9, 8);
+      }
+    }
+
+    const g = ctx.createLinearGradient(player.x, y, player.x + w, y + h);
+    if (player.dead) {
+      g.addColorStop(0, "#9aa6b6");
+      g.addColorStop(1, "#5d6a7c");
+    } else {
+      g.addColorStop(0, "#ffb35c");
+      g.addColorStop(1, "#e2761c");
+    }
+    ctx.fillStyle = g;
+    roundRect(ctx, player.x, y, w, h, 10);
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(0,0,0,.22)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, player.x, y, w, h, 10);
+    ctx.stroke();
+
+    // Face, always looking right.
+    ctx.fillStyle = "#fff";
+    roundRect(ctx, player.x + w - 18, y + (player.sliding ? 7 : 9), 12, 12, 4);
+    ctx.fill();
+
+    ctx.fillStyle = "#1d2733";
+    ctx.beginPath();
+    ctx.arc(player.x + w - 9, y + (player.sliding ? 13 : 15), 3.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffd8a8";
+    ctx.beginPath();
+    ctx.arc(player.x + w - 6, y + (player.sliding ? 21 : 29), 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawParticles() {
+    for (const p of particles) {
+      ctx.globalAlpha = clamp(p.life, 0, 1) * 0.9;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, p.size, p.size);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawFloaters() {
+    ctx.textAlign = "center";
+    ctx.font = "900 18px Inter, system-ui, sans-serif";
+    for (const f of floaters) {
+      ctx.globalAlpha = clamp(f.life, 0, 1);
+      ctx.fillStyle = "rgba(0,0,0,.25)";
+      ctx.fillText(f.text, f.x + 1, f.y + 1);
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.text, f.x, f.y);
+    }
+    ctx.globalAlpha = 1;
+    ctx.textAlign = "left";
+  }
+
+  /* =========================
+     LOOP
+  ========================= */
+
+  function advance(ms) {
+    acc += ms;
+    let guard = 0;
+    while (acc >= STEP && guard++ < 8) {
+      step();
+      acc -= STEP;
+    }
+    if (acc > STEP * 8) acc = 0;
+    draw();
+  }
+
+  function frame(now) {
+    if (manual) return;
+    const dt = Math.min(now - last, 200);
+    last = now;
+    advance(dt);
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function startLoop() {
+    last = performance.now();
+    acc = 0;
+    if (!manual) {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(frame);
+    }
+  }
+
+  function stopLoop() {
+    cancelAnimationFrame(rafId);
+    rafId = 0;
+  }
+
+  /* =========================
+     LAYOUT
+  ========================= */
+
+  function layout() {
+    const compact = window.innerWidth < 860;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Measure the surrounding page with a tiny field, so the field can take
+    // every pixel that is actually left over instead of guessing a reserve.
+    fieldEl.style.width = "1px";
+    fieldEl.style.height = "1px";
+
+    const bodyPad = window.getComputedStyle(document.body);
+    const padY = parseFloat(bodyPad.paddingTop || 0) + parseFloat(bodyPad.paddingBottom || 0);
+
+    // On narrow screens the HUD sits under the field, so its height counts as
+    // chrome too. On wide screens it sits beside the field and does not.
+    const hudH = compact ? hudEl.getBoundingClientRect().height : 0;
+    const chrome = appEl.getBoundingClientRect().height - stageEl.getBoundingClientRect().height + hudH;
+
+    const hudW = compact ? 0 : 184;
+    const availW = Math.min(vw - 32, 1180) - hudW;
+    const availH = Math.max(80, vh - padY - chrome - 1);
+    const minW = compact ? 260 : 420;
+
+    let w = Math.min(availW, availH * (W / H));
+    w = Math.max(minW, Math.min(w, 960));
+
+    // Sizing from measurements can be a few pixels out once real gaps and
+    // rounding are counted, so fit against the rendered page directly.
+    for (let pass = 0; pass < 4; pass++) {
+      applySize(w);
+      const over = appEl.getBoundingClientRect().height + padY - vh;
+      if (over <= 0.5 || w <= minW) break;
+      w = Math.max(minW, w - over * (W / H) - 0.5);
+    }
+
+    applySize(w);
+    draw();
+  }
+
+  function applySize(w) {
+    const h = w * (H / W);
+
+    fieldEl.style.width = Math.round(w) + "px";
+    fieldEl.style.height = Math.round(h) + "px";
+
+    // A very short field needs a smaller overlay or the buttons fall off the box.
+    overlay.classList.toggle("tiny", h < 250);
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+
+    const scale = Math.min(w / W, h / H);
+    view = { scale, ox: (w - W * scale) / 2, oy: (h - H * scale) / 2 };
+
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * view.ox, dpr * view.oy);
+  }
+
+  /* =========================
+     EVENTS
+  ========================= */
+
+  function onKeyDown(e) {
+    const k = e.key;
+
+    if (k === " " || k === "Spacebar" || k === "ArrowUp" || k === "Up" || k === "w" || k === "W") {
+      e.preventDefault();
+      if (e.repeat) return;
+      requestJump();
+      return;
+    }
+
+    if (k === "ArrowDown" || k === "Down" || k === "s" || k === "S") {
+      e.preventDefault();
+      setSlide(true);
+      return;
+    }
+
+    if (k === "p" || k === "P") {
+      if (state === "playing") pause();
+      else if (state === "paused") resume();
+      return;
+    }
+
+    if (k === "Enter") {
+      if (state === "over" || state === "ready") startRun();
+      else if (state === "paused") resume();
+    }
+  }
+
+  function onKeyUp(e) {
+    const k = e.key;
+    if (k === "ArrowDown" || k === "Down" || k === "s" || k === "S") setSlide(false);
+  }
+
+  function onPointerDown(e) {
+    if (e.target.closest && e.target.closest(".overlay")) return;
+    e.preventDefault();
+    requestJump();
+  }
+
+  let touchY = null;
+  let touchX = null;
+
+  function onTouchStart(e) {
+    if (e.target.closest && e.target.closest(".overlay")) return;
+    const t = e.changedTouches[0];
+    touchX = t.clientX;
+    touchY = t.clientY;
+  }
+
+  function onTouchMove(e) {
+    if (touchY == null || state !== "playing") return;
+    const t = e.changedTouches[0];
+    const dy = t.clientY - touchY;
+    const dx = t.clientX - touchX;
+    if (dy > 26 && Math.abs(dy) > Math.abs(dx)) {
+      e.preventDefault();
+      setSlide(true);
+    }
+  }
+
+  function onTouchEnd(e) {
+    if (touchY == null) return;
+    if (state === "playing") {
+      setSlide(false);
+      if (e.target.closest && e.target.closest(".overlay")) return;
+      requestJump();
+    } else {
+      requestJump();
+    }
+    touchX = touchY = null;
+  }
+
+  document.addEventListener("keydown", onKeyDown);
+  document.addEventListener("keyup", onKeyUp);
+
+  fieldEl.addEventListener("mousedown", onPointerDown);
+  fieldEl.addEventListener("touchstart", onTouchStart, { passive: true });
+  fieldEl.addEventListener("touchmove", onTouchMove, { passive: false });
+  fieldEl.addEventListener("touchend", onTouchEnd);
+
+  controls.addEventListener("pointerdown", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    e.preventDefault();
+    if (btn.dataset.act === "jump") requestJump();
+    else setSlide(true);
+  });
+
+  ["pointerup", "pointercancel", "pointerleave"].forEach((ev) =>
+    controls.addEventListener(ev, () => setSlide(false))
+  );
+
+  ovBtn.addEventListener("click", () => {
+    if (state === "paused") resume();
+    else startRun();
+  });
+
+  muteEl.addEventListener("click", () => {
+    muted = !muted;
+    store.set(MUTE_KEY, muted ? "1" : "0");
+    muteEl.textContent = muted ? "🔇" : "🔊";
+    muteEl.classList.toggle("off", muted);
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && state === "playing") pause();
+  });
+
+  window.addEventListener("resize", layout);
+  window.addEventListener("orientationchange", () => setTimeout(layout, 250));
+
+  /* =========================
+     TEST HOOK
+     Lets a headless check drive the sim one tick at a time.
+  ========================= */
+
+  window.EndlessRunner = {
+    get state() { return state; },
+    get score() { return score(); },
+    get distance() { return distance; },
+    get speed() { return speed; },
+    get coins() { return coinsTaken; },
+    get player() {
+      return {
+        x: player.x, y: player.y, vy: player.vy, h: player.h,
+        onGround: player.onGround, sliding: player.sliding, dead: player.dead
+      };
+    },
+    get obstacles() {
+      return obstacles.map((o) => ({ x: o.x, y: o.y, w: o.w, h: o.h, kind: o.kind }));
+    },
+    get coinList() {
+      return coins.map((c) => ({ x: c.x, y: c.y, r: c.r }));
+    },
+    manual(on) {
+      manual = !!on;
+      if (manual) stopLoop();
+    },
+    start() { startRun(); },
+    stop() { stopLoop(); },
+    step(ms) { advance(typeof ms === "number" ? ms : STEP); },
+    jump() { requestJump(); },
+    slide(on) { setSlide(!!on); },
+    die() { die("hit"); },
+    layout,
+    CONST: { W, H, GROUND_Y, P_X, P_W, P_H, P_SLIDE_H, GRAVITY, JUMP_V, AIR_STEPS, SPEED_START, SPEED_MAX }
+  };
+
+  /* =========================
+     BOOT
+  ========================= */
+
+  muteEl.textContent = muted ? "🔇" : "🔊";
+  muteEl.classList.toggle("off", muted);
+  bestEl.textContent = best;
+
+  resetRun();
+  state = "ready";
+  layout();
+
+})();
+</script>
+
+</body>
+</html>
