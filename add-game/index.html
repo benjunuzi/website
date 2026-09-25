@@ -196,6 +196,7 @@
                     <span id="everyone-count" class="text-[11px] text-slate-400">newest first</span>
                 </div>
                 <p class="text-xs text-slate-400 mb-3">All the games anyone has sent in, from every device — not just yours.</p>
+                <div id="everyone-msg" class="hidden rounded-2xl px-4 py-3 mb-3 text-sm"></div>
                 <div id="all-games" class="grid sm:grid-cols-2 gap-2.5"></div>
                 <div id="all-empty" class="surface rounded-2xl p-6 text-center text-sm text-slate-400">No games have been sent in yet — be the first!</div>
             </section>
@@ -424,6 +425,29 @@
 
     /* Every game from everyone, newest first — this is the list to check
        to see what people have made. */
+    function answerButtons(game) {
+        var approved = game.status === "approved";
+        return '<div class="flex flex-wrap items-center gap-2 mt-2">' +
+            statusBadge(game) +
+            (approved
+                ? '<button class="btn-bad rounded-xl px-3 py-1.5 text-[11px] font-extrabold" data-delete="' + esc(game.id) + '">🗑 NO — take it off</button>'
+                : '<button class="btn-good rounded-xl px-3 py-1.5 text-[11px] font-extrabold" data-approve="' + esc(game.id) + '">✅ YES — add it</button>' +
+                  '<button class="btn-bad rounded-xl px-3 py-1.5 text-[11px] font-extrabold" data-delete="' + esc(game.id) + '">🗑 NO — delete it</button>') +
+            '</div>';
+    }
+
+    var everyoneTimer = null;
+
+    function everyoneMessage(text, ok) {
+        var box = $("everyone-msg");
+        if (everyoneTimer) { clearTimeout(everyoneTimer); everyoneTimer = null; }
+        if (!text) { box.classList.add("hidden"); return; }
+        box.className = "rounded-2xl px-4 py-3 mb-3 text-sm " + (ok ? "bg-emerald-500/15 text-emerald-200" : "bg-amber-500/15 text-amber-100");
+        box.textContent = text;
+        box.classList.remove("hidden");
+        everyoneTimer = setTimeout(function () { box.classList.add("hidden"); }, 7000);
+    }
+
     function renderEveryone() {
         var games = PracticeGames.all();
         var shown = games.slice(0, 40);
@@ -439,7 +463,7 @@
                     '<div class="text-[11px] text-slate-400 truncate">' + esc(g.goal) + '</div>' +
                     '<div class="text-[11px] text-slate-500 mt-0.5 truncate">by ' + esc(g.by || "Anonymous") +
                         ' · ' + esc(g.category || "Arcade") + ' · ' + timeAgo(g.createdAt) + '</div>' +
-                    '<div class="mt-1.5">' + statusBadge(g) + '</div>' +
+                    answerButtons(g) +
                 '</div>' +
                 '<div class="flex flex-col gap-1.5 shrink-0">' +
                     '<a class="btn-ghost rounded-xl px-3 py-1.5 text-xs font-bold text-white text-center" href="' + PracticeGames.playerUrl(g) + '">Play</a>' +
@@ -451,6 +475,22 @@
         $("everyone-count").textContent = games.length
             ? (games.length > shown.length ? "newest " + shown.length + " of " + games.length : games.length + (games.length === 1 ? " game" : " games"))
             : "nothing yet";
+
+        Array.prototype.forEach.call(box.querySelectorAll("[data-approve]"), function (btn) {
+            btn.addEventListener("click", function () {
+                var game = PracticeGames.approve(btn.dataset.approve);
+                if (game) everyoneMessage("✅ \u201c" + game.title + "\u201d is on the home page now, with a PRACTICE badge.", true);
+            });
+        });
+        Array.prototype.forEach.call(box.querySelectorAll("[data-delete]"), function (btn) {
+            btn.addEventListener("click", function () {
+                var game = PracticeGames.byId(btn.dataset.delete);
+                if (!game) return;
+                if (!window.confirm("Delete \u201c" + game.title + "\u201d? This cannot be undone.")) return;
+                PracticeGames.removeGame(game.id);
+                everyoneMessage("🗑 \u201c" + game.title + "\u201d was deleted and is not on the site.", true);
+            });
+        });
     }
 
     function renderWaitingStrip() {
