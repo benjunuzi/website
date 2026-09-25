@@ -80,6 +80,17 @@
             <!-- Result of a YES / NO link from Ben's email -->
             <div id="email-result" class="hidden rounded-2xl px-5 py-4 mb-5"></div>
 
+            <!-- How many games have been sent in -->
+            <div id="waiting-strip" class="hidden surface rounded-2xl px-5 py-4 mb-5 flex flex-wrap items-center gap-3">
+                <div class="text-2xl">🎮</div>
+                <div class="flex-1 min-w-[180px]">
+                    <div id="waiting-text" class="font-bold text-sm"></div>
+                    <div id="waiting-sub" class="text-xs text-slate-400"></div>
+                </div>
+                <a href="#everyone" class="btn-ghost rounded-xl px-4 py-2 text-xs font-bold text-white">See every game ↓</a>
+                <a href="#review" class="btn-ghost rounded-xl px-4 py-2 text-xs font-bold text-white">Review desk ↓</a>
+            </div>
+
             <!-- How it works -->
             <div class="grid sm:grid-cols-3 gap-3 mb-6">
                 <div class="surface rounded-2xl p-4">
@@ -179,11 +190,22 @@
                 </section>
             </div>
 
+            <!-- ============ EVERY GAME PEOPLE MADE ============ -->
+            <section id="everyone" class="mt-10">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-extrabold tracking-tight">Every game people made</h2>
+                    <span id="everyone-count" class="text-[11px] text-slate-400">newest first</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-3">All the games anyone has sent in, from every device — not just yours.</p>
+                <div id="all-games" class="grid sm:grid-cols-2 gap-2.5"></div>
+                <div id="all-empty" class="surface rounded-2xl p-6 text-center text-sm text-slate-400">No games have been sent in yet — be the first!</div>
+            </section>
+
             <!-- ============ MY GAMES ============ -->
             <section class="mt-8">
                 <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-lg font-extrabold tracking-tight">Games I sent to Ben</h2>
-                    <span class="text-[11px] text-slate-400">saved on this device</span>
+                    <h2 class="text-lg font-extrabold tracking-tight">Sent from this device</h2>
+                    <span class="text-[11px] text-slate-400">only this browser</span>
                 </div>
                 <div id="my-games" class="flex flex-col gap-2.5"></div>
                 <div id="my-empty" class="surface rounded-2xl p-6 text-center text-sm text-slate-400">
@@ -429,6 +451,58 @@
         return '<span class="badge wait">⏳ WAITING FOR BEN</span>';
     }
 
+    function timeAgo(ts) {
+        if (!ts) return "just now";
+        var secs = Math.floor((Date.now() - ts) / 1000);
+        if (secs < 60) return "just now";
+        if (secs < 3600) return Math.floor(secs / 60) + " min ago";
+        if (secs < 86400) return Math.floor(secs / 3600) + "h ago";
+        return Math.floor(secs / 86400) + "d ago";
+    }
+
+    /* Every game from everyone, newest first — this is the list to check
+       to see what people have made. */
+    function renderEveryone() {
+        var games = PracticeGames.all();
+        var shown = games.slice(0, 40);
+        var box = $("all-games");
+        box.innerHTML = shown.map(function (g) {
+            var approved = g.status === "approved";
+            var mail = PracticeGames.mailto(g);
+            return '<div class="surface rounded-2xl p-3 flex items-center gap-3">' +
+                '<div class="w-12 h-12 rounded-xl grid place-items-center text-2xl shrink-0" style="background:' +
+                    (approved ? "rgba(18,183,106,.16)" : "rgba(255,193,7,.14)") + '">' + esc(g.emoji || "🎮") + '</div>' +
+                '<div class="flex-1 min-w-0">' +
+                    '<div class="font-bold text-sm truncate">' + esc(g.title) + '</div>' +
+                    '<div class="text-[11px] text-slate-400 truncate">' + esc(g.goal) + '</div>' +
+                    '<div class="text-[11px] text-slate-500 mt-0.5 truncate">by ' + esc(g.by || "Anonymous") +
+                        ' · ' + esc(g.category || "Arcade") + ' · ' + timeAgo(g.createdAt) + '</div>' +
+                    '<div class="mt-1.5">' + statusBadge(g) + '</div>' +
+                '</div>' +
+                '<div class="flex flex-col gap-1.5 shrink-0">' +
+                    '<a class="btn-ghost rounded-xl px-3 py-1.5 text-xs font-bold text-white text-center" href="' + PracticeGames.playerUrl(g) + '">Play</a>' +
+                    (mail ? '<a class="btn-ghost rounded-xl px-3 py-1.5 text-xs font-bold text-white text-center" href="' + esc(mail) + '">✉️ Email</a>' : '') +
+                '</div>' +
+            '</div>';
+        }).join("");
+        $("all-empty").classList.toggle("hidden", games.length > 0);
+        $("everyone-count").textContent = games.length
+            ? (games.length > shown.length ? "newest " + shown.length + " of " + games.length : games.length + (games.length === 1 ? " game" : " games"))
+            : "nothing yet";
+    }
+
+    function renderWaitingStrip() {
+        var all = PracticeGames.all().length;
+        var pending = PracticeGames.pending().length;
+        var approved = PracticeGames.approved().length;
+        var strip = $("waiting-strip");
+        strip.classList.toggle("hidden", all === 0);
+        if (!all) return;
+        $("waiting-text").textContent = all + (all === 1 ? " game has" : " games have") + " been sent in";
+        $("waiting-sub").textContent = pending + " waiting for Ben to say yes or no · " + approved + " on the games list" +
+            (pending > 0 && !PracticeGames.isReviewer() ? " · unlock the review desk below to decide" : "");
+    }
+
     function myGameCard(game) {
         var mail = PracticeGames.mailto(game);
         return '<div class="surface rounded-2xl p-3 flex items-center gap-3">' +
@@ -566,6 +640,7 @@
             hint.textContent = "Ben: put your email address in practice-games.js (BEN_EMAIL) and every finished game lands in your inbox with a YES button (add it) and a NO button (delete it).";
             hint.classList.remove("hidden");
         }
+        renderWaitingStrip();
 
         var pending = PracticeGames.pending();
         var approved = PracticeGames.approved();
@@ -643,6 +718,8 @@
     });
 
     PracticeGames.ready(function () {
+        renderEveryone();
+        renderWaitingStrip();
         renderMine();
         renderDesk();
     });
