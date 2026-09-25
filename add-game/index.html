@@ -88,7 +88,6 @@
                     <div id="waiting-sub" class="text-xs text-slate-400"></div>
                 </div>
                 <a href="#everyone" class="btn-ghost rounded-xl px-4 py-2 text-xs font-bold text-white">See every game ↓</a>
-                <a href="#review" class="btn-ghost rounded-xl px-4 py-2 text-xs font-bold text-white">Review desk ↓</a>
             </div>
 
             <!-- How it works -->
@@ -101,7 +100,7 @@
                 <div class="surface rounded-2xl p-4">
                     <div class="text-2xl">🚀</div>
                     <h3 class="font-bold mt-1.5">2. Send it to Ben</h3>
-                    <p class="text-xs text-slate-400 mt-1">Your game goes to Ben's review desk as a practice game.</p>
+                    <p class="text-xs text-slate-400 mt-1">Your game is emailed to Ben with a YES button and a NO button.</p>
                 </div>
                 <div class="surface rounded-2xl p-4">
                     <div class="text-2xl">✅</div>
@@ -210,43 +209,6 @@
                 <div id="my-games" class="flex flex-col gap-2.5"></div>
                 <div id="my-empty" class="surface rounded-2xl p-6 text-center text-sm text-slate-400">
                     You haven't sent a game yet. Make one above and press 🚀 Send to Ben.
-                </div>
-            </section>
-
-            <!-- ============ REVIEW DESK ============ -->
-            <section id="review" class="mt-10 surface-strong rounded-[26px] p-5 sm:p-7">
-                <div class="flex flex-wrap items-center gap-3">
-                    <h2 class="text-xl font-extrabold tracking-tight">🔒 Ben's review desk</h2>
-                    <span id="review-state" class="badge off">locked</span>
-                    <button id="lock-btn" class="hidden ml-auto text-xs font-bold text-slate-300 hover:text-white">Lock it again</button>
-                </div>
-                <p class="text-xs text-slate-400 mt-1.5">This is where the games wait for you. Say <b>good</b> and the game is added to the games list. Say <b>delete</b> and it's gone.</p>
-
-                <div id="unlock-box" class="mt-4">
-                    <div class="flex flex-col sm:flex-row gap-2.5 max-w-md">
-                        <input id="code-input" type="password" placeholder="Review code" class="flex-1 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500">
-                        <button id="unlock-btn" class="btn-primary text-white font-bold px-5 py-2.5 rounded-xl text-sm">Unlock</button>
-                    </div>
-                    <p id="unlock-msg" class="text-xs mt-2 text-slate-400">Hint for Ben: the code is your name (you can change it in practice-games.js).</p>
-                </div>
-
-                <div id="desk" class="hidden mt-4">
-                    <p id="email-hint" class="hidden text-xs text-amber-200 mb-3"></p>
-                    <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-2">Waiting for a decision</h3>
-                    <div id="pending-list" class="flex flex-col gap-3"></div>
-                    <div id="pending-empty" class="surface rounded-2xl p-6 text-center text-sm text-slate-400">No games waiting right now. 🎉</div>
-
-                    <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mt-7 mb-2">Approved practice games (live on the site)</h3>
-                    <div id="approved-list" class="flex flex-col gap-3"></div>
-                    <div id="approved-empty" class="surface rounded-2xl p-6 text-center text-sm text-slate-400">Nothing approved yet.</div>
-
-                    <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mt-7 mb-2">Add a game from a code</h3>
-                    <p class="text-xs text-slate-400 mb-2">If a friend sends you a game code (the long BENGAME1: text), paste it here.</p>
-                    <textarea id="code-area" rows="3" placeholder="BENGAME1:..." class="w-full rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500"></textarea>
-                    <div class="flex items-center gap-3 mt-2.5">
-                        <button id="import-btn" class="btn-ghost text-white font-bold px-4 py-2.5 rounded-xl text-sm">Add to review desk</button>
-                        <span id="import-msg" class="text-xs text-slate-400"></span>
-                    </div>
                 </div>
             </section>
 
@@ -499,8 +461,7 @@
         strip.classList.toggle("hidden", all === 0);
         if (!all) return;
         $("waiting-text").textContent = all + (all === 1 ? " game has" : " games have") + " been sent in";
-        $("waiting-sub").textContent = pending + " waiting for Ben to say yes or no · " + approved + " on the games list" +
-            (pending > 0 && !PracticeGames.isReviewer() ? " · unlock the review desk below to decide" : "");
+        $("waiting-sub").textContent = pending + " waiting for Ben to say yes or no · " + approved + " on the games list";
     }
 
     function myGameCard(game) {
@@ -580,124 +541,12 @@
         });
         try { localStorage.setItem("gameLabName", cfg.by); } catch (e) { /* ignore */ }
         message("Sent! \u201c" + game.title + "\u201d is waiting for Ben's decision. " +
-            (PracticeGames.status() === "live" ? "Ben will see it in his review desk." : "It's saved here — use \u201cCopy code\u201d to send the game to Ben."), true);
+            (PracticeGames.status() === "live" ? "Ben will get it in his email." : "It's saved here — use \u201cCopy code\u201d to send the game to Ben."), true);
         showSendActions(game);
         renderMine();
     });
 
-    /* ------------------------ Ben's review desk --------------------- */
-
-    function miniPreview(game) {
-        return '<iframe title="preview" sandbox="allow-scripts" class="w-full rounded-xl border border-white/10 bg-[#02040a]" style="height:210px; border-width:1px;" srcdoc="' + esc(game.html) + '"></iframe>';
-    }
-
-    function pendingCard(game) {
-        return '<div class="surface rounded-2xl p-3 grid sm:grid-cols-[150px_1fr] gap-3">' +
-            '<div>' + miniPreview(game) + '</div>' +
-            '<div class="flex flex-col">' +
-                '<div class="font-bold">' + esc(game.emoji || "🎮") + ' ' + esc(game.title) + '</div>' +
-                '<div class="text-xs text-slate-400 mt-0.5">' + esc(game.goal) + '</div>' +
-                '<div class="text-[11px] text-slate-500 mt-1">by ' + esc(game.by || "Anonymous") + ' · ' + esc(game.category || "Arcade") + ' · ' + new Date(game.createdAt).toLocaleString() + '</div>' +
-                '<div class="flex flex-wrap gap-2 mt-3 sm:mt-auto">' +
-                    '<a class="btn-ghost rounded-xl px-3.5 py-2 text-xs font-bold text-white" href="' + PracticeGames.playerUrl(game) + '">▶ Play</a>' +
-                    '<button class="btn-good rounded-xl px-3.5 py-2 text-xs font-extrabold" data-approve="' + esc(game.id) + '">✅ It\'s good — add it</button>' +
-                    '<button class="btn-bad rounded-xl px-3.5 py-2 text-xs font-extrabold" data-delete="' + esc(game.id) + '">🗑 Delete game</button>' +
-                    '<button class="btn-ghost rounded-xl px-3.5 py-2 text-xs font-bold text-white" data-copy="' + esc(game.id) + '">Copy code</button>' +
-                '</div>' +
-            '</div>' +
-        '</div>';
-    }
-
-    function approvedCard(game) {
-        return '<div class="surface rounded-2xl p-3 flex items-center gap-3">' +
-            '<div class="w-12 h-12 rounded-xl grid place-items-center text-2xl shrink-0" style="background:rgba(18,183,106,.16)">' + esc(game.emoji || "🎮") + '</div>' +
-            '<div class="flex-1 min-w-0">' +
-                '<div class="font-bold text-sm truncate">' + esc(game.title) + '</div>' +
-                '<div class="text-[11px] text-slate-400 truncate">' + esc(game.goal) + ' · by ' + esc(game.by || "Anonymous") + '</div>' +
-                '<div class="mt-1.5"><span class="badge live">✅ ON THE GAMES LIST</span></div>' +
-            '</div>' +
-            '<div class="flex flex-col gap-1.5 shrink-0">' +
-                '<a class="btn-ghost rounded-xl px-3 py-1.5 text-xs font-bold text-white text-center" href="' + PracticeGames.playerUrl(game) + '">Play</a>' +
-                '<button class="btn-bad rounded-xl px-3 py-1.5 text-xs font-extrabold" data-delete="' + esc(game.id) + '">Remove</button>' +
-            '</div>' +
-        '</div>';
-    }
-
-    function renderDesk() {
-        var unlocked = PracticeGames.isReviewer();
-        $("unlock-box").classList.toggle("hidden", unlocked);
-        $("desk").classList.toggle("hidden", !unlocked);
-        $("review-state").textContent = unlocked ? "unlocked" : "locked";
-        $("review-state").className = "badge " + (unlocked ? "live" : "off");
-        $("lock-btn").classList.toggle("hidden", !unlocked);
-        if (!unlocked) return;
-
-        var hint = $("email-hint");
-        if (PracticeGames.email()) {
-            hint.textContent = "Games can also arrive in your email with a YES button and a NO button.";
-            hint.classList.remove("hidden");
-        } else {
-            hint.textContent = "Ben: put your email address in practice-games.js (BEN_EMAIL) and every finished game lands in your inbox with a YES button (add it) and a NO button (delete it).";
-            hint.classList.remove("hidden");
-        }
-        renderWaitingStrip();
-
-        var pending = PracticeGames.pending();
-        var approved = PracticeGames.approved();
-        $("pending-list").innerHTML = pending.map(pendingCard).join("");
-        $("pending-empty").classList.toggle("hidden", pending.length > 0);
-        $("approved-list").innerHTML = approved.map(approvedCard).join("");
-        $("approved-empty").classList.toggle("hidden", approved.length > 0);
-
-        bindDeskButtons($("pending-list"));
-        bindDeskButtons($("approved-list"));
-    }
-
-    function bindDeskButtons(root) {
-        Array.prototype.forEach.call(root.querySelectorAll("[data-approve]"), function (btn) {
-            btn.addEventListener("click", function () {
-                var game = PracticeGames.approve(btn.dataset.approve);
-                if (game) message("\u201c" + game.title + "\u201d is good — it's been added to the games! 🎉", true);
-            });
-        });
-        Array.prototype.forEach.call(root.querySelectorAll("[data-delete]"), function (btn) {
-            btn.addEventListener("click", function () {
-                var game = PracticeGames.byId(btn.dataset.delete);
-                if (!game) return;
-                if (!window.confirm("Delete \u201c" + game.title + "\u201d? This cannot be undone.")) return;
-                PracticeGames.removeGame(game.id);
-                message("Deleted \u201c" + game.title + "\u201d. 🗑", true);
-            });
-        });
-        Array.prototype.forEach.call(root.querySelectorAll("[data-copy]"), function (btn) {
-            btn.addEventListener("click", function () { copyGameCode(btn.dataset.copy, btn); });
-        });
-    }
-
-    $("unlock-btn").addEventListener("click", function () {
-        if (PracticeGames.unlock($("code-input").value)) {
-            $("code-input").value = "";
-            $("unlock-msg").textContent = "Welcome back, Ben!";
-            renderDesk();
-        } else {
-            $("unlock-msg").textContent = "Not the right code. Try again.";
-        }
-    });
-
-    $("code-input").addEventListener("keydown", function (e) {
-        if (e.key === "Enter") $("unlock-btn").click();
-    });
-
-    $("lock-btn").addEventListener("click", function () {
-        PracticeGames.lock();
-        renderDesk();
-    });
-
-    $("import-btn").addEventListener("click", function () {
-        var result = PracticeGames.importCode($("code-area").value);
-        $("import-msg").textContent = result.message;
-        if (result.ok) $("code-area").value = "";
-    });
+    /* Games are answered from Ben's email, not from this page. */
 
     /* ---------------------------- status --------------------------- */
 
@@ -721,7 +570,6 @@
         renderEveryone();
         renderWaitingStrip();
         renderMine();
-        renderDesk();
     });
 
     /* ------------------- YES / NO links from the email ---------------- */
@@ -751,7 +599,7 @@
             bar.className = "rounded-2xl px-5 py-4 mb-5 bg-rose-500/15 border border-rose-400/40";
             bar.innerHTML =
                 '<div class="font-extrabold text-rose-200">🗑 You said NO — \u201c' + esc(res.game.title) + '\u201d has been deleted.</div>' +
-                '<div class="text-xs text-slate-300 mt-1.5">It is gone from the review desk and it was never added to the games.</div>';
+                '<div class="text-xs text-slate-300 mt-1.5">It was deleted and it was never added to the games.</div>';
         } else {
             bar.className = "rounded-2xl px-5 py-4 mb-5 bg-amber-500/15 border border-amber-400/40";
             bar.innerHTML =
