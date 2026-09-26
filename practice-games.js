@@ -51,6 +51,7 @@
     var localGames = [];   // games saved on this device
     var remoteGames = [];  // games shared with everyone
     var gone = [];         // deleted ids, so they can't come back
+    var deletedIds = {};   // games deleted anywhere, learned from the shared inbox
     var current = [];      // merged list the pages read
     var listeners = [];
     var statusListeners = [];
@@ -114,11 +115,20 @@
     function merge() {
         var byId = {};
         var order = [];
+        var dead = {};
+
+        /* A game that Ben deleted is kept in the shared inbox as a small
+           "deleted" note. That is how every other phone finds out about it,
+           so the game disappears there too instead of waiting forever. */
+        remoteGames.forEach(function (g) {
+            if (g && g.id && g.status === "deleted") dead[g.id] = true;
+        });
+        deletedIds = dead;
 
         function add(list) {
             list.forEach(function (g) {
                 if (!g || !g.id) return;
-                if (gone.indexOf(g.id) !== -1) return;
+                if (gone.indexOf(g.id) !== -1 || dead[g.id]) return;
                 if (!byId[g.id]) { byId[g.id] = g; order.push(g.id); return; }
                 var merged = Object.assign({}, byId[g.id], g);
                 if (!g._local) delete merged._local;
@@ -133,6 +143,16 @@
             .sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
     }
 
+    /* Once a device learns a game was deleted, its own saved copy is no
+       longer wanted, so the game cannot come back later. */
+    function pruneDeletedLocal() {
+        var before = localGames.length;
+        localGames = localGames.filter(function (g) {
+            return g && !deletedIds[g.id] && gone.indexOf(g.id) === -1;
+        });
+        if (localGames.length !== before) write(STORE_KEY, localGames);
+    }
+
     function saveLocal(game) {
         var found = false;
         localGames = localGames.map(function (g) {
@@ -145,6 +165,7 @@
 
     function publish() {
         merge();
+        pruneDeletedLocal();
         listeners.slice().forEach(function (cb) {
             try { cb(current); } catch (e) { console.error(e); }
         });
@@ -217,14 +238,6 @@
                 });
             }
         } catch (e) { console.warn("Practice Games: saving to the shared inbox failed", e); }
-    }
-
-    function deleteRemote(id) {
-        if (!fb) return;
-        try {
-            var done = fb.dbMod.remove(fb.dbMod.ref(fb.db, DB_PATH + "/" + id));
-            if (done && done.catch) done.catch(function () { /* nothing to do */ });
-        } catch (e) { console.warn("Practice Games: deleting from the shared inbox failed", e); }
     }
 
     function stripLocal(game) {
@@ -302,12 +315,26 @@
 
         /* Ben says "not good" -> the game gets deleted */
         removeGame: function (id) {
+            var game = api.byId(id);
+            /* Leave a small "deleted" note in the shared inbox instead of
+               quietly removing the game, so every other device finds out.
+               The game itself (its code and pictures) is not kept. */
+            var tombstone = {
+                id: id,
+                title: (game && game.title) || "deleted game",
+                by: (game && game.by) || "",
+                emoji: (game && game.emoji) || "",
+                category: (game && game.category) || "",
+                createdAt: (game && game.createdAt) || Date.now(),
+                deletedAt: Date.now(),
+                status: "deleted"
+            };
             localGames = localGames.filter(function (g) { return g.id !== id; });
             remoteGames = remoteGames.filter(function (g) { return g.id !== id; });
             if (gone.indexOf(id) === -1) gone.push(id);
             write(GONE_KEY, gone);
             write(STORE_KEY, localGames);
-            deleteRemote(id);
+            saveRemote(tombstone);
             publish();
         },
 
