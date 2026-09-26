@@ -20,7 +20,7 @@
        Ben's review code. Change the word if you want a new secret.
        Only this code can approve or delete games.
        --------------------------------------------------------------- */
-    var REVIEW_CODE = "ben";
+    var REVIEW_CODE = "ben123";
 
     /* Ben's email address. When this is filled in, every finished game can
        be emailed to Ben with a YES link (add it) and a NO link (delete it). */
@@ -92,6 +92,15 @@
     function toBase64(str) { return btoa(unescape(encodeURIComponent(str))); }
 
     function fromBase64(str) { return decodeURIComponent(escape(atob(str))); }
+
+    /* A little stamp of the current code. It is kept in the browser instead
+       of the word itself, and it changes whenever the code changes, so
+       anyone who knew the old code is locked out again. */
+    function codeStamp(code) {
+        var h = 5381;
+        for (var i = 0; i < code.length; i++) h = ((h * 33) ^ code.charCodeAt(i)) >>> 0;
+        return "ok" + h.toString(36);
+    }
 
     function slugTitle(title) {
         var slug = clean(title, 60).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -387,15 +396,16 @@
 
         /* Ben's review desk lock */
         isReviewer: function () {
+            var stamp = codeStamp(REVIEW_CODE);
             try {
-                return sessionStorage.getItem(UNLOCK_KEY) === "yes" || localStorage.getItem(UNLOCK_KEY) === "yes";
+                return sessionStorage.getItem(UNLOCK_KEY) === stamp || localStorage.getItem(UNLOCK_KEY) === stamp;
             } catch (e) { return false; }
         },
         unlock: function (code) {
             if (String(code == null ? "" : code).trim().toLowerCase() !== REVIEW_CODE) return false;
             try {
-                sessionStorage.setItem(UNLOCK_KEY, "yes");
-                localStorage.setItem(UNLOCK_KEY, "yes");
+                sessionStorage.setItem(UNLOCK_KEY, codeStamp(REVIEW_CODE));
+                localStorage.setItem(UNLOCK_KEY, codeStamp(REVIEW_CODE));
             } catch (e) { /* ignore */ }
             return true;
         },
