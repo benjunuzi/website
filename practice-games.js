@@ -45,6 +45,7 @@
     var STORE_KEY = "ben_practice_games_v1";
     var GONE_KEY = "ben_practice_deleted_v1";
     var MINE_KEY = "ben_my_game_ids_v1";
+    var HIDDEN_KEY = "ben_hidden_game_ids_v1";
     var UNLOCK_KEY = "ben_review_unlocked_v1";
     var SDK = "https://www.gstatic.com/firebasejs/11.6.1/";
 
@@ -125,12 +126,14 @@
         var byId = {};
         var order = [];
         var dead = {};
+        var inInbox = {};
 
         /* A game that Ben deleted is kept in the shared inbox as a small
            "deleted" note. That is how every other phone finds out about it,
            so the game disappears there too instead of waiting forever. */
         remoteGames.forEach(function (g) {
             if (g && g.id && g.status === "deleted") dead[g.id] = true;
+            else if (g && g.id) inInbox[g.id] = true;
         });
         deletedIds = dead;
 
@@ -139,9 +142,7 @@
                 if (!g || !g.id) return;
                 if (gone.indexOf(g.id) !== -1 || dead[g.id]) return;
                 if (!byId[g.id]) { byId[g.id] = g; order.push(g.id); return; }
-                var merged = Object.assign({}, byId[g.id], g);
-                if (!g._local) delete merged._local;
-                byId[g.id] = merged;
+                byId[g.id] = Object.assign({}, byId[g.id], g);
             });
         }
 
@@ -150,6 +151,16 @@
 
         current = order.map(function (id) { return byId[id]; })
             .sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
+        /* A game that is already in the shared inbox is not "stuck on this
+           device", so the "not sent yet" note must not show for it. */
+        current.forEach(function (g) { if (inInbox[g.id]) delete g._local; });
+    }
+
+    /* True when a game has been deleted, here or anywhere else. Nothing may
+       quietly bring a deleted game back to life. */
+    function isDeletedId(id) {
+        return !!deletedIds[id] || gone.indexOf(id) !== -1;
     }
 
     /* Once a device learns a game was deleted, its own saved copy is no
@@ -190,7 +201,23 @@
 
     /* ---------------------------- firebase ------------------------- */
 
+    var connecting = false;
+    var retryTimer = null;
+
+    /* If the shared inbox cannot be reached (flaky wifi, blocked CDN, a
+       phone that was asleep), keep trying quietly so the device still finds
+       out about games Ben deleted instead of being stuck on "solo". */
+    function scheduleRetry() {
+        if (retryTimer || connected || !SHARE_IN_INBOX) return;
+        retryTimer = setTimeout(function () {
+            retryTimer = null;
+            connect();
+        }, 20000);
+    }
+
     function connect() {
+        if (connecting || connected) return;
+        connecting = true;
         Promise.all([
             import(SDK + "firebase-app.js"),
             import(SDK + "firebase-auth.js"),
@@ -200,27 +227,34 @@
             var app = appMod.initializeApp(FIREBASE_CONFIG);
             var auth = authMod.getAuth(app);
             var db = dbMod.getDatabase(app);
-            fb = { db: db, dbMod: dbMod };
 
             return authMod.signInAnonymously(auth).then(function () {
+                /* only now is the shared inbox really usable, so a game made
+                   before this point stays honestly marked as "not sent" */
+                fb = { db: db, dbMod: dbMod };
                 dbMod.onValue(dbMod.ref(db, DB_PATH), function (snapshot) {
                     var val = snapshot.val() || {};
                     remoteGames = Object.keys(val).map(function (key) {
                         return Object.assign({ id: key }, val[key]);
                     });
+                    connecting = false;
                     connected = true;
+                    if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
                     setStatus("live");
                     publish();
                     pushLocalOnly();
                 }, function (err) {
                     console.warn("Practice Games: cannot read the shared inbox", err);
-                    if (!connected) { setStatus("solo"); publish(); }
+                    connecting = false;
+                    if (!connected) { setStatus("solo"); publish(); scheduleRetry(); }
                 });
             });
         }).catch(function (err) {
             console.warn("Practice Games: staying on this device only", err);
+            connecting = false;
             setStatus("solo");
             publish();
+            scheduleRetry();
         });
     }
 
@@ -238,6 +272,8 @@
 
     function saveRemote(game) {
         if (!fb) return;
+        /* never write a waiting game over the top of a deletion */
+        if (game.status !== "deleted" && isDeletedId(game.id)) return;
         try {
             var done = fb.dbMod.set(fb.dbMod.ref(fb.db, DB_PATH + "/" + game.id), stripLocal(game));
             if (done && done.catch) {
@@ -306,7 +342,10 @@
             saveLocal(game);
             saveRemote(game);
             api.rememberMine(game.id);
-            if (fb) delete game._local;
+            if (fb) {
+                delete game._local;
+                write(STORE_KEY, localGames);
+            }
             publish();
             return game;
         },
@@ -352,6 +391,10 @@
             var game = api.byId(id);
             if (!game) return "";
             var payload = {
+                /* the original id travels with the code, so the same game
+                   stays the same game even when it is pasted in somewhere
+                   else - that is what lets Ben's NO reach the maker */
+                i: game.id, o: game.createdAt || Date.now(),
                 t: game.title, g: game.goal, c: game.category, e: game.emoji,
                 b: game.by, h: game.html, s: game.status || "pending", k: game.token || ""
             };
@@ -368,8 +411,12 @@
                 return { ok: false, message: "That game code doesn't look right. Ask for it again." };
             }
             if (!payload || !payload.h) return { ok: false, message: "That game code is missing the game." };
+            var keptId = String(payload.i == null ? "" : payload.i).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60);
+            if (keptId && isDeletedId(keptId)) {
+                return { ok: false, message: "Ben already deleted that game, so it can't be added back." };
+            }
             var game = {
-                id: newId(),
+                id: keptId || newId(),
                 token: clean(payload.k, 32) || newToken(),
                 title: clean(payload.t, 60) || "Practice Game",
                 goal: clean(payload.g, 120) || "Have fun!",
@@ -377,16 +424,34 @@
                 emoji: clean(payload.e, 6) || "🎮",
                 by: clean(payload.b, 24) || "Anonymous",
                 html: String(payload.h),
-                createdAt: Date.now(),
-                status: "pending",
+                createdAt: Number(payload.o) || Date.now(),
+                status: clean(payload.s, 12) === "approved" ? "approved" : "pending",
                 _local: true
             };
             saveLocal(game);
             saveRemote(game);
-            if (fb) delete game._local;
+            if (fb) {
+                delete game._local;
+                write(STORE_KEY, localGames);
+            }
             publish();
             return { ok: true, message: "Added \u201c" + game.title + "\u201d to your review desk.", id: game.id };
         },
+
+        /* The maker can clear their own game off their own screen. It stays
+           in Ben's list until he says yes or no, and it still shows on the
+           home page if Ben adds it. */
+        forgetGame: function (id) {
+            var hidden = read(HIDDEN_KEY, []);
+            if (hidden.indexOf(id) === -1) { hidden.push(id); write(HIDDEN_KEY, hidden); }
+            localGames = localGames.filter(function (g) { return g.id !== id; });
+            write(STORE_KEY, localGames);
+            publish();
+        },
+
+        isHidden: function (id) { return read(HIDDEN_KEY, []).indexOf(id) !== -1; },
+
+        isMine: function (id) { return api.myIds().indexOf(id) !== -1; },
 
         myIds: function () { return read(MINE_KEY, []); },
         rememberMine: function (id) {
@@ -502,6 +567,12 @@
     gone = read(GONE_KEY, []);
     merge();
     window.PracticeGames = api;
+    /* coming back online (or waking the phone) is a good moment to try the
+       shared inbox again, so deletions arrive without a reload */
+    if (typeof window.addEventListener === "function") {
+        window.addEventListener("online", function () { connect(); });
+        window.addEventListener("focus", function () { if (!connected) connect(); });
+    }
     if (SHARE_IN_INBOX) connect();
     else setStatus("solo");
 })();

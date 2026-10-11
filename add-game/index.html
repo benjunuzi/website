@@ -233,7 +233,7 @@
     </footer>
 </div>
 
-<script src="../practice-games.js"></script>
+<script src="../practice-games.js?v=3"></script>
 <!-- ?v=2: GitHub Pages caches files for 10 minutes, so the version tag makes
      browsers pick up the 10 new starters straight away. Bump it when this
      changes again. -->
@@ -451,7 +451,20 @@
 
     function statusBadge(game) {
         if (game.status === "approved") return '<span class="badge live">✅ ADDED TO GAMES</span>';
+        /* If it never reached the shared inbox, "waiting for Ben" is a lie:
+           Ben has not got it yet. Say so. */
+        if (game._local && PracticeGames.isMine(game.id)) {
+            return '<span class="badge off" title="This game is only on this device so far.">⚠️ NOT SENT YET</span>';
+        }
         return '<span class="badge wait">⏳ WAITING FOR BEN</span>';
+    }
+
+    /* Games this device made can be cleared off this screen. Ben still has
+       the game until he says yes or no. */
+    function clearButton(game) {
+        if (game.status === "approved" || !PracticeGames.isMine(game.id)) return "";
+        return '<button class="btn-ghost rounded-xl px-3 py-1.5 text-[11px] font-bold text-white" ' +
+            'data-clear="' + esc(game.id) + '" title="Hide this from your screen only.">✕ Clear from my screen</button>';
     }
 
     function timeAgo(ts) {
@@ -469,7 +482,7 @@
         var approved = game.status === "approved";
         /* only Ben sees the yes / no buttons */
         if (!PracticeGames.isReviewer()) {
-            return '<div class="flex flex-wrap items-center gap-2 mt-2">' + statusBadge(game) + '</div>';
+            return '<div class="flex flex-wrap items-center gap-2 mt-2">' + statusBadge(game) + clearButton(game) + '</div>';
         }
         return '<div class="flex flex-wrap items-center gap-2 mt-2">' +
             statusBadge(game) +
@@ -530,7 +543,8 @@
     }
 
     function renderEveryone() {
-        var games = PracticeGames.all();
+        /* games the maker cleared off their own screen stay out of this list */
+        var games = PracticeGames.all().filter(function (g) { return !PracticeGames.isHidden(g.id); });
         var shown = games.slice(0, 40);
         var box = $("all-games");
         box.innerHTML = shown.map(function (g) {
@@ -572,12 +586,21 @@
                 everyoneMessage("🗑 \u201c" + game.title + "\u201d was deleted and is not on the site.", true);
             });
         });
+        Array.prototype.forEach.call(box.querySelectorAll("[data-clear]"), function (btn) {
+            btn.addEventListener("click", function () {
+                var game = PracticeGames.byId(btn.dataset.clear);
+                var title = (game && game.title) || "That game";
+                PracticeGames.forgetGame(btn.dataset.clear);
+                everyoneMessage("✕ \u201c" + title + "\u201d is cleared from your screen.", true);
+            });
+        });
     }
 
     function renderWaitingStrip() {
-        var all = PracticeGames.all().length;
-        var pending = PracticeGames.pending().length;
-        var approved = PracticeGames.approved().length;
+        var visible = PracticeGames.all().filter(function (g) { return !PracticeGames.isHidden(g.id); });
+        var all = visible.length;
+        var pending = visible.filter(function (g) { return g.status !== "approved"; }).length;
+        var approved = visible.filter(function (g) { return g.status === "approved"; }).length;
         var strip = $("waiting-strip");
         strip.classList.toggle("hidden", all === 0);
         if (!all) return;
