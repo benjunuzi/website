@@ -108,6 +108,10 @@
         .th-action{ background: linear-gradient(135deg,#f7971e,#ff5f6d); }
         .th-music { background: linear-gradient(135deg,#ee0979,#ff6a00); }
         .th-other { background: linear-gradient(135deg,#1e5799,#2989d8); }
+        .th-puzzle{ background: linear-gradient(135deg,#00b09b,#96c93d); }
+        .th-racing{ background: linear-gradient(135deg,#f12711,#f5af19); }
+        .th-adventure { background: linear-gradient(135deg,#0f9b8e,#4aa8ff); }
+        .th-battle { background: linear-gradient(135deg,#8e2de2,#ff2e63); }
         .thumb {
             position: relative;
             display: grid;
@@ -161,6 +165,10 @@
         .cat-pill.action{ background: rgba(247,151,30,.16); color:#ffc98a; border-color: rgba(255,150,50,.4); }
         .cat-pill.music { background: rgba(238,9,121,.16); color:#ff9cc9; border-color: rgba(255,60,150,.4); }
         .cat-pill.other { background: rgba(41,137,216,.16); color:#9ccdff; border-color: rgba(60,150,230,.4); }
+        .cat-pill.puzzle { background: rgba(0,176,155,.16); color:#8ff0e2; border-color: rgba(20,190,165,.4); }
+        .cat-pill.racing { background: rgba(241,84,25,.16); color:#ffbf9c; border-color: rgba(245,140,60,.4); }
+        .cat-pill.adventure { background: rgba(15,155,142,.16); color:#8fe3ff; border-color: rgba(74,168,255,.4); }
+        .cat-pill.battle { background: rgba(142,45,226,.16); color:#e0aaff; border-color: rgba(180,80,240,.4); }
 
         /* "NEW" badge for recently added games */
         .new-badge {
@@ -567,13 +575,17 @@
     let featuredIndex = 0;
     let featuredTimer = null;
 
-    const standardCats = ["Sports", "Arcade", "Action", "Music"];
+    const standardCats = ["Sports", "Arcade", "Action", "Music", "Puzzle", "Racing", "Adventure", "Battle"];
 
     const categoryMeta = {
         "Sports":  { cls: "sports",  icon: "⚽", grad: "th-sports" },
         "Arcade":  { cls: "arcade",  icon: "🕹️", grad: "th-arcade" },
         "Action":  { cls: "action",  icon: "💥", grad: "th-action" },
         "Music":   { cls: "music",   icon: "🎵", grad: "th-music" },
+        "Puzzle":  { cls: "puzzle",  icon: "🧩", grad: "th-puzzle" },
+        "Racing":  { cls: "racing",  icon: "🏎️", grad: "th-racing" },
+        "Adventure": { cls: "adventure", icon: "🗺️", grad: "th-adventure" },
+        "Battle":  { cls: "battle",  icon: "⚔️", grad: "th-battle" },
     };
 
     const gameEmoji = {

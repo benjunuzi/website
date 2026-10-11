@@ -117,7 +117,7 @@
                     <p class="text-xs text-slate-400 mt-1">Nothing gets added to the website by itself — Ben has to say it's good first.</p>
 
                     <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400 mt-5 mb-2">Pick a starter</p>
-                    <div id="starter-picks" class="grid sm:grid-cols-3 gap-2.5"></div>
+                    <div id="starter-picks" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5"></div>
 
                     <div class="grid sm:grid-cols-2 gap-4 mt-5">
                         <div>
@@ -139,6 +139,10 @@
                                 <option>Sports</option>
                                 <option>Action</option>
                                 <option>Music</option>
+                                <option>Puzzle</option>
+                                <option>Racing</option>
+                                <option>Adventure</option>
+                                <option>Battle</option>
                             </select>
                         </div>
                         <div>
@@ -149,6 +153,11 @@
 
                     <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400 mt-5 mb-2">Game picture</p>
                     <div id="icon-picks" class="flex flex-wrap gap-1.5"></div>
+
+                    <div id="player-row" class="mt-5">
+                        <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">Who you play as</p>
+                        <div id="player-picks" class="flex flex-wrap gap-1.5"></div>
+                    </div>
 
                     <div class="grid sm:grid-cols-2 gap-4 mt-5">
                         <div>
@@ -162,7 +171,7 @@
                     </div>
 
                     <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400 mt-5 mb-2">Colours</p>
-                    <div id="theme-picks" class="flex items-center gap-3"></div>
+                    <div id="theme-picks" class="flex flex-wrap items-center gap-3"></div>
 
                     <div id="form-msg" class="hidden mt-5 text-sm rounded-xl px-4 py-3"></div>
                     <div id="send-actions" class="hidden mt-3 flex flex-wrap gap-2 items-center"></div>
@@ -227,13 +236,20 @@
 <script src="../practice-games.js"></script>
 <script src="game-templates.js"></script>
 <script>
-    var EMOJI_ICONS = ["🏆","🎮","🕹️","🚀","⚡","🔥","💎","👑","🌟","🎯","🐍","🧩","🎪","🛸","🧊","🌈","🍕","🐉","🎲","🦖"];
-    var EMOJI_GOOD = ["⭐","🍎","🍕","🍩","💎","🪙","🎁","🧁","⚽","🏀","🎾","⚾","🏈","🐟","🍌","🍇","🌻","🧊","👾","🪐"];
-    var EMOJI_BAD = ["💣","☄️","🌵","🧨","🦂","🔥","⚡","🐍","👻","🪨","🌪️","😾"];
+    var EMOJI_ICONS = ["🏆","🎮","🕹️","🚀","⚡","🔥","💎","👑","🌟","🎯","🐍","🧩","🎪","🛸","🧊","🌈","🍕","🐉","🎲","🦖",
+        "🦘","🏓","🃏","🧺","🐝","🦄","👽","🤖","🍭","🎸","🪄","⛳","🎱","🥊","🏀","🧲","🪂","🎳","🐧",
+        "🐦","🧱","🏗️","🛹","🚁","🐙","🦆","🍄","🎠","🥌","🛼","🌟"];
+    var EMOJI_GOOD = ["⭐","🍎","🍕","🍩","💎","🪙","🎁","🧁","⚽","🏀","🎾","⚾","🏈","🐟","🍌","🍇","🌻","🧊","👾","🪐",
+        "🎯","🍓","🍪","🎈","🐣","🦋","🍒","🥇","🎵","🪁","🐬"];
+    var EMOJI_BAD = ["💣","☄️","🌵","🧨","🦂","🔥","⚡","🐍","👻","🪨","🌪️","😾",
+        "💥","🌋","🕷️","🧟","🦈","❄️","🌩️","🪤","🦑"];
+    var EMOJI_PLAYER = ["🧺","🚀","🦘","🐦","🐍","🏓","🐱","🐶","🐸","🦊","🐼","🐵","🦄","👽","🤖","🐧","🐢","🐝",
+        "🐙","🦖","🐲","🧜","🦸","🧙","🥷","🤠"];
     var SPEEDS = [
-        { id: 0.8, name: "Easy" },
-        { id: 1, name: "Normal" },
-        { id: 1.35, name: "Hard" }
+        { id: 0.7, name: "Chill" },
+        { id: 1, name: "Easy" },
+        { id: 1.4, name: "Hard" },
+        { id: 1.8, name: "Insane" }
     ];
 
     var pick = {
@@ -242,7 +258,8 @@
         speed: 1,
         icon: "🧺",
         good: "⭐",
-        bad: "💣"
+        bad: "💣",
+        player: ""
     };
 
     function $(id) { return document.getElementById(id); }
@@ -267,7 +284,7 @@
             emoji: pick.icon || s.icon,
             good: pick.good,
             bad: pick.bad,
-            player: s.player,
+            player: pick.player || s.player,
             by: $("f-by").value.trim() || "Anonymous"
         };
     }
@@ -295,6 +312,7 @@
         pick.icon = s.icon;
         pick.good = s.good;
         pick.bad = s.bad;
+        pick.player = s.player;
 
         var title = $("f-title");
         var goal = $("f-goal");
@@ -306,6 +324,7 @@
         }
         renderStarters();
         renderEmojiPickers();
+        renderPlayerPicks();
         updatePreview(false);
     }
 
@@ -342,6 +361,21 @@
         });
         emojiRow("bad-picks", EMOJI_BAD, pick.bad, function (e) {
             pick.bad = e; renderEmojiPickers(); updatePreview(false);
+        });
+    }
+
+    /* Some starters are about the player character, others are not.
+       Hide the picker when the game has nobody to play as. */
+    function renderPlayerPicks() {
+        var s = starter();
+        var row = $("player-row");
+        if (!s.player) {
+            row.classList.add("hidden");
+            return;
+        }
+        row.classList.remove("hidden");
+        emojiRow("player-picks", EMOJI_PLAYER, pick.player || s.player, function (e) {
+            pick.player = e; renderPlayerPicks(); updatePreview(false);
         });
     }
 
@@ -677,6 +711,7 @@
     renderStarters();
     renderSpeedPicks();
     renderEmojiPickers();
+    renderPlayerPicks();
     renderThemes();
 
     (function fillDefaults() {
