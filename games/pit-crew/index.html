@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#080b12">
+<title>Pit Crew: Driver's Orders</title>
+<style>
+    :root {
+        --ink: #f5f7fb;
+        --muted: #9ba7bd;
+        --panel: #101521;
+        --panel-2: #181f2f;
+        --line: rgba(255, 255, 255, .12);
+        --orange: #ff6b35;
+        --orange-hot: #ff8b57;
+        --cyan: #52d6ff;
+        --green: #6ee7a8;
+        --red: #ff496c;
+        --yellow: #ffd166;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; min-height: 100%; }
+
+    body {
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        overflow-x: hidden;
+        padding: 12px;
+        background:
+            radial-gradient(circle at 8% 0%, rgba(255, 107, 53, .14), transparent 34rem),
+            radial-gradient(circle at 96% 100%, rgba(82, 214, 255, .11), transparent 36rem),
+            #080b12;
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+
+    button { font: inherit; }
+
+    .shell {
+        width: min(1180px, 100%);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .game-header {
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-width: 0;
+    }
+
+    .brand-mark {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border-radius: 13px;
+        color: #170b06;
+        background: linear-gradient(145deg, var(--orange-hot), var(--orange));
+        box-shadow: 0 8px 28px rgba(255, 107, 53, .28), inset 0 1px 0 rgba(255, 255, 255, .45);
+        font-family: Impact, "Arial Black", sans-serif;
+        font-size: 21px;
+        letter-spacing: .5px;
+        transform: skew(-5deg);
+    }
+
+    .brand-copy { line-height: 1; min-width: 0; }
+    .brand-title {
+        margin: 0;
+        font-family: Impact, "Arial Black", sans-serif;
+        font-size: clamp(22px, 3vw, 31px);
+        font-weight: 900;
+        letter-spacing: 1.2px;
+        white-space: nowrap;
+    }
+    .brand-title span { color: var(--orange); }
+    .brand-sub {
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: 2.3px;
+        white-space: nowrap;
+    }
+
+    .race-stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(72px, auto));
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: rgba(16, 21, 33, .82);
+        backdrop-filter: blur(12px);
+    }
+
+    .stat {
+        padding: 8px 14px;
+        text-align: center;
+        border-left: 1px solid var(--line);
+    }
+    .stat:first-child { border-left: 0; }
+    .stat-label {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--muted);
+        font-size: 8px;
+        font-weight: 800;
+        letter-spacing: 1.8px;
+    }
+    .stat-value {
+        display: block;
+        font-variant-numeric: tabular-nums;
+        font-size: 17px;
+        font-weight: 900;
+    }
+    .stat-value.orange { color: var(--orange-hot); }
+
+    .stage {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        aspect-ratio: 1200 / 760;
+        border: 1px solid rgba(255, 255, 255, .13);
+        border-radius: 20px;
+        background: #101811;
+        box-shadow: 0 28px 80px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .08);
+        isolation: isolate;
+    }
+
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    .top-hud {
+        position: absolute;
+        inset: 12px 12px auto;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        pointer-events: none;
+    }
+
+    .telemetry,
+    .gauge-panel,
+    .radio {
+        border: 1px solid rgba(255, 255, 255, .12);
+        background: rgba(8, 11, 18, .76);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 26px rgba(0, 0, 0, .24);
+    }
+
+    .telemetry {
+        min-width: 116px;
+        padding: 9px 11px;
+        border-radius: 12px;
+    }
+    .telemetry-line { display: flex; align-items: baseline; gap: 5px; }
+    #speedValue {
+        font-family: Impact, "Arial Black", sans-serif;
+        font-size: clamp(24px, 4vw, 40px);
+        line-height: .9;
+        letter-spacing: .7px;
+        font-variant-numeric: tabular-nums;
+    }
+    .telemetry-unit { color: var(--muted); font-size: 8px; font-weight: 800; letter-spacing: 1.2px; }
+    .telemetry-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 8px;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+    #gearValue { color: var(--orange-hot); font-size: 11px; }
+
+    .gauge-panel {
+        width: min(210px, 32vw);
+        padding: 10px 11px;
+        border-radius: 12px;
+    }
+    .gauge { margin-bottom: 8px; }
+    .gauge:last-child { margin-bottom: 0; }
+    .gauge-head {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
+        color: #d8dfec;
+        font-size: 8px;
+        font-weight: 900;
+        letter-spacing: 1.3px;
+    }
+    .gauge-head b { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .bar {
+        height: 7px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .1);
+    }
+    .bar-fill {
+        height: 100%;
+        width: 100%;
+        border-radius: inherit;
+        transition: width .18s linear, background .2s;
+    }
+    #tyreFill { background: linear-gradient(90deg, #ff4a68, var(--yellow) 35%, var(--green) 70%); }
+    #fuelFill { background: linear-gradient(90deg, #ff6b35, var(--orange-hot)); }
+
+    .bottom-hud {
+        position: absolute;
+        inset: auto 12px 12px;
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        pointer-events: none;
+    }
+
+    .radio {
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 43px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 12px;
+        border-radius: 12px;
+    }
+    .radio-light {
+        flex: 0 0 auto;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 12px rgba(110, 231, 168, .75);
+    }
+    .radio-copy { min-width: 0; }
+    .radio-label {
+        margin-bottom: 1px;
+        color: var(--muted);
+        font-size: 7px;
+        font-weight: 900;
+        letter-spacing: 1.6px;
+    }
+    #radioText {
+        overflow: hidden;
+        color: #f4f6fa;
+        font-size: clamp(9px, 1.35vw, 13px);
+        font-weight: 700;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .pit-call {
+        flex: 0 0 auto;
+        min-width: 96px;
+        padding: 7px 10px;
+        border: 1px solid rgba(255, 209, 102, .42);
+        border-radius: 10px;
+        color: var(--yellow);
+        background: rgba(31, 24, 10, .78);
+        font-size: 8px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-align: center;
+        text-transform: uppercase;
+        backdrop-filter: blur(10px);
+    }
+    .pit-call strong {
+        display: block;
+        margin-top: 1px;
+        color: #fff4c8;
+        font-size: 12px;
+        letter-spacing: .4px;
+    }
+
+    .center-message {
+        position: absolute;
+        inset: 42% 0 auto;
+        z-index: 4;
+        display: none;
+        color: #fff;
+        font-family: Impact, "Arial Black", sans-serif;
+        font-size: clamp(50px, 12vw, 126px);
+        line-height: .8;
+        letter-spacing: 2px;
+        text-align: center;
+        text-shadow: 0 5px 0 rgba(0, 0, 0, .45), 0 0 28px rgba(255, 107, 53, .45);
+        pointer-events: none;
+    }
+    .center-message.show { display: block; animation: count-pop .31s ease-out; }
+    @keyframes count-pop {
+        from { transform: scale(.72); opacity: .25; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    .screen {
+        position: absolute;
+        inset: 0;
+        z-index: 8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(16px, 4vw, 44px);
+        background:
+            linear-gradient(110deg, rgba(7, 10, 16, .96), rgba(8, 12, 19, .86) 55%, rgba(7, 10, 16, .65)),
+            radial-gradient(circle at 74% 40%, rgba(255, 107, 53, .2), transparent 45%);
+        backdrop-filter: blur(4px);
+    }
+    .screen.hidden { display: none; }
+
+    .start-layout {
+        width: min(880px, 100%);
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(260px, .85fr);
+        align-items: center;
+        gap: clamp(20px, 5vw, 64px);
+    }
+
+    .eyebrow {
+        margin-bottom: 10px;
+        color: var(--orange-hot);
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 3.5px;
+        text-transform: uppercase;
+    }
+    .start-title {
+        max-width: 550px;
+        margin: 0;
+        font-family: Impact, "Arial Black", sans-serif;
+        font-size: clamp(48px, 8vw, 88px);
+        font-weight: 900;
+        line-height: .86;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+    }
+    .start-title span { color: var(--orange); }
+    .start-description {
+        max-width: 50ch;
+        margin: 18px 0 22px;
+        color: #bdc6d8;
+        font-size: clamp(12px, 1.7vw, 15px);
+        line-height: 1.55;
+    }
+
+    .mode-picker {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+        width: min(540px, 100%);
+        margin: 0 0 14px;
+    }
+    .mode-option {
+        min-height: 50px;
+        padding: 8px 9px;
+        border: 1px solid rgba(255, 255, 255, .12);
+        border-radius: 9px;
+        color: #e8edf6;
+        background: rgba(255, 255, 255, .035);
+        text-align: left;
+        cursor: pointer;
+        transition: border-color .15s ease, background .15s ease, transform .15s ease;
+    }
+    .mode-option:hover { transform: translateY(-1px); border-color: rgba(255, 139, 87, .55); }
+    .mode-option b {
+        display: block;
+        font-family: Impact, "Arial Black", sans-serif;
+        font-size: 12px;
+        letter-spacing: .9px;
+        text-transform: uppercase;
+    }
+    .mode-option span {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 7px;
+        font-weight: 700;
+        line-height: 1.25;
+    }
+    .mode-option[aria-pressed="true"] {
+        border-color: rgba(255, 139, 87, .76);
+        background: linear-gradient(145deg, rgba(255, 107, 53, .2), rgba(255, 107, 53, .08));
+        box-shadow: inset 0 0 0 1px rgba(255, 139, 87, .16);
+    }
+    .mode-option[aria-pressed="true"] b { color: var(--orange-hot); }
+
+    .start-button {
+        min-width: 188px;
+        min-height: 48px;
+        padding: 0 24px;
+        border: 0;
+        border-radius: 10px;
+        color: #1a0b05;
+        background: linear-gradient(145deg, var(--orange-hot), var(--orange));
+        box-shadow: 0 12px 28px rgba(255, 107, 53, .3), inset 0 1px 0 rgba(255, 255, 255, .4);
+        font-family: Impact, "Arial Black", sans-serif;
+        font-size: 18px;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: transform .14s ease, filter .14s ease;
+    }
+    .start-button:hover { transform: translateY(-2px); filter: brightness(1.07); }
+    .start-button:active { transform: translateY(1px); }
+
+    .practice-exit {
+        position: absolute;
+        top: 76px;
+        right: 12px;
+        z-index: 6;
+        display: none;
+        min-height: 34px;
+        padding: 0 11px;
+        border: 1px solid rgba(255, 255, 255, .16);
+        border-radius: 8px;
+        color: #e9eef7;
+        background: rgba(8, 11, 18, .8);
+        font-size: 8px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+    }
+    .practice-exit.show { display: block; }
+
+    .briefing {
+        display: grid;
+        gap: 9px;
+    }
+    .brief-item {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, .1);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, .035);
+    }
+    .brief-icon {
+        flex: 0 0 auto;
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 9px;
+        color: var(--orange-hot);
+        background: rgba(255, 107, 53, .12);
+        font-family: Impact, "Arial Black", sans-serif;
+        font-size: 12px;
+        letter-spacing: .4px;
+    }
+    .brief-copy b {
+        display: block;
+        margin-bottom: 2px;
+        font-size: 11px;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+    }
+    .brief-copy span { color: var(--muted); font-size: 10px; line-height: 1.35; }
+    .key-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 6px;
+    }
+    .key {
+        padding: 3px 7px;
+        border: 1px solid rgba(255, 255, 255, .15);
+        border-bottom-width: 2px;
+        border-radius: 5px;
+        color: #dce4f2;
+        background: rgba(255, 255, 255, .045);
+        font-size: 9px;
+        font-weight: 800;
+    }
+
+    .finish-card {
+        width: min(450px, 100%);
+        padding: clamp(20px, 5vw, 34px);
+        border: 1px solid rgba(255, 255, 255, .15);
+        border-radius: 18px;
+        background: linear-gradient(145deg, rgba(25, 31, 45, .97), rgba(10, 14, 23, .97));
+        box-shadow: 0 24px 70px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .08);
+        text-align: center;
+    }
+    .finish-kicker {
+        color: var(--orange-hot);
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+    }
+    #finishPosition {
+        margin: 6px 0 2px;
+        font-family: Impact, "Arial Black", sans-serif;
+        font-size: clamp(55px, 11vw, 88px);
+        line-height: 1;
+        color: var(--yellow);
+    }
+    #finishTitle {
+        margin: 0 0 18px;
+        color: #e6ebf4;
+        font-size: 16px;
+    }
+    .result-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--line);
+    }
+    .result-cell { padding: 10px 6px; background: rgba(9, 13, 21, .92); }
+    .result-cell span {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--muted);
+        font-size: 7px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+    .result-cell b { font-size: 13px; font-variant-numeric: tabular-nums; }
+
+    .finish-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .finish-actions .start-button { min-width: 0; width: 100%; }
+    .garage-button {
+        min-height: 48px;
+        padding: 0 14px;
+        border: 1px solid rgba(255, 255, 255, .15);
+        border-radius: 10px;
+        color: #dfe6f1;
+        background: rgba(255, 255, 255, .045);
+        font-family: Impact, "Arial Black", sans-serif;
+        font-size: 16px;
+        letter-spacing: .8px;
+        text-transform: uppercase;
+        cursor: pointer;
+    }
+
+    .touch-controls {
+        display: none;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        width: 100%;
+    }
+    .touch-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .touch-button {
+        min-height: 54px;
+        border: 1px solid rgba(255, 255, 255, .14);
+        border-radius: 12px;
+        color: #edf2fa;
+        background: linear-gradient(180deg, #1c2434, #121824);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, .24);
+        font-family: Impact, "Arial Black", sans-serif;
+        font-size: 17px;
+        letter-spacing: 1px;
+        cursor: pointer;
+        touch-action: none;
+    }
+    .touch-button.gas {
+        color: #1a0b05;
+        border-color: rgba(255, 255, 255, .24);
+        background: linear-gradient(145deg, var(--orange-hot), var(--orange));
+    }
+    .touch-button.pressed { transform: translateY(2px); filter: brightness(1.25); }
+
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    @media (pointer: coarse), (max-width: 760px) {
+        body {
+            place-items: start center;
+            padding: 7px;
+            overflow-y: auto;
+        }
+        .shell { gap: 7px; }
+        .game-header { min-height: 40px; }
+        .brand-mark { width: 34px; height: 34px; border-radius: 10px; font-size: 17px; }
+        .brand-title { font-size: 20px; }
+        .brand-sub { margin-top: 2px; font-size: 6px; letter-spacing: 1.4px; }
+        .race-stats { border-radius: 10px; }
+        .stat { padding: 6px 9px; }
+        .stat-label { font-size: 6px; }
+        .stat-value { font-size: 13px; }
+        .stage { border-radius: 14px; }
+        .top-hud { inset: 7px 7px auto; }
+        .telemetry { min-width: 78px; padding: 6px 7px; border-radius: 8px; }
+        #speedValue { font-size: 24px; }
+        .telemetry-unit { font-size: 6px; }
+        .telemetry-meta { margin-top: 3px; font-size: 6px; }
+        .gauge-panel { width: 126px; padding: 7px; border-radius: 8px; }
+        .gauge { margin-bottom: 5px; }
+        .gauge-head { margin-bottom: 2px; font-size: 6px; }
+        .bar { height: 5px; }
+        .bottom-hud { inset: auto 7px 7px; gap: 5px; }
+        .radio { min-height: 35px; gap: 6px; padding: 6px 8px; border-radius: 8px; }
+        .radio-light { width: 5px; height: 5px; }
+        .radio-label { display: none; }
+        #radioText { font-size: 8px; }
+        .pit-call { min-width: 72px; padding: 5px 7px; font-size: 6px; }
+        .pit-call strong { font-size: 9px; }
+        .touch-controls { display: grid; }
+        .start-layout { grid-template-columns: 1fr; gap: 12px; }
+        .start-title { font-size: clamp(38px, 12vw, 62px); }
+        .start-description { margin: 8px 0 10px; font-size: 10px; }
+        .mode-picker { gap: 4px; margin-bottom: 9px; }
+        .mode-option { min-height: 38px; padding: 5px; text-align: center; }
+        .mode-option b { font-size: 9px; }
+        .mode-option span { display: none; }
+        .practice-exit { top: 57px; right: 7px; min-height: 29px; padding: 0 8px; font-size: 7px; }
+        .briefing { grid-template-columns: repeat(3, 1fr); gap: 5px; }
+        .brief-item { padding: 7px; gap: 6px; align-items: flex-start; }
+        .brief-icon { width: 24px; height: 24px; border-radius: 6px; font-size: 8px; }
+        .brief-copy b { font-size: 7px; }
+        .brief-copy span { display: none; }
+        .key-row { display: none; }
+        .screen { padding: 12px; }
+        .start-button { min-height: 42px; }
+    }
+
+    @media (pointer: coarse) and (orientation: landscape) {
+        .game-header { display: none; }
+        .shell { width: min(100%, 980px); }
+        .touch-controls {
+            position: fixed;
+            inset: auto 10px 10px;
+            z-index: 20;
+            width: auto;
+            pointer-events: none;
+        }
+        .touch-group { width: min(180px, 30vw); pointer-events: auto; }
+        .touch-button { min-height: 48px; opacity: .88; }
+    }
+
+    @media (max-width: 560px) and (orientation: portrait) {
+        .brand-sub { display: none; }
+        .briefing .brief-item:nth-child(3) { display: none; }
+        .briefing { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+    }
+</style>
+</head>
+<body>
+<main class="shell">
+    <header class="game-header">
+        <div class="brand">
+            <div class="brand-mark">PC</div>
+            <div class="brand-copy">
+                <h1 class="brand-title">PIT CREW <span>DRIVER</span></h1>
+                <div class="brand-sub" id="brandSub">MEDIUM MODE · YOU DRIVE · MAKE IT COUNT</div>
+            </div>
+        </div>
+        <div class="race-stats" aria-label="Race status">
+            <div class="stat"><span class="stat-label" id="positionLabel">POSITION</span><strong class="stat-value orange" id="positionValue">P4</strong></div>
+            <div class="stat"><span class="stat-label" id="lapLabel">LAP</span><strong class="stat-value" id="lapValue">1 / 3</strong></div>
+            <div class="stat"><span class="stat-label" id="timeLabel">TIME</span><strong class="stat-value" id="timeValue">0:00.0</strong></div>
+        </div>
+    </header>
+
+    <section class="stage" aria-label="Top-down auto racing game">
+        <canvas id="gameCanvas" width="1200" height="760" aria-label="Drive around the circuit, manage tyre wear, and stop in the orange pit box."></canvas>
+
+        <div class="top-hud" aria-hidden="true">
+            <div class="telemetry">
+                <div class="telemetry-line"><strong id="speedValue">0</strong><span class="telemetry-unit">KM/H</span></div>
+                <div class="telemetry-meta"><span>GEAR <b id="gearValue">N</b></span><span id="trackState">ON TRACK</span></div>
+            </div>
+            <div class="gauge-panel">
+                <div class="gauge">
+                    <div class="gauge-head"><span>TIRES</span><b id="tyreText">100%</b></div>
+                    <div class="bar"><div class="bar-fill" id="tyreFill"></div></div>
+                </div>
+                <div class="gauge">
+                    <div class="gauge-head"><span>FUEL</span><b id="fuelText">100%</b></div>
+                    <div class="bar"><div class="bar-fill" id="fuelFill"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-hud" aria-hidden="true">
+            <div class="radio">
+                <span class="radio-light" id="radioLight"></span>
+                <div class="radio-copy">
+                    <div class="radio-label" id="radioLabel">MEDIUM · CAR TO PIT WALL</div>
+                    <div id="radioText">Lights out. Keep it clean and watch your tyre wear.</div>
+                </div>
+            </div>
+            <div class="pit-call" id="pitCall">PIT STATUS<strong id="pitCallValue">OPEN</strong></div>
+        </div>
+
+        <div class="center-message" id="centerMessage" aria-live="assertive"></div>
+        <button class="practice-exit" id="practiceExit" type="button">Exit practice</button>
+
+        <div class="screen" id="startScreen">
+            <div class="start-layout">
+                <div>
+                    <div class="eyebrow">One driver · one crew · no excuses</div>
+                    <h2 class="start-title">DRIVE IN.<br><span>STOP FAST.</span></h2>
+                    <p class="start-description" id="startDescription">Medium pace: three laps, faster tyre wear, and one mandatory stop. The crew does the rest—but every second on pit road is time lost.</p>
+                    <div class="mode-picker" role="group" aria-label="Game mode">
+                        <button class="mode-option" type="button" data-mode="easy" aria-pressed="false"><b>Easy</b><span>Slower rivals, gentle wear</span></button>
+                        <button class="mode-option" type="button" data-mode="medium" aria-pressed="true"><b>Medium</b><span>Balanced race pace</span></button>
+                        <button class="mode-option" type="button" data-mode="hard" aria-pressed="false"><b>Hard</b><span>Fast rivals, heavy wear</span></button>
+                        <button class="mode-option" type="button" data-mode="practice" aria-pressed="false"><b>Practice</b><span>Open track, no rivals</span></button>
+                    </div>
+                    <button class="start-button" id="startButton" type="button">Start Medium race</button>
+                </div>
+                <div class="briefing">
+                    <div class="brief-item">
+                        <div class="brief-icon">01</div>
+                        <div class="brief-copy"><b>Drive the race</b><span>Steer, brake and hit your marks.</span>
+                            <div class="key-row"><span class="key">W / ↑</span><span class="key">A D / ← →</span><span class="key">S / ↓</span></div>
+                        </div>
+                    </div>
+                    <div class="brief-item">
+                        <div class="brief-icon">02</div>
+                        <div class="brief-copy"><b>Mind the wear</b><span>Hard cornering eats the tyres. Low grip means less steering and speed.</span></div>
+                    </div>
+                    <div class="brief-item">
+                        <div class="brief-icon">03</div>
+                        <div class="brief-copy"><b id="stopBriefTitle">Own the stop</b><span id="stopBriefText">One stop is mandatory. Dive into the pit box below the main straight and brake under 25 km/h.</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="screen hidden" id="finishScreen">
+            <div class="finish-card">
+                <div class="finish-kicker">Chequered flag</div>
+                <div id="finishPosition">P1</div>
+                <p id="finishTitle">Clean stop. Perfect drive.</p>
+                <div class="result-grid">
+                    <div class="result-cell"><span>Total</span><b id="finishTime">0:00.0</b></div>
+                    <div class="result-cell"><span>Best lap</span><b id="finishBest">0:00.0</b></div>
+                    <div class="result-cell"><span>Pit stops</span><b id="finishStops">0</b></div>
+                </div>
+                <div class="finish-actions">
+                    <button class="start-button" id="restartButton" type="button">Race again</button>
+                    <button class="garage-button" id="garageButton" type="button">Change mode</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="touch-controls" aria-label="Touch driving controls">
+        <div class="touch-group">
+            <button class="touch-button" type="button" data-input="left" aria-label="Steer left">LEFT</button>
+            <button class="touch-button" type="button" data-input="right" aria-label="Steer right">RIGHT</button>
+        </div>
+        <div class="touch-group">
+            <button class="touch-button" type="button" data-input="brake" aria-label="Brake or reverse">BRAKE</button>
+            <button class="touch-button gas" type="button" data-input="accelerate" aria-label="Accelerate">GAS</button>
+        </div>
+    </div>
+
+    <p class="sr-only" id="liveStatus" aria-live="polite"></p>
+</main>
+
+<script>
+(() => {
+    "use strict";
+
+    const WIDTH = 1200;
+    const HEIGHT = 760;
+    const RACE_LAPS = 3;
+    const PIT_LIMIT = 25;
+    const MODE_CONFIG = {
+        easy: {
+            label: "Easy",
+            aiPace: [.64, .68, .62],
+            aiCatchUp: 1,
+            aiEaseOff: .94,
+            tyreWear: .68,
+            fuelWear: .75,
+            playerSpeed: 1.04,
+            pitTime: 2.6,
+            mandatoryStop: true,
+            practice: false,
+            description: "Easy pace: relaxed rivals, gentle tyre wear, and a short crew stop. One stop is still required."
+        },
+        medium: {
+            label: "Medium",
+            aiPace: [.82, .85, .79],
+            aiCatchUp: 1.04,
+            aiEaseOff: .97,
+            tyreWear: 1.1,
+            fuelWear: 1,
+            playerSpeed: 1,
+            pitTime: 3.2,
+            mandatoryStop: true,
+            practice: false,
+            description: "Medium pace: three laps, faster tyre wear, and one mandatory stop. The crew does the rest—but every second on pit road is time lost."
+        },
+        hard: {
+            label: "Hard",
+            aiPace: [.96, 1, .92],
+            aiCatchUp: 1.1,
+            aiEaseOff: .99,
+            tyreWear: 1.45,
+            fuelWear: 1.25,
+            playerSpeed: .98,
+            pitTime: 3.8,
+            mandatoryStop: true,
+            practice: false,
+            description: "Hard pace: quicker rivals, heavy tyre wear, and a longer crew stop. Clean braking and a strong pit entry matter."
+        },
+        practice: {
+            label: "Practice",
+            aiPace: [],
+            aiCatchUp: 1,
+            aiEaseOff: 1,
+            tyreWear: .72,
+            fuelWear: .5,
+            playerSpeed: 1,
+            pitTime: 2.2,
+            mandatoryStop: false,
+            practice: true,
+            description: "Open practice: no rivals and no mandatory stop. Learn the racing line, practice the pit entry, and chase your best lap."
+        }
+    };
+    let activeMode = "medium";
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const startScreen = document.getElementById("startScreen");
+    const finishScreen = document.getElementById("finishScreen");
+    const centerMessage = document.getElementById("centerMessage");
+    const startButton = document.getElementById("startButton");
+    const restartButton = document.getElementById("restartButton");
+    const garageButton = document.getElementById("garageButton");
+    const practiceExit = document.getElementById("practiceExit");
+
+    const ui = {
+        positionLabel: document.getElementById("positionLabel"),
+        position: document.getElementById("positionValue"),
+        lapLabel: document.getElementById("lapLabel"),
+        lap: document.getElementById("lapValue"),
+        timeLabel: document.getElementById("timeLabel"),
+        time: document.getElementById("timeValue"),
+        speed: document.getElementById("speedValue"),
+        gear: document.getElementById("gearValue"),
+        trackState: document.getElementById("trackState"),
+        tyreText: document.getElementById("tyreText"),
+        tyreFill: document.getElementById("tyreFill"),
+        fuelText: document.getElementById("fuelText"),
+        fuelFill: document.getElementById("fuelFill"),
+        radioText: document.getElementById("radioText"),
+        radioLabel: document.getElementById("radioLabel"),
+        radioLight: document.getElementById("radioLight"),
+        pitCall: document.getElementById("pitCallValue"),
+        finishPosition: document.getElementById("finishPosition"),
+        finishTitle: document.getElementById("finishTitle"),
+        finishTime: document.getElementById("finishTime"),
+        finishBest: document.getElementById("finishBest"),
+        finishStops: document.getElementById("finishStops"),
+        startDescription: document.getElementById("startDescription"),
+        brandSub: document.getElementById("brandSub"),
+        stopBriefTitle: document.getElementById("stopBriefTitle"),
+        stopBriefText: document.getElementById("stopBriefText"),
+        liveStatus: document.getElementById("liveStatus")
+    };
+
+    const outer = { x: 62, y: 54, w: 1076, h: 652, r: 166 };
+    const inner = { x: 252, y: 238, w: 696, h: 284, r: 118 };
+    const pitBox = { x: 555, y: 631, w: 132, h: 62 };
+
+    const route = [
+        { x: 280, y: 612 }, { x: 420, y: 612 }, { x: 560, y: 612 },
+        { x: 700, y: 612 }, { x: 840, y: 612 }, { x: 950, y: 606 },
+        { x: 1014, y: 576 }, { x: 1046, y: 520 }, { x: 1054, y: 452 },
+        { x: 1054, y: 370 }, { x: 1054, y: 292 }, { x: 1042, y: 226 },
+        { x: 1004, y: 180 }, { x: 942, y: 154 }, { x: 850, y: 148 },
+        { x: 730, y: 148 }, { x: 610, y: 148 }, { x: 490, y: 148 },
+        { x: 370, y: 148 }, { x: 280, y: 155 }, { x: 210, y: 184 },
+        { x: 166, y: 232 }, { x: 148, y: 302 }, { x: 148, y: 384 },
+        { x: 148, y: 466 }, { x: 158, y: 532 }, { x: 190, y: 582 },
+        { x: 234, y: 606 }
+    ];
+    const routeSpeeds = [
+        286, 290, 292, 290, 282, 264, 235, 210, 199, 198, 207, 226,
+        252, 270, 276, 280, 282, 282, 276, 264, 238, 212, 200, 199,
+        210, 232, 260, 278
+    ];
+
+    const routeState = buildRoute(route);
+    const routeLength = routeState.total;
+    const asphaltSpecks = [];
+    const crowd = [];
+    const dust = [];
+    let rngState = 918273;
+
+    function random() {
+        rngState = (rngState * 1664525 + 1013904223) >>> 0;
+        return rngState / 4294967296;
+    }
+
+    for (let i = 0; i < 520; i++) {
+        const x = 70 + random() * 1060;
+        const y = 60 + random() * 640;
+        if (isTarmac(x, y)) asphaltSpecks.push({ x, y, a: .02 + random() * .05, s: .5 + random() * 1.5 });
+    }
+    for (let i = 0; i < 220; i++) {
+        crowd.push({ x: 76 + random() * 1048, y: random() > .5 ? 18 + random() * 20 : 722 + random() * 19, c: random() });
+    }
+
+    const input = {
+        accelerate: false,
+        brake: false,
+        left: false,
+        right: false
+    };
+    const keyState = Object.create(null);
+    const touchState = Object.create(null);
+
+    const game = {
+        state: "ready",
+        time: 0,
+        countdownStarted: 0,
+        lastFrame: performance.now(),
+        position: 4,
+        completedLaps: 0,
+        bestLap: Infinity,
+        lapStartedAt: 0,
+        pitStops: 0,
+        radioUntil: 0,
+        radioPriority: 0,
+        warnedHalf: false,
+        warnedCritical: false,
+        warnedFastPit: false,
+        announcedLastLap: false,
+        collisionCooldown: 0,
+        finishSequenceTimer: 0
+    };
+
+    const player = {
+        x: 255,
+        y: 612,
+        angle: 0,
+        speed: 0,
+        steer: 0,
+        tyres: 100,
+        fuel: 100,
+        damage: 0,
+        distance: 0,
+        nearestRoute: routeLength - 25,
+        serviceTimer: 0,
+        inPit: false,
+        canPit: true,
+        stopped: false,
+        finished: false,
+        finishTime: 0,
+        crossedFinishLine: false
+    };
+
+    const botConfigs = [
+        { name: "VIPER", color: "#9b7bff", accent: "#d7c8ff", distance: 62, number: 14 },
+        { name: "NOVA", color: "#39c7e8", accent: "#b7f2ff", distance: 124, number: 3 },
+        { name: "BYTE", color: "#69df99", accent: "#d0ffe1", distance: 186, number: 27 }
+    ];
+    let bots = [];
+
+    function modeConfig() {
+        return MODE_CONFIG[activeMode];
+    }
+
+    function buildRoute(points) {
+        const segments = [];
+        let total = 0;
+        for (let i = 0; i < points.length; i++) {
+            const a = points[i];
+            const b = points[(i + 1) % points.length];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const length = Math.hypot(dx, dy);
+            segments.push({ a, b, dx, dy, length, start: total, angle: Math.atan2(dy, dx) });
+            total += length;
+        }
+        return { points, segments, total };
+    }
+
+    function mod(value, n) {
+        return ((value % n) + n) % n;
+    }
+
+    function pointAtDistance(distance) {
+        const d = mod(distance, routeLength);
+        let segment = routeState.segments[0];
+        for (const candidate of routeState.segments) {
+            if (d >= candidate.start && d < candidate.start + candidate.length) {
+                segment = candidate;
+                break;
+            }
+        }
+        const t = segment.length ? (d - segment.start) / segment.length : 0;
+        return {
+            x: segment.a.x + segment.dx * t,
+            y: segment.a.y + segment.dy * t,
+            angle: segment.angle,
+            index: routeState.segments.indexOf(segment)
+        };
+    }
+
+    function nearestRoutePoint(x, y) {
+        let bestDistance = Infinity;
+        let bestAlong = 0;
+        for (const segment of routeState.segments) {
+            const lengthSq = segment.dx * segment.dx + segment.dy * segment.dy;
+            const raw = lengthSq ? ((x - segment.a.x) * segment.dx + (y - segment.a.y) * segment.dy) / lengthSq : 0;
+            const t = Math.max(0, Math.min(1, raw));
+            const px = segment.a.x + segment.dx * t;
+            const py = segment.a.y + segment.dy * t;
+            const distanceSq = (x - px) * (x - px) + (y - py) * (y - py);
+            if (distanceSq < bestDistance) {
+                bestDistance = distanceSq;
+                bestAlong = segment.start + segment.length * t;
+            }
+        }
+        return { distance: bestAlong, gap: Math.sqrt(bestDistance) };
+    }
+
+    function insideRoundedRect(x, y, rect) {
+        if (x < rect.x || x > rect.x + rect.w || y < rect.y || y > rect.y + rect.h) return false;
+        let px = x;
+        let py = y;
+        if (x < rect.x + rect.r) px = rect.x + rect.r;
+        else if (x > rect.x + rect.w - rect.r) px = rect.x + rect.w - rect.r;
+        if (y < rect.y + rect.r) py = rect.y + rect.r;
+        else if (y > rect.y + rect.h - rect.r) py = rect.y + rect.h - rect.r;
+        return (x - px) * (x - px) + (y - py) * (y - py) <= rect.r * rect.r;
+    }
+
+    function isTarmac(x, y) {
+        return insideRoundedRect(x, y, outer) && !insideRoundedRect(x, y, inner);
+    }
+
+    function inPitZone(x, y) {
+        return x >= pitBox.x && x <= pitBox.x + pitBox.w && y >= pitBox.y && y <= pitBox.y + pitBox.h;
+    }
+
+    function addRoundedRectPath(context, x, y, w, h, r) {
+        const radius = Math.min(r, w / 2, h / 2);
+        context.moveTo(x + radius, y);
+        context.lineTo(x + w - radius, y);
+        context.quadraticCurveTo(x + w, y, x + w, y + radius);
+        context.lineTo(x + w, y + h - radius);
+        context.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+        context.lineTo(x + radius, y + h);
+        context.quadraticCurveTo(x, y + h, x, y + h - radius);
+        context.lineTo(x, y + radius);
+        context.quadraticCurveTo(x, y, x + radius, y);
+        context.closePath();
+    }
+
+    function roundedRectPath(context, x, y, w, h, r) {
+        context.beginPath();
+        addRoundedRectPath(context, x, y, w, h, r);
+    }
+
+    function formatTime(seconds, compact = false) {
+        if (!Number.isFinite(seconds)) return "--:--";
+        const minutes = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        const tenths = Math.floor((seconds % 1) * 10);
+        if (compact) return `${minutes}:${String(secs).padStart(2, "0")}.${tenths}`;
+        return `${minutes}:${String(secs).padStart(2, "0")}.${tenths}`;
+    }
+
+    function setRadio(message, priority = 1, duration = 3.8) {
+        const now = performance.now() / 1000;
+        if (priority < game.radioPriority && game.radioUntil > now) return;
+        game.radioPriority = priority;
+        game.radioUntil = now + duration;
+        ui.radioText.textContent = message;
+        ui.radioLight.style.background = priority >= 3 ? "#ff496c" : priority === 2 ? "#ffd166" : "#6ee7a8";
+        ui.radioLight.style.boxShadow = `0 0 12px ${priority >= 3 ? "rgba(255,73,108,.75)" : priority === 2 ? "rgba(255,209,102,.75)" : "rgba(110,231,168,.75)"}`;
+    }
+
+    function updateInput() {
+        input.accelerate = !!keyState.accelerate || !!touchState.accelerate;
+        input.brake = !!keyState.brake || !!touchState.brake;
+        input.left = !!keyState.left || !!touchState.left;
+        input.right = !!keyState.right || !!touchState.right;
+    }
+
+    function syncModeUI() {
+        const config = modeConfig();
+        document.querySelectorAll(".mode-option").forEach(button => {
+            button.setAttribute("aria-pressed", String(button.dataset.mode === activeMode));
+        });
+        ui.startDescription.textContent = config.description;
+        ui.stopBriefTitle.textContent = config.practice ? "Open practice" : "Own the stop";
+        ui.stopBriefText.textContent = config.practice
+            ? "No mandatory stop. Practice the braking point into the pit box at your own pace."
+            : `One stop is mandatory. Dive into the pit box below the main straight and brake under ${PIT_LIMIT} km/h.`;
+        ui.brandSub.textContent = `${config.label.toUpperCase()} MODE · YOU DRIVE · MAKE IT COUNT`;
+        ui.radioLabel.textContent = `${config.label.toUpperCase()} · CAR TO PIT WALL`;
+        startButton.textContent = config.practice ? "Enter practice" : `Start ${config.label} race`;
+    }
+
+    function setMode(mode) {
+        if (!MODE_CONFIG[mode] || activeMode === mode) return;
+        activeMode = mode;
+        syncModeUI();
+        if (game.state === "ready") resetGame();
+    }
+
+    function clearInputs() {
+        for (const key of Object.keys(keyState)) keyState[key] = false;
+        for (const key of Object.keys(touchState)) touchState[key] = false;
+        updateInput();
+        document.querySelectorAll(".touch-button").forEach(button => button.classList.remove("pressed"));
+    }
+
+    function returnToGarage() {
+        clearInputs();
+        resetGame();
+        game.state = "ready";
+        practiceExit.classList.remove("show");
+        ui.liveStatus.textContent = "Choose a race mode.";
+    }
+
+    function resetGame() {
+        const config = modeConfig();
+        game.state = "ready";
+        game.time = 0;
+        game.position = config.practice ? 1 : botConfigs.length + 1;
+        game.completedLaps = 0;
+        game.bestLap = Infinity;
+        game.lapStartedAt = 0;
+        game.pitStops = 0;
+        game.radioUntil = 0;
+        game.radioPriority = 0;
+        game.warnedHalf = false;
+        game.warnedCritical = false;
+        game.warnedFastPit = false;
+        game.announcedLastLap = false;
+        game.collisionCooldown = 0;
+        game.finishSequenceTimer = 0;
+
+        Object.assign(player, {
+            x: 255,
+            y: 612,
+            angle: 0,
+            speed: 0,
+            steer: 0,
+            tyres: 100,
+            fuel: 100,
+            damage: 0,
+            distance: 0,
+            nearestRoute: routeLength - 25,
+            serviceTimer: 0,
+            inPit: false,
+            canPit: true,
+            stopped: false,
+            finished: false,
+            finishTime: 0,
+            crossedFinishLine: false
+        });
+
+        bots = config.practice ? [] : botConfigs.map((botConfig, index) => {
+            const p = pointAtDistance(botConfig.distance);
+            return {
+                ...botConfig,
+                factor: config.aiPace[index],
+                x: p.x,
+                y: p.y,
+                angle: p.angle,
+                distance: botConfig.distance,
+                finished: false,
+                finishTime: 0
+            };
+        });
+        dust.length = 0;
+        practiceExit.classList.remove("show");
+        startScreen.classList.remove("hidden");
+        finishScreen.classList.add("hidden");
+        centerMessage.classList.remove("show");
+        ui.pitCall.parentElement.style.opacity = ".65";
+        ui.pitCall.textContent = "OPEN";
+        syncModeUI();
+        setRadio(config.practice
+            ? "Open practice. Learn the track, try the pit box, and chase a fast lap."
+            : "Lights out. Keep it clean and watch your tyre wear.", 0, 100);
+        updateHud();
+    }
+
+    function beginRace() {
+        resetGame();
+        game.state = "countdown";
+        game.countdownStarted = performance.now();
+        game.lastFrame = performance.now();
+        startScreen.classList.add("hidden");
+        practiceExit.classList.toggle("show", modeConfig().practice);
+        ui.liveStatus.textContent = modeConfig().practice ? "Practice session starting." : "Race starting.";
+    }
+
+    function finishRace() {
+        if (player.finished) return;
+        player.finished = true;
+        player.finishTime = game.time;
+        game.state = "finishing";
+        game.finishSequenceTimer = 1.15;
+        practiceExit.classList.remove("show");
+        centerMessage.textContent = "FINISH";
+        centerMessage.classList.add("show");
+        setRadio("Chequered flag. Bring it home.", 3, 2.5);
+        ui.liveStatus.textContent = "Chequered flag.";
+    }
+
+    function completeRace() {
+        game.state = "finished";
+        game.time = player.finishTime;
+        player.speed = 0;
+        centerMessage.classList.remove("show");
+        bots.forEach(bot => {
+            if (!bot.finished && bot.distance >= routeLength * RACE_LAPS) {
+                bot.finished = true;
+                bot.finishTime = player.finishTime;
+            }
+        });
+
+        const missedStop = modeConfig().mandatoryStop && game.pitStops < 1;
+        game.position = missedStop ? 4 : 1 + bots.filter(bot => bot.distance > player.distance).length;
+        const place = game.position;
+        ui.finishPosition.textContent = missedStop ? "DSQ" : `P${place}`;
+        ui.finishTitle.textContent = missedStop
+            ? "Mandatory pit stop missed."
+            : place === 1
+                ? "Clean stop. Perfect drive."
+                : place === 2
+                    ? "So close. One cleaner lap next time."
+                    : "Points finish. Try the undercut.";
+        ui.finishTime.textContent = formatTime(player.finishTime);
+        ui.finishBest.textContent = formatTime(game.bestLap);
+        ui.finishStops.textContent = String(game.pitStops);
+        finishScreen.classList.remove("hidden");
+        ui.liveStatus.textContent = missedStop ? "Race finished without the mandatory pit stop." : `Race finished in position ${place}.`;
+    }
+
+    function startService() {
+        if (player.serviceTimer > 0) return;
+        player.inPit = true;
+        player.canPit = false;
+        player.speed = 0;
+        player.serviceTimer = modeConfig().pitTime;
+        game.pitStops += 1;
+        ui.pitCall.parentElement.style.opacity = "1";
+        ui.pitCall.textContent = "SERVICE";
+        setRadio("Pit crew: four tyres, fuel and repairs. Stay on the brake.", 3, modeConfig().pitTime);
+        ui.liveStatus.textContent = "Pit service has started.";
+    }
+
+    function completeService() {
+        player.tyres = 100;
+        player.fuel = Math.min(100, player.fuel + 72);
+        player.damage = Math.max(0, player.damage - 30);
+        player.inPit = false;
+        player.serviceTimer = 0;
+        game.warnedHalf = false;
+        game.warnedCritical = false;
+        ui.pitCall.textContent = "BOXED";
+        setRadio("Go! Go! Go! Fresh tyres and fuel are in.", 3, 2.6);
+        ui.liveStatus.textContent = "Pit service complete.";
+    }
+
+    function updatePlayer(dt) {
+        const config = modeConfig();
+        player.crossedFinishLine = false;
+        game.collisionCooldown = Math.max(0, game.collisionCooldown - dt);
+
+        if (player.serviceTimer > 0) {
+            player.serviceTimer -= dt;
+            player.speed = 0;
+            player.steer = 0;
+            if (player.serviceTimer <= 0) completeService();
+            return;
+        }
+
+        const tyreGrip = .58 + (player.tyres / 100) * .42;
+        const healthGrip = 1 - player.damage * .005;
+        const maxSpeed = 304 * config.playerSpeed * tyreGrip * healthGrip * (player.fuel > 0 ? 1 : .28);
+        const accelerating = input.accelerate;
+        const braking = input.brake;
+
+        if (accelerating) {
+            const force = 170 * (player.tyres > 0 ? 1 : .45);
+            player.speed += force * dt;
+        }
+        if (braking) {
+            player.speed -= (player.speed > 0 ? 245 : 95) * dt;
+        }
+        if (!accelerating && !braking) {
+            player.speed -= Math.sign(player.speed) * 31 * dt;
+        }
+
+        const onTrack = isTarmac(player.x, player.y);
+        const speedCap = onTrack ? maxSpeed : 92;
+        if (player.speed > speedCap) player.speed -= (player.speed - speedCap) * Math.min(1, dt * 2.8);
+        player.speed = Math.max(-82, Math.min(maxSpeed, player.speed));
+
+        const steeringInput = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+        const steeringAuthority = Math.min(1, Math.abs(player.speed) / 58);
+        const turnRate = 1.94 * steeringAuthority * (.72 + tyreGrip * .28);
+        player.steer += (steeringInput - player.steer) * Math.min(1, dt * 8);
+        player.angle += player.steer * turnRate * dt * (player.speed < 0 ? -1 : 1);
+
+        const previousX = player.x;
+        const previousY = player.y;
+        const moveDistance = player.speed * dt;
+        const moveSteps = Math.max(1, Math.ceil(Math.abs(moveDistance) / 4));
+        const stepDistance = moveDistance / moveSteps;
+        for (let step = 0; step < moveSteps; step++) {
+            const stepStartX = player.x;
+            const stepStartY = player.y;
+            player.x += Math.cos(player.angle) * stepDistance;
+            player.y += Math.sin(player.angle) * stepDistance;
+            if (resolveBotCollisions()) {
+                player.x = stepStartX;
+                player.y = stepStartY;
+                break;
+            }
+        }
+        player.crossedFinishLine = previousX < 280 && player.x >= 280 && player.y > 520 && player.y < 706;
+
+        player.tyres = Math.max(0, player.tyres - dt * (0.55 + Math.abs(player.speed) / 288 * 2.05 + Math.abs(player.steer) * 0.27) * config.tyreWear);
+        player.fuel = Math.max(0, player.fuel - dt * (0.25 + (accelerating ? 1.35 : 0) + Math.abs(player.speed) / 720) * config.fuelWear);
+
+        const nearest = nearestRoutePoint(player.x, player.y);
+        let delta = nearest.distance - player.nearestRoute;
+        if (delta > routeLength / 2) delta -= routeLength;
+        if (delta < -routeLength / 2) delta += routeLength;
+        const maxDelta = Math.abs(player.speed) * dt * 2.5 + 3;
+        if (Math.abs(delta) < maxDelta && (onTrack || inPitZone(player.x, player.y))) {
+            player.distance += delta;
+        }
+        player.nearestRoute = nearest.distance;
+
+        const inPitNow = inPitZone(player.x, player.y);
+        if (!inPitNow && player.serviceTimer <= 0 && !player.inPit) player.canPit = true;
+
+        if (inPitNow && player.canPit && !player.inPit) {
+            ui.pitCall.textContent = Math.abs(player.speed) < PIT_LIMIT ? "STOP" : "SLOW";
+            if (Math.abs(player.speed) < PIT_LIMIT) {
+                startService();
+            } else if (!game.warnedFastPit) {
+                game.warnedFastPit = true;
+                setRadio("Too fast! Brake inside the orange box.", 2, 3.2);
+            }
+        } else if (!player.inPit) {
+            ui.pitCall.textContent = inPitNow ? "BOXED" : "OPEN";
+        }
+
+        if (!onTrack && !inPitZone(player.x, player.y) && Math.abs(player.speed) > 80) {
+            addDust(previousX, previousY, 1);
+        }
+
+        const modeTag = config.practice ? "PRACTICE" : config.label.toUpperCase();
+        if (!onTrack) ui.trackState.textContent = `${modeTag} · OFF TRACK`;
+        else if (inPitZone(player.x, player.y)) ui.trackState.textContent = `${modeTag} · PIT LANE`;
+        else ui.trackState.textContent = `${modeTag} · ON TRACK`;
+
+        if (player.tyres < 50 && !game.warnedHalf) {
+            game.warnedHalf = true;
+            setRadio("Crew: Tyres are half gone. The pit window is open.", 2, 4.2);
+        }
+        if (player.tyres < 24 && !game.warnedCritical) {
+            game.warnedCritical = true;
+            setRadio("Crew: Tyres are finished! Get into the pit box.", 3, 4.2);
+        }
+        if (player.fuel < 18) setRadio("Crew: Fuel is critical. Ease off where you can.", 3, 1.2);
+
+        const onTrackNow = isTarmac(player.x, player.y);
+        const allowedArea = onTrackNow || inPitZone(player.x, player.y);
+        if (!allowedArea && Math.abs(player.speed) > 55) {
+            player.speed -= Math.sign(player.speed) * 90 * dt;
+        }
+
+    }
+
+    function resolveBotCollisions() {
+        if (player.serviceTimer > 0) return false;
+        let hitAny = false;
+        for (const bot of bots) {
+            const hit = carBodyOverlap(player, bot);
+            if (!hit) continue;
+
+            hitAny = true;
+            player.x += hit.nx * (hit.overlap + 1.2);
+            player.y += hit.ny * (hit.overlap + 1.2);
+            player.speed *= .24;
+
+            if (game.collisionCooldown <= 0) {
+                player.damage = Math.min(100, player.damage + 5);
+                game.collisionCooldown = .65;
+                setRadio("Contact! Front wing damage reported.", 2, 2.8);
+                addDust(player.x, player.y, 5);
+            }
+        }
+        return hitAny;
+    }
+
+    function carBodyOverlap(a, b) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const halfLength = 27;
+        const halfWidth = 17;
+        const axes = [];
+        for (const angle of [a.angle, b.angle]) {
+            axes.push({ x: Math.cos(angle), y: Math.sin(angle) });
+            axes.push({ x: -Math.sin(angle), y: Math.cos(angle) });
+        }
+
+        let smallestOverlap = Infinity;
+        let smallestAxis = null;
+        for (const axis of axes) {
+            const aForward = Math.abs(Math.cos(a.angle) * axis.x + Math.sin(a.angle) * axis.y);
+            const aSide = Math.abs(-Math.sin(a.angle) * axis.x + Math.cos(a.angle) * axis.y);
+            const bForward = Math.abs(Math.cos(b.angle) * axis.x + Math.sin(b.angle) * axis.y);
+            const bSide = Math.abs(-Math.sin(b.angle) * axis.x + Math.cos(b.angle) * axis.y);
+            const aRadius = halfLength * aForward + halfWidth * aSide;
+            const bRadius = halfLength * bForward + halfWidth * bSide;
+            const centerDistance = Math.abs(dx * axis.x + dy * axis.y);
+            const overlap = aRadius + bRadius - centerDistance;
+            if (overlap <= 0) return null;
+            if (overlap < smallestOverlap) {
+                smallestOverlap = overlap;
+                smallestAxis = axis;
+            }
+        }
+
+        const facing = dx * smallestAxis.x + dy * smallestAxis.y >= 0 ? 1 : -1;
+        return {
+            overlap: smallestOverlap,
+            nx: smallestAxis.x * facing,
+            ny: smallestAxis.y * facing
+        };
+    }
+
+    function updateBots(dt) {
+        const config = modeConfig();
+        for (const bot of bots) {
+            if (bot.finished) continue;
+            const point = pointAtDistance(bot.distance);
+            const cornerSpeed = routeSpeeds[point.index] || 220;
+            const jitter = 1 + Math.sin(game.time * 1.7 + bot.number) * .012;
+            const gap = bot.distance - player.distance;
+            const difficultyPace = gap < -220
+                ? config.aiCatchUp
+                : gap > 300
+                    ? config.aiEaseOff
+                    : 1;
+            const speed = cornerSpeed * bot.factor * jitter * difficultyPace;
+            bot.distance += speed * dt;
+            const next = pointAtDistance(bot.distance + 8);
+            bot.x = next.x;
+            bot.y = next.y;
+            bot.angle = next.angle;
+            if (bot.distance >= routeLength * RACE_LAPS && !bot.finished) {
+                bot.finished = true;
+                bot.finishTime = game.time;
+            }
+        }
+    }
+
+    function addDust(x, y, count) {
+        for (let i = 0; i < count; i++) {
+            dust.push({
+                x: x + (random() - .5) * 20,
+                y: y + (random() - .5) * 20,
+                vx: (random() - .5) * 36,
+                vy: (random() - .5) * 36,
+                life: .35 + random() * .35,
+                maxLife: .7,
+                size: 3 + random() * 8
+            });
+        }
+        if (dust.length > 90) dust.splice(0, dust.length - 90);
+    }
+
+    function updateDust(dt) {
+        for (let i = dust.length - 1; i >= 0; i--) {
+            const p = dust[i];
+            p.life -= dt;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.size += dt * 12;
+            if (p.life <= 0) dust.splice(i, 1);
+        }
+    }
+
+    function updateRaceProgress() {
+        const config = modeConfig();
+        const previousLaps = game.completedLaps;
+        game.completedLaps = Math.max(0, Math.floor(player.distance / routeLength));
+        if (game.completedLaps > previousLaps) {
+            const lapTime = game.time - game.lapStartedAt;
+            if (lapTime > 1) {
+                game.bestLap = Math.min(game.bestLap, lapTime);
+                if (config.practice) {
+                    setRadio(`Lap ${game.completedLaps}: ${formatTime(lapTime)}. Best: ${formatTime(game.bestLap)}.`, 1, 3.2);
+                }
+            }
+            game.lapStartedAt = game.time;
+        }
+
+        if (!config.practice && game.completedLaps >= RACE_LAPS && player.crossedFinishLine) finishRace();
+        game.position = config.practice ? 1 : 1 + bots.filter(bot => bot.distance > player.distance).length;
+
+        if (!config.practice && game.completedLaps === RACE_LAPS - 1 && !game.announcedLastLap) {
+            game.announcedLastLap = true;
+            setRadio("Final lap. Bring us home.", 2, 3.5);
+        }
+    }
+
+    function updateHud() {
+        const config = modeConfig();
+        const kmh = Math.round(Math.abs(player.speed) * .72);
+        ui.positionLabel.textContent = config.practice ? "MODE" : "POSITION";
+        ui.lapLabel.textContent = config.practice ? "LAPS" : "LAP";
+        ui.timeLabel.textContent = config.practice ? "BEST" : "TIME";
+        ui.position.textContent = config.practice ? "SOLO" : `P${game.position}`;
+        ui.lap.textContent = config.practice
+            ? `${game.completedLaps} ${game.completedLaps === 1 ? "LAP" : "LAPS"}`
+            : `${Math.min(RACE_LAPS, game.completedLaps + 1)} / ${RACE_LAPS}`;
+        ui.time.textContent = config.practice ? formatTime(game.bestLap) : formatTime(game.time);
+        ui.speed.textContent = String(kmh);
+        ui.gear.textContent = player.speed < -2 ? "R" : player.speed < 5 ? "N" : Math.min(6, 1 + Math.floor(kmh / 44));
+        ui.tyreText.textContent = `${Math.round(player.tyres)}%`;
+        ui.tyreFill.style.width = `${player.tyres}%`;
+        ui.fuelText.textContent = `${Math.round(player.fuel)}%`;
+        ui.fuelFill.style.width = `${player.fuel}%`;
+    }
+
+    function update(dt) {
+        if (game.state === "countdown") {
+            const elapsed = (performance.now() - game.countdownStarted) / 1000;
+            const count = Math.ceil(3 - elapsed);
+            if (elapsed < 3) {
+                centerMessage.textContent = String(Math.max(1, count));
+                centerMessage.classList.add("show");
+                if (count === 2) {
+                    setRadio(modeConfig().practice
+                        ? "Practice crew: use this lap to learn the line. The pit box is inside at the end of the main straight."
+                        : "Crew: Brake warm. Pit box is on your inside at the end of the main straight.", 1, 2);
+                }
+            } else {
+                centerMessage.textContent = "GO";
+                centerMessage.classList.add("show");
+                game.state = "racing";
+                game.time = 0;
+                game.lapStartedAt = 0;
+                setTimeout(() => centerMessage.classList.remove("show"), 600);
+                ui.liveStatus.textContent = "Race started.";
+            }
+            updateHud();
+            return;
+        }
+
+        if (game.state === "finishing") {
+            game.time += dt;
+            game.finishSequenceTimer -= dt;
+            player.speed = Math.max(0, player.speed - 115 * dt);
+            player.x += Math.cos(player.angle) * player.speed * dt;
+            player.y += Math.sin(player.angle) * player.speed * dt;
+            updateDust(dt);
+            updateHud();
+            if (game.finishSequenceTimer <= 0) completeRace();
+            return;
+        }
+
+        if (game.state !== "racing") {
+            updateDust(dt);
+            return;
+        }
+
+        game.time += dt;
+        updatePlayer(dt);
+        updateBots(dt);
+        resolveBotCollisions();
+        updateRaceProgress();
+        updateDust(dt);
+        updateHud();
+    }
+
+    function drawBackground() {
+        ctx.fillStyle = "#111a13";
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        const grass = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+        grass.addColorStop(0, "#142218");
+        grass.addColorStop(1, "#0b160f");
+        ctx.fillStyle = grass;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        ctx.strokeStyle = "rgba(255,255,255,.022)";
+        ctx.lineWidth = 1;
+        for (let x = -220; x < WIDTH + 220; x += 36) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x + 220, HEIGHT);
+            ctx.stroke();
+        }
+
+        drawGrandstand(35, 8, WIDTH - 70, 34);
+        drawGrandstand(35, HEIGHT - 38, WIDTH - 70, 30);
+    }
+
+    function drawGrandstand(x, y, w, h) {
+        ctx.fillStyle = "#0a0f16";
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = "rgba(255,255,255,.08)";
+        ctx.strokeRect(x + .5, y + .5, w - 1, h - 1);
+        for (const person of crowd) {
+            if (person.y < y || person.y > y + h) continue;
+            const colors = ["#ff6b35", "#52d6ff", "#ffd166", "#8f7bff", "#e9eef8"];
+            ctx.globalAlpha = .55;
+            ctx.fillStyle = colors[Math.floor(person.c * colors.length)];
+            ctx.fillRect(person.x, person.y, 2.2, 2.2);
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    function drawInfield() {
+        ctx.fillStyle = "#0d1b12";
+        roundedRectPath(ctx, inner.x, inner.y, inner.w, inner.h, inner.r);
+        ctx.fill();
+
+        ctx.save();
+        roundedRectPath(ctx, inner.x, inner.y, inner.w, inner.h, inner.r);
+        ctx.clip();
+        ctx.globalAlpha = .08;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1;
+        for (let x = inner.x - 200; x < inner.x + inner.w + 240; x += 34) {
+            ctx.beginPath();
+            ctx.moveTo(x, inner.y);
+            ctx.lineTo(x + 180, inner.y + inner.h);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "rgba(255,107,53,.16)";
+        ctx.beginPath();
+        ctx.moveTo(330, 264);
+        ctx.lineTo(820, 264);
+        ctx.lineTo(760, 366);
+        ctx.lineTo(388, 366);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,.06)";
+        ctx.font = '900 52px Impact, "Arial Black", sans-serif';
+        ctx.textAlign = "left";
+        ctx.fillText("PIT CREW", 374, 335);
+        ctx.font = '700 12px Inter, sans-serif';
+        ctx.letterSpacing = "5px";
+        ctx.fillStyle = "rgba(255,255,255,.22)";
+        ctx.fillText("DRIVER'S ORDERS", 380, 354);
+        ctx.restore();
+
+        ctx.strokeStyle = "rgba(255,255,255,.16)";
+        ctx.lineWidth = 3;
+        roundedRectPath(ctx, inner.x, inner.y, inner.w, inner.h, inner.r);
+        ctx.stroke();
+    }
+
+    function drawTrack() {
+        drawBackground();
+
+        ctx.save();
+        ctx.beginPath();
+        addRoundedRectPath(ctx, outer.x, outer.y, outer.w, outer.h, outer.r);
+        addRoundedRectPath(ctx, inner.x, inner.y, inner.w, inner.h, inner.r);
+        ctx.fillStyle = "#303743";
+        ctx.fill("evenodd");
+        ctx.clip("evenodd");
+
+        const asphalt = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+        asphalt.addColorStop(0, "#363e4a");
+        asphalt.addColorStop(1, "#252b35");
+        ctx.fillStyle = asphalt;
+        ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+        for (const speck of asphaltSpecks) {
+            ctx.globalAlpha = speck.a;
+            ctx.fillStyle = "#dce5ed";
+            ctx.fillRect(speck.x, speck.y, speck.s, speck.s);
+        }
+
+        ctx.globalAlpha = .16;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 13]);
+        for (let i = 0; i < routeState.segments.length; i += 2) {
+            const a = routeState.points[i];
+            const b = routeState.points[(i + 1) % routeState.points.length];
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+        ctx.restore();
+
+        drawInfield();
+
+        ctx.strokeStyle = "#edf2f8";
+        ctx.lineWidth = 6;
+        roundedRectPath(ctx, outer.x + 4, outer.y + 4, outer.w - 8, outer.h - 8, outer.r - 4);
+        ctx.stroke();
+        roundedRectPath(ctx, inner.x - 4, inner.y - 4, inner.w + 8, inner.h + 8, inner.r + 4);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#ff6b35";
+        ctx.lineWidth = 7;
+        ctx.setLineDash([44, 30]);
+        roundedRectPath(ctx, outer.x + 11, outer.y + 11, outer.w - 22, outer.h - 22, outer.r - 10);
+        ctx.stroke();
+        roundedRectPath(ctx, inner.x - 11, inner.y - 11, inner.w + 22, inner.h + 22, inner.r + 10);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        drawTrackFurniture();
+    }
+
+    function drawTrackFurniture() {
+        const finishX = 280;
+        const square = 12;
+        for (let row = 0; row < 13; row++) {
+            for (let col = 0; col < 2; col++) {
+                ctx.fillStyle = (row + col) % 2 ? "#f3f6fa" : "#1b2029";
+                ctx.fillRect(finishX - square + col * square, 537 + row * square, square, square);
+            }
+        }
+
+        drawDirectionArrow(760, 612, 0);
+        drawDirectionArrow(610, 148, Math.PI);
+
+        ctx.save();
+        ctx.shadowColor = "rgba(255,107,53,.55)";
+        ctx.shadowBlur = 14;
+        ctx.strokeStyle = "#ff6b35";
+        ctx.lineWidth = 4;
+        roundedRectPath(ctx, pitBox.x, pitBox.y, pitBox.w, pitBox.h, 8);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(255,107,53,.14)";
+        ctx.fill();
+        ctx.restore();
+
+        ctx.strokeStyle = "rgba(255,255,255,.55)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.moveTo(pitBox.x + 6, pitBox.y + pitBox.h - 11);
+        ctx.lineTo(pitBox.x + pitBox.w - 6, pitBox.y + pitBox.h - 11);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = "#ffb185";
+        ctx.font = '900 10px Inter, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText("PIT BOX", pitBox.x + pitBox.w / 2, pitBox.y - 8);
+
+        ctx.fillStyle = "rgba(8,11,18,.75)";
+        ctx.fillRect(187, 540, 104, 28);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = '900 11px Inter, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText("START / FINISH", 239, 558);
+
+        drawPitGantry();
+    }
+
+    function drawDirectionArrow(x, y, angle) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.globalAlpha = .18;
+        ctx.fillStyle = "#ffffff";
+        for (let i = -1; i <= 1; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * 34 - 9, -7);
+            ctx.lineTo(i * 34 + 7, 0);
+            ctx.lineTo(i * 34 - 9, 7);
+            ctx.lineTo(i * 34 - 2, 0);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function drawPitGantry() {
+        ctx.fillStyle = "rgba(8,11,18,.9)";
+        ctx.fillRect(pitBox.x + 9, 716, pitBox.w - 18, 23);
+        ctx.fillStyle = "#ff6b35";
+        ctx.fillRect(pitBox.x + 9, 716, pitBox.w - 18, 3);
+        ctx.fillStyle = "#f7f9fc";
+        ctx.font = '900 10px Inter, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText(player.inPit ? "PIT CREW ACTIVE" : "BRAKE < 25", pitBox.x + pitBox.w / 2, 732);
+    }
+
+    function drawCar(car, color, accent, number, isPlayer = false, angle = car.angle) {
+        ctx.save();
+        ctx.translate(car.x, car.y);
+        ctx.rotate(angle);
+
+        ctx.globalAlpha = .32;
+        ctx.fillStyle = "#000000";
+        roundedRectPath(ctx, -24, -11, 50, 26, 8);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        ctx.fillStyle = "#090b0e";
+        ctx.fillRect(-17, -16, 10, 7);
+        ctx.fillRect(9, -16, 10, 7);
+        ctx.fillRect(-17, 9, 10, 7);
+        ctx.fillRect(9, 9, 10, 7);
+
+        const bodyGradient = ctx.createLinearGradient(-22, 0, 24, 0);
+        bodyGradient.addColorStop(0, color);
+        bodyGradient.addColorStop(.65, color);
+        bodyGradient.addColorStop(1, accent);
+
+        ctx.fillStyle = bodyGradient;
+        ctx.beginPath();
+        ctx.moveTo(25, 0);
+        ctx.quadraticCurveTo(20, -12, 8, -13);
+        ctx.lineTo(-16, -11);
+        ctx.quadraticCurveTo(-25, -8, -27, 0);
+        ctx.quadraticCurveTo(-25, 8, -16, 11);
+        ctx.lineTo(8, 13);
+        ctx.quadraticCurveTo(20, 12, 25, 0);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "rgba(5,8,12,.82)";
+        ctx.beginPath();
+        ctx.ellipse(-3, 0, 8, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = accent;
+        ctx.fillRect(-13, -2, 29, 4);
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(-15, 0, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#171c24";
+        ctx.font = '900 9px Inter, sans-serif';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(number), -15, .5);
+
+        ctx.fillStyle = "#ff6b35";
+        ctx.fillRect(20, -10, 3, 5);
+        ctx.fillRect(20, 5, 3, 5);
+
+        if (isPlayer) {
+            ctx.strokeStyle = "rgba(255,255,255,.75)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(20, -7);
+            ctx.lineTo(24, 0);
+            ctx.lineTo(20, 7);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function drawCars() {
+        for (const bot of bots) drawCar(bot, bot.color, bot.accent, bot.number);
+        drawCar(player, "#ff6b35", "#ffd0b7", 7, true);
+        if (player.serviceTimer > 0) drawCrew();
+    }
+
+    function drawCrew() {
+        const progress = 1 - player.serviceTimer / modeConfig().pitTime;
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        ctx.rotate(player.angle);
+
+        const crewColors = ["#ffd166", "#52d6ff", "#ff6b35", "#6ee7a8"];
+        const positions = [
+            { x: -4, y: -25 },
+            { x: 15, y: -24 },
+            { x: -5, y: 25 },
+            { x: 16, y: 24 }
+        ];
+        for (let i = 0; i < positions.length; i++) {
+            const phase = progress * Math.PI * 8 + i * 1.7;
+            const wobble = Math.sin(phase) * 5;
+            const p = positions[i];
+            ctx.fillStyle = crewColors[i];
+            ctx.beginPath();
+            ctx.arc(p.x + wobble * .35, p.y, 4.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "rgba(8,11,18,.9)";
+            ctx.fillRect(p.x + wobble * .35 - 1.2, p.y + 3, 2.4, 8);
+        }
+
+        ctx.strokeStyle = "rgba(255,209,102,.85)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(26, -24);
+        ctx.bezierCurveTo(8, -31, 5, 20, -17, 21);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(8,11,18,.9)";
+        ctx.fillRect(-24, -34, 50, 13);
+        ctx.fillStyle = "#ffd166";
+        ctx.font = '900 8px Inter, sans-serif';
+        ctx.textAlign = "center";
+        ctx.fillText(`CREW ${Math.ceil(player.serviceTimer * 10) / 10}s`, 1, -25);
+        ctx.restore();
+    }
+
+    function drawDust() {
+        for (const p of dust) {
+            ctx.globalAlpha = Math.max(0, p.life / p.maxLife) * .32;
+            ctx.fillStyle = p.x > 700 ? "#a8b2bf" : "#85a178";
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    function drawSpeedLines() {
+        const speed = Math.abs(player.speed);
+        if (speed < 170 || game.state !== "racing") return;
+        const count = Math.floor((speed - 150) / 18);
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        ctx.rotate(player.angle);
+        ctx.strokeStyle = "rgba(255,255,255,.22)";
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < count; i++) {
+            const y = -15 + random() * 30;
+            const x = -38 - random() * 35;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - 20 - random() * 26, y);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function render() {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const scaleX = canvas.width / WIDTH;
+        const scaleY = canvas.height / HEIGHT;
+        ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+
+        drawTrack();
+        drawDust();
+        drawCars();
+        drawSpeedLines();
+
+        if (player.serviceTimer > 0) {
+            const progress = 1 - player.serviceTimer / modeConfig().pitTime;
+            ctx.fillStyle = "rgba(8,11,18,.86)";
+            roundedRectPath(ctx, 484, 324, 232, 58, 10);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(255,209,102,.5)";
+            ctx.lineWidth = 1;
+            roundedRectPath(ctx, 484, 324, 232, 58, 10);
+            ctx.stroke();
+            ctx.fillStyle = "#ffd166";
+            ctx.font = '900 11px Inter, sans-serif';
+            ctx.textAlign = "left";
+            ctx.fillText("PIT SERVICE", 502, 345);
+            ctx.fillStyle = "#e8edf5";
+            ctx.font = '700 10px Inter, sans-serif';
+            ctx.textAlign = "right";
+            ctx.fillText(`${Math.round(progress * 100)}%`, 698, 345);
+            ctx.fillStyle = "rgba(255,255,255,.12)";
+            roundedRectPath(ctx, 502, 358, 196, 7, 4);
+            ctx.fill();
+            ctx.fillStyle = "#ffd166";
+            roundedRectPath(ctx, 502, 358, Math.max(7, 196 * progress), 7, 4);
+            ctx.fill();
+        }
+    }
+
+    function resizeCanvas() {
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const displayWidth = Math.max(320, Math.round(canvas.getBoundingClientRect().width));
+        canvas.width = Math.round(displayWidth * dpr);
+        canvas.height = Math.round(displayWidth * (HEIGHT / WIDTH) * dpr);
+    }
+
+    function loop(now) {
+        const dt = Math.min(.034, Math.max(0, (now - game.lastFrame) / 1000));
+        game.lastFrame = now;
+        update(dt);
+        render();
+        requestAnimationFrame(loop);
+    }
+
+    const keyMap = {
+        ArrowUp: "accelerate",
+        KeyW: "accelerate",
+        ArrowDown: "brake",
+        KeyS: "brake",
+        ArrowLeft: "left",
+        KeyA: "left",
+        ArrowRight: "right",
+        KeyD: "right"
+    };
+
+    window.addEventListener("keydown", event => {
+        if (event.code === "Enter" && (game.state === "ready" || game.state === "finished")) {
+            event.preventDefault();
+            beginRace();
+            return;
+        }
+        if (event.code === "Escape" && game.state === "racing" && modeConfig().practice) {
+            event.preventDefault();
+            returnToGarage();
+            return;
+        }
+        if (event.code === "Space" && game.state === "ready") {
+            event.preventDefault();
+            beginRace();
+            return;
+        }
+        const mapped = keyMap[event.code];
+        if (mapped) {
+            event.preventDefault();
+            keyState[mapped] = true;
+            updateInput();
+        }
+    });
+
+    window.addEventListener("keyup", event => {
+        const mapped = keyMap[event.code];
+        if (mapped) {
+            event.preventDefault();
+            keyState[mapped] = false;
+            updateInput();
+        }
+    });
+
+    window.addEventListener("blur", () => {
+        for (const key of Object.keys(keyState)) keyState[key] = false;
+        for (const key of Object.keys(touchState)) touchState[key] = false;
+        updateInput();
+        document.querySelectorAll(".touch-button").forEach(button => button.classList.remove("pressed"));
+    });
+
+    document.querySelectorAll(".touch-button").forEach(button => {
+        const control = button.dataset.input;
+        const press = event => {
+            event.preventDefault();
+            touchState[control] = true;
+            button.classList.add("pressed");
+            button.setPointerCapture?.(event.pointerId);
+            updateInput();
+        };
+        const release = event => {
+            event.preventDefault();
+            touchState[control] = false;
+            button.classList.remove("pressed");
+            updateInput();
+        };
+        button.addEventListener("pointerdown", press);
+        button.addEventListener("pointerup", release);
+        button.addEventListener("pointercancel", release);
+        button.addEventListener("pointerleave", event => {
+            if (event.buttons) release(event);
+        });
+    });
+
+    document.querySelectorAll(".mode-option").forEach(button => {
+        button.addEventListener("click", () => setMode(button.dataset.mode));
+    });
+
+    startButton.addEventListener("click", beginRace);
+    restartButton.addEventListener("click", beginRace);
+    garageButton.addEventListener("click", returnToGarage);
+    practiceExit.addEventListener("click", returnToGarage);
+    window.addEventListener("resize", resizeCanvas);
+
+    resizeCanvas();
+    resetGame();
+    requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
