@@ -47,6 +47,7 @@
 
     .shell {
         width: min(1180px, 100%);
+        min-width: 0;
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -137,6 +138,7 @@
         position: relative;
         overflow: hidden;
         width: 100%;
+        min-width: 0;
         aspect-ratio: 1200 / 760;
         border: 1px solid rgba(255, 255, 255, .13);
         border-radius: 20px;
@@ -328,6 +330,8 @@
             linear-gradient(110deg, rgba(7, 10, 16, .96), rgba(8, 12, 19, .86) 55%, rgba(7, 10, 16, .65)),
             radial-gradient(circle at 74% 40%, rgba(255, 107, 53, .2), transparent 45%);
         backdrop-filter: blur(4px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
     }
     .screen.hidden { display: none; }
 
@@ -614,19 +618,30 @@
     @media (pointer: coarse), (max-width: 760px) {
         body {
             place-items: start center;
-            padding: 7px;
+            padding: 7px 7px max(9px, env(safe-area-inset-bottom));
             overflow-y: auto;
         }
         .shell { gap: 7px; }
-        .game-header { min-height: 40px; }
+        .game-header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 5px;
+            width: 100%;
+            min-width: 0;
+        }
+        .brand { width: 100%; min-width: 0; }
         .brand-mark { width: 34px; height: 34px; border-radius: 10px; font-size: 17px; }
         .brand-title { font-size: 20px; }
         .brand-sub { margin-top: 2px; font-size: 6px; letter-spacing: 1.4px; }
+        .race-stats { width: 100%; min-width: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .race-stats { border-radius: 10px; }
-        .stat { padding: 6px 9px; }
+        .stat { min-width: 0; padding: 5px 4px; }
         .stat-label { font-size: 6px; }
         .stat-value { font-size: 13px; }
         .stage { border-radius: 14px; }
+        .stage.garage { aspect-ratio: auto; min-height: 420px; }
+        .stage.results { aspect-ratio: auto; min-height: 360px; }
+        .stage.garage canvas, .stage.results canvas { height: auto; }
         .top-hud { inset: 7px 7px auto; }
         .telemetry { min-width: 78px; padding: 6px 7px; border-radius: 8px; }
         #speedValue { font-size: 24px; }
@@ -644,10 +659,11 @@
         .pit-call { min-width: 72px; padding: 5px 7px; font-size: 6px; }
         .pit-call strong { font-size: 9px; }
         .touch-controls { display: grid; }
-        .start-layout { grid-template-columns: 1fr; gap: 12px; }
+        .screen { align-items: flex-start; padding: 10px; }
+        .start-layout { grid-template-columns: minmax(0, 1fr); gap: 9px; width: 100%; min-width: 0; }
         .start-title { font-size: clamp(38px, 12vw, 62px); }
         .start-description { margin: 8px 0 10px; font-size: 10px; }
-        .mode-picker { gap: 4px; margin-bottom: 9px; }
+        .mode-picker { width: 100%; min-width: 0; gap: 4px; margin-bottom: 9px; }
         .mode-option { min-height: 38px; padding: 5px; text-align: center; }
         .mode-option b { font-size: 9px; }
         .mode-option span { display: none; }
@@ -658,8 +674,8 @@
         .brief-copy b { font-size: 7px; }
         .brief-copy span { display: none; }
         .key-row { display: none; }
-        .screen { padding: 12px; }
         .start-button { min-height: 42px; }
+        .touch-controls { min-width: 0; }
     }
 
     @media (pointer: coarse) and (orientation: landscape) {
@@ -678,8 +694,8 @@
 
     @media (max-width: 560px) and (orientation: portrait) {
         .brand-sub { display: none; }
-        .briefing .brief-item:nth-child(3) { display: none; }
-        .briefing { grid-template-columns: repeat(2, 1fr); }
+        .briefing .brief-item:nth-child(3) { display: flex; }
+        .briefing { grid-template-columns: repeat(3, 1fr); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -704,7 +720,7 @@
         </div>
     </header>
 
-    <section class="stage" aria-label="Top-down auto racing game">
+    <section class="stage garage" aria-label="Top-down auto racing game">
         <canvas id="gameCanvas" width="1200" height="760" aria-label="Drive around the circuit, manage tyre wear, and stop in the orange pit box."></canvas>
 
         <div class="top-hud" aria-hidden="true">
@@ -869,6 +885,7 @@
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    const stage = document.querySelector(".stage");
     const startScreen = document.getElementById("startScreen");
     const finishScreen = document.getElementById("finishScreen");
     const centerMessage = document.getElementById("centerMessage");
@@ -1219,6 +1236,8 @@
         });
         dust.length = 0;
         practiceExit.classList.remove("show");
+        stage.classList.add("garage");
+        stage.classList.remove("results");
         startScreen.classList.remove("hidden");
         finishScreen.classList.add("hidden");
         centerMessage.classList.remove("show");
@@ -1236,6 +1255,7 @@
         game.state = "countdown";
         game.countdownStarted = performance.now();
         game.lastFrame = performance.now();
+        stage.classList.remove("garage", "results");
         startScreen.classList.add("hidden");
         practiceExit.classList.toggle("show", modeConfig().practice);
         ui.liveStatus.textContent = modeConfig().practice ? "Practice session starting." : "Race starting.";
@@ -1258,6 +1278,7 @@
         game.state = "finished";
         game.time = player.finishTime;
         player.speed = 0;
+        stage.classList.add("results");
         centerMessage.classList.remove("show");
         bots.forEach(bot => {
             if (!bot.finished && bot.distance >= routeLength * RACE_LAPS) {
