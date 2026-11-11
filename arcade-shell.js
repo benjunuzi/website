@@ -448,46 +448,6 @@
     }
 
     function start() {
-        installBodySpacing();
-        var ui = installBar();
-        updateFavoriteButton(ui);
         setupEngagement();
-
-        ui.favorite.addEventListener("click", function () {
-            toggleFavorite(currentGame);
-            updateFavoriteButton(ui);
-            track(isFavorite(currentGame) ? "favorite_add" : "favorite_remove");
-            showToast(ui, isFavorite(currentGame) ? "Saved to your favorites" : "Removed from favorites");
-        });
-
-        ui.replay.addEventListener("click", function () {
-            track("game_replay");
-            location.reload();
-        });
-
-        ui.share.addEventListener("click", function () {
-            shareCurrentGame(ui);
-        });
-
-        loadGames()
-            .then(function (games) {
-                var match = games.find(function (game) { return game.path === currentGame.path; });
-                if (match) {
-                    currentGame.title = cleanTitle(match.title);
-                    updateFavoriteButton(ui);
-                }
-                var uniqueGames = [];
-                var seen = {};
-                games.forEach(function (game) {
-                    if (!seen[game.path]) {
-                        seen[game.path] = true;
-                        uniqueGames.push(game);
-                    }
-                });
-                setupNavigation(uniqueGames, ui);
-            })
-            .catch(function () {
-                track("game_catalog_error");
-            });
     }
 }());

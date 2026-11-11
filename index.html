@@ -524,8 +524,8 @@
                 <div class="flex flex-wrap items-end justify-between gap-4 mb-5">
                     <div>
                         <p class="text-[11px] font-black tracking-[0.2em] uppercase text-[#77f5cf] mb-1">Ben's Arcade</p>
-                        <h1 class="text-2xl md:text-4xl font-black tracking-tight text-white">Quick games. Big wins.</h1>
-                        <p class="text-sm text-emerald-50/70 mt-1">Free, mobile-friendly sports and arcade games—no download or sign-in.</p>
+                        <h1 class="text-2xl md:text-4xl font-black tracking-tight text-white">Play Free Online Games</h1>
+                        <p class="text-sm text-emerald-50/70 mt-1">Pick a game and start playing instantly.</p>
                     </div>
                     <a href="add-game/index.html" class="add-games-btn font-extrabold px-5 py-2.5 rounded-xl text-sm">＋ Add Games</a>
                 </div>
@@ -651,22 +651,21 @@
                 </div>
 
                 <div class="surface-strong rounded-[26px] p-8 text-center mb-5 glow-ring">
-                    <div id="player-avatar" class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-[#20cfa0] to-[#3fa2ff] grid place-items-center text-4xl font-extrabold text-[#032d2b] shadow-2xl shadow-emerald-600/30">P</div>
-                    <label for="player-name" class="sr-only">Player name</label>
-                    <input id="player-name" class="profile-name" maxlength="32" placeholder="Your player name" autocomplete="nickname">
-                    <p class="text-slate-400 text-sm mt-2">Your progress is saved on this device.</p>
+                    <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-[#2b6bff] to-[#3fa2ff] grid place-items-center text-4xl font-extrabold text-white shadow-2xl shadow-blue-600/40">B</div>
+                    <h2 class="mt-4 text-2xl font-extrabold">Ben</h2>
+                    <p class="text-slate-400 text-sm mt-1">ben.junuzi.com · Game Maker</p>
                     <div class="mt-6 grid grid-cols-3 gap-3">
                         <div class="surface rounded-2xl py-4">
                             <div class="text-2xl font-extrabold text-[#4aa8ff]" id="stat-games">0</div>
                             <div class="text-xs text-slate-400 mt-1">Games</div>
                         </div>
                         <div class="surface rounded-2xl py-4">
-                            <div class="text-2xl font-extrabold text-[#ff9cc9]" id="stat-favorites">0</div>
-                            <div class="text-xs text-slate-400 mt-1">Favorites</div>
+                            <div class="text-2xl font-extrabold text-[#ff9cc9]">0</div>
+                            <div class="text-xs text-slate-400 mt-1">Saved</div>
                         </div>
                         <div class="surface rounded-2xl py-4">
-                            <div class="text-2xl font-extrabold text-[#6ff0b0]" id="stat-played">0</div>
-                            <div class="text-xs text-slate-400 mt-1">Plays</div>
+                            <div class="text-2xl font-extrabold text-[#6ff0b0]">0</div>
+                            <div class="text-xs text-slate-400 mt-1">Played</div>
                         </div>
                     </div>
                     <a href="/forum/index.html" class="btn-primary block mt-6 text-white font-extrabold py-3.5 rounded-2xl text-sm">💬  Visit Community Forum</a>
@@ -675,14 +674,6 @@
                 <div class="surface rounded-[26px] p-6">
                     <h3 class="font-bold mb-3">Your Favorites</h3>
                     <div id="profile-games" class="flex flex-col gap-2.5"></div>
-                </div>
-
-                <div class="surface rounded-[26px] p-6 mt-5">
-                    <div class="flex items-center justify-between gap-3 mb-3">
-                        <h3 class="font-bold">Recently Played</h3>
-                        <button onclick="setView('games')" class="text-xs font-bold text-[#8cffdb] hover:text-white">Browse games</button>
-                    </div>
-                    <div id="profile-history" class="flex flex-col gap-2.5"></div>
                 </div>
             </div>
         </section>
@@ -958,14 +949,11 @@
             const featureClass = i === 2 || i === 13 ? "sm:col-span-2 sm:row-span-2" : "";
             const badge = newBadge(g);
             return `
-                <div class="bgames-card-wrap ${featureClass}">
-                    <a href="${safeUrl(g.url)}" aria-label="Play ${escapeHtml(g.title)}" class="bgames-card">
-                        ${thumb(g, "w-full h-full", i < 6)}
-                        <div class="bgames-card-title"><span class="line-clamp-2">${escapeHtml(g.title)}</span></div>
-                        ${badge ? `<div class="bgames-card-new">${badge}</div>` : ""}
-                    </a>
-                    ${saveGameButton(g)}
-                </div>`;
+                <a href="${safeUrl(g.url)}" aria-label="Play ${escapeHtml(g.title)}" class="bgames-card ${featureClass}">
+                    ${thumb(g, "w-full h-full", i < 6)}
+                    <div class="bgames-card-title"><span class="line-clamp-2">${escapeHtml(g.title)}</span></div>
+                    ${badge ? `<div class="bgames-card-new">${badge}</div>` : ""}
+                </a>`;
         }).join("");
     }
 
@@ -976,19 +964,16 @@
 
     function row(g, showCat = true) {
         return `
-            <div class="game-row-wrap">
-                <a href="${safeUrl(g.url)}" class="game-row flex items-center gap-3 surface rounded-2xl p-2.5 pr-12">
-                    ${thumb(g, "w-14 h-14 rounded-xl shrink-0")}
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-bold text-sm flex items-center gap-2 min-w-0">
-                            ${gameTitle(g)}${newBadge(g)}
-                        </h4>
-                    </div>
-                    ${showCat ? catPill(normCat(g.category)) : ""}
-                    <svg class="chevron w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                </a>
-                ${saveGameButton(g)}
-            </div>`;
+            <a href="${safeUrl(g.url)}" class="game-row flex items-center gap-3 surface rounded-2xl p-2.5">
+                ${thumb(g, "w-14 h-14 rounded-xl shrink-0")}
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-bold text-sm flex items-center gap-2 min-w-0">
+                        <span class="truncate">${escapeHtml(g.title)}</span>${newBadge(g)}
+                    </h4>
+                </div>
+                ${showCat ? catPill(normCat(g.category)) : ""}
+                <svg class="chevron w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </a>`;
     }
 
     function renderGamesList() {
@@ -1033,39 +1018,9 @@
 
     function renderProfile() {
         document.getElementById("stat-games").textContent = gamesData.length;
-        const history = window.BenArcade ? window.BenArcade.getHistory() : [];
-        const favorites = window.BenArcade ? window.BenArcade.getFavorites() : [];
-        const playCount = history.reduce((total, game) => total + (Number(game.plays) || 0), 0);
-
-        document.getElementById("stat-favorites").textContent = favorites.length;
-        document.getElementById("stat-played").textContent = playCount;
-
-        function gameForStored(entry) {
-            const storedPath = window.BenArcade ? window.BenArcade.pathFor(entry.path || entry.url) : entry.url;
-            return gamesData.find(g => window.BenArcade.pathFor(g.url) === storedPath) || {
-                title: entry.title || "Game",
-                url: entry.path || entry.url,
-                category: "Other",
-                goal: "",
-                _preview: ""
-            };
-        }
-
-        const favoritesEl = document.getElementById("profile-games");
-        favoritesEl.innerHTML = favorites.length
-            ? favorites.map(gameForStored).map(g => row(g, true)).join("")
-            : `<div class="profile-empty">Tap ☆ on any game to save it here.</div>`;
-
-        const historyEl = document.getElementById("profile-history");
-        historyEl.innerHTML = history.length
-            ? history.slice(0, 6).map(gameForStored).map(g => row(g, true)).join("")
-            : `<div class="profile-empty">Your most recent games will appear here.</div>`;
-
-        const name = window.BenArcade ? window.BenArcade.getPlayerName() : "";
-        const nameInput = document.getElementById("player-name");
-        if (nameInput && document.activeElement !== nameInput) nameInput.value = name;
-        const shownName = name || "Player";
-        document.getElementById("player-avatar").textContent = shownName.charAt(0).toUpperCase();
+        const favs = gamesData.filter(g => ["Soccer", "Football", "Touchdown Blitz"].some(f => titleKey(g.title) === titleKey(f)));
+        const el = document.getElementById("profile-games");
+        el.innerHTML = (favs.length ? favs : gamesData.slice(0, 3)).map(g => row(g, true)).join("");
     }
 
     function renderAll() {
