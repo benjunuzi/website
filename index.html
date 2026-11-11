@@ -1215,7 +1215,7 @@
         gamesData.forEach((g, i) => {
             g.url = String(g.url || "").replace(/^\/+/, "");
             g._grad = grads[i % grads.length];
-            g._preview = `assets/game-covers-v2/${gameSlug(g.title)}.jpg`;
+            g._preview = "";
         });
 
         // Newest uploads are appended to the bottom of games.csv, so flip the order
