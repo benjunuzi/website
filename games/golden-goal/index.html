@@ -1,0 +1,2424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08110b">
+  <meta name="description" content="Play Golden Goal: a fast, free 3-a-side soccer game with charged shots, tackles, and sudden-death overtime.">
+  <meta property="og:title" content="Golden Goal · Ben's Arcade">
+  <meta property="og:description" content="Dribble, tackle, and bury the winner in a 60-second street soccer match.">
+  <meta property="og:image" content="preview.png">
+  <title>Golden Goal ⚽ · Ben's Arcade</title>
+  <meta property="og:url" content="https://ben.junuzi.com/games/golden-goal/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://ben.junuzi.com/games/golden-goal/">
+
+  <link rel="icon" href="../../logo-mark.svg">
+  <link rel="apple-touch-icon" href="../../logo.png">
+  <style>
+    :root {
+      --ink: #07110b;
+      --ink-2: #101c14;
+      --paper: #f4f1e7;
+      --paper-2: #e9e5d9;
+      --line: rgba(7, 17, 11, .14);
+      --muted: #69736b;
+      --lime: #d9fa62;
+      --lime-deep: #b9dc35;
+      --blue: #6fc8ff;
+      --orange: #ff7556;
+      --gold: #ffd65a;
+      --shadow: 0 22px 70px rgba(0, 0, 0, .34);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      min-height: 100vh;
+      color: var(--paper);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(900px 520px at 80% -8%, rgba(132, 190, 38, .20), transparent 65%),
+        radial-gradient(760px 540px at -10% 35%, rgba(20, 120, 74, .18), transparent 68%),
+        linear-gradient(145deg, #07110b 0%, #09140d 56%, #050a07 100%);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .22;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.84' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+      mix-blend-mode: soft-light;
+    }
+
+    button, a { font: inherit; }
+    button { color: inherit; }
+    ::selection { color: var(--ink); background: var(--lime); }
+
+    .app {
+      position: relative;
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 18px 0 calc(26px + env(safe-area-inset-bottom));
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .wordmark {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--paper);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .wordmark img {
+      width: 31px;
+      height: 31px;
+      border-radius: 9px;
+      padding: 4px;
+      background: var(--paper);
+      box-shadow: 0 6px 22px rgba(0, 0, 0, .3);
+    }
+
+    .wordmark span { opacity: .74; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #d8e1d8;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--lime);
+      box-shadow: 0 0 0 4px rgba(217, 250, 98, .09), 0 0 14px rgba(217, 250, 98, .7);
+    }
+
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+
+    .icon-btn {
+      min-width: 38px;
+      height: 38px;
+      padding: 0 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .05);
+      color: #dbe5dc;
+      text-decoration: none;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 750;
+      transition: background .18s ease, border-color .18s ease, transform .18s ease;
+    }
+
+    .icon-btn:hover { background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .24); transform: translateY(-1px); }
+    .icon-btn svg { width: 15px; height: 15px; }
+
+    .score-strip {
+      position: relative;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: stretch;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--paper);
+      border-radius: 18px 18px 0 0;
+      box-shadow: 0 -1px 0 rgba(255, 255, 255, .5) inset;
+    }
+
+    .club {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      padding: 13px 18px;
+    }
+
+    .club.away { justify-content: flex-end; text-align: right; }
+    .club-copy { min-width: 0; }
+    .club-kicker {
+      display: block;
+      margin-bottom: 1px;
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 850;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .club-name {
+      display: block;
+      overflow: hidden;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .crest {
+      position: relative;
+      flex: 0 0 auto;
+      width: 42px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      clip-path: polygon(50% 0, 93% 14%, 87% 74%, 50% 100%, 13% 74%, 7% 14%);
+      color: #fff;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: 18px;
+      letter-spacing: .02em;
+      text-shadow: 0 2px 5px rgba(0, 0, 0, .2);
+    }
+
+    .crest.home { background: linear-gradient(155deg, #1a4335, #0a261c); }
+    .crest.away { background: linear-gradient(155deg, #ff8a60, #cf3f2b); }
+    .crest::before {
+      content: "";
+      position: absolute;
+      inset: 7px 7px 11px;
+      border: 1px solid rgba(255, 255, 255, .34);
+      border-radius: 50%;
+    }
+    .crest span { position: relative; z-index: 1; }
+
+    .score-box {
+      min-width: 190px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 8px 18px;
+      background: #111b14;
+      color: #fff;
+    }
+
+    .score {
+      text-align: center;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: clamp(32px, 4vw, 45px);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      letter-spacing: .02em;
+    }
+
+    .score.home-score { color: var(--lime); }
+    .score.away-score { color: var(--orange); }
+
+    .match-clock {
+      min-width: 84px;
+      text-align: center;
+      padding: 0 12px;
+    }
+
+    .clock-label {
+      display: block;
+      margin-bottom: 2px;
+      color: #8d9e91;
+      font-size: 7px;
+      font-weight: 850;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .clock-value {
+      display: block;
+      color: #f7f7ef;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 17px;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .clock-value.urgent { color: var(--gold); animation: pulseClock .8s ease-in-out infinite alternate; }
+    @keyframes pulseClock { to { opacity: .55; } }
+
+    .stat-rail {
+      position: relative;
+      z-index: 4;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      color: var(--ink);
+      background: #dfdcd1;
+      border-top: 1px solid rgba(0, 0, 0, .08);
+    }
+
+    .stat-rail .stat {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 34px;
+      border-right: 1px solid rgba(0, 0, 0, .09);
+      font-size: 9px;
+      font-weight: 750;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .stat-rail .stat:last-child { border-right: 0; }
+    .stat b { color: #15281c; font-size: 11px; font-variant-numeric: tabular-nums; }
+
+    .stadium-shell {
+      position: relative;
+      z-index: 2;
+      padding: 9px;
+      border-radius: 0 0 22px 22px;
+      background: linear-gradient(180deg, #243026, #111a14);
+      box-shadow: var(--shadow), 0 0 0 1px rgba(255, 255, 255, .06);
+    }
+
+    .pitch-wrap {
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 5 / 3;
+      border-radius: 14px;
+      background: #17673c;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), inset 0 0 55px rgba(0, 0, 0, .34);
+      touch-action: none;
+      isolation: isolate;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    .pitch-wrap::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      border-radius: inherit;
+      box-shadow: inset 0 0 60px rgba(0, 0, 0, .28);
+      background: linear-gradient(180deg, rgba(255, 255, 255, .05), transparent 19%, transparent 76%, rgba(0, 0, 0, .16));
+    }
+
+    .field-tip {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      z-index: 6;
+      transform: translateX(-50%);
+      padding: 7px 12px;
+      border: 1px solid rgba(255, 255, 255, .20);
+      border-radius: 999px;
+      background: rgba(4, 17, 10, .68);
+      color: rgba(255, 255, 255, .78);
+      font-size: 9px;
+      font-weight: 750;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      transition: opacity .3s ease;
+    }
+
+    body.playing .field-tip {
+      opacity: 1;
+      animation: hideTip .6s 6s forwards;
+    }
+    @keyframes hideTip { to { opacity: 0; } }
+
+    .goal-callout {
+      position: absolute;
+      inset: 0;
+      z-index: 7;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+      opacity: 0;
+      transform: scale(.94);
+      transition: opacity .16s ease, transform .26s cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .goal-callout.show { opacity: 1; transform: scale(1); }
+    .goal-callout strong {
+      color: #fff;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: clamp(58px, 12vw, 132px);
+      font-style: italic;
+      font-weight: 900;
+      letter-spacing: .01em;
+      line-height: .86;
+      text-shadow: 0 9px 0 rgba(0, 0, 0, .18), 0 16px 40px rgba(0, 0, 0, .38);
+    }
+
+    .goal-callout span {
+      display: block;
+      margin-top: 14px;
+      color: var(--lime);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .22em;
+      text-align: center;
+      text-transform: uppercase;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, .7);
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      z-index: 9;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        radial-gradient(500px 280px at 72% 30%, rgba(217, 250, 98, .10), transparent 70%),
+        linear-gradient(110deg, rgba(3, 13, 8, .87), rgba(3, 13, 8, .62));
+      backdrop-filter: blur(5px);
+      transition: opacity .25s ease;
+    }
+
+    .screen.hidden {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .menu-card {
+      width: min(530px, 100%);
+      padding: clamp(22px, 4vw, 38px);
+      color: var(--ink);
+      border-radius: 22px;
+      background: var(--paper);
+      box-shadow: 0 24px 90px rgba(0, 0, 0, .44), inset 0 0 0 1px rgba(255, 255, 255, .8);
+      transform: rotate(-.3deg);
+    }
+
+    .menu-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 9px;
+      border: 1px solid rgba(7, 17, 11, .14);
+      border-radius: 6px;
+      color: #415044;
+      font-size: 8px;
+      font-weight: 850;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .menu-kicker::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--lime-deep); }
+
+    .menu-title {
+      margin: 15px 0 5px;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: clamp(52px, 9vw, 86px);
+      font-style: italic;
+      font-weight: 900;
+      letter-spacing: -.015em;
+      line-height: .81;
+      text-transform: uppercase;
+    }
+
+    .menu-title span { color: #2c723f; }
+    .menu-sub {
+      max-width: 390px;
+      margin: 0 0 18px;
+      color: #5e685f;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .difficulty-label {
+      margin-bottom: 7px;
+      color: #6c756d;
+      font-size: 8px;
+      font-weight: 850;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    .difficulty {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .difficulty button {
+      padding: 10px 8px;
+      border: 1px solid rgba(7, 17, 11, .13);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, .48);
+      color: #4d5b50;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 800;
+      transition: background .16s ease, color .16s ease, border-color .16s ease;
+    }
+
+    .difficulty button:hover { border-color: rgba(7, 17, 11, .35); }
+    .difficulty button.active { color: var(--paper); background: #1d5d35; border-color: #1d5d35; }
+
+    .style-picks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin: -3px 0 14px;
+    }
+
+    .style-cycle {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      border: 1px solid rgba(7, 17, 11, .13);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, .48);
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+      transition: transform .16s ease, border-color .16s ease, background .16s ease;
+    }
+
+    .style-cycle:hover {
+      border-color: rgba(7, 17, 11, .35);
+      background: rgba(255, 255, 255, .8);
+      transform: translateY(-1px);
+    }
+
+    .style-icon {
+      position: relative;
+      width: 27px;
+      height: 27px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border-radius: 8px;
+      background: var(--swatch, #2b9061);
+      color: #fff;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25);
+    }
+
+    .style-icon::before {
+      content: "";
+      width: 12px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, .82);
+      border-radius: 50% 50% 40% 40%;
+    }
+
+    .style-icon.kick::before {
+      width: 12px;
+      height: 12px;
+      border: 0;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 0 2px rgba(7, 17, 11, .2), 8px -8px 12px var(--swatch, #d9fa62);
+    }
+
+    .style-copy {
+      min-width: 0;
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .style-copy small {
+      color: #768078;
+      font-size: 7px;
+      font-weight: 850;
+      letter-spacing: .13em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .style-copy strong {
+      overflow: hidden;
+      font-size: 10px;
+      font-weight: 850;
+      line-height: 1.35;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .style-cycle svg {
+      width: 12px;
+      height: 12px;
+      flex: 0 0 auto;
+      color: #79837b;
+    }
+
+    .primary-btn {
+      width: 100%;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--ink);
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      box-shadow: 0 12px 25px rgba(7, 17, 11, .20);
+      transition: transform .16s ease, background .16s ease;
+    }
+
+    .primary-btn:hover { background: #1d5d35; transform: translateY(-2px); }
+    .primary-btn svg { width: 17px; height: 17px; }
+
+    .menu-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 13px;
+      color: #777f78;
+      font-size: 8px;
+      font-weight: 750;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .best-badge { color: #31503a; }
+    .best-badge b { color: var(--ink); }
+
+    .end-card { text-align: center; }
+    .end-kicker {
+      color: #597260;
+      font-size: 9px;
+      font-weight: 850;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+    .end-title {
+      margin: 8px 0 6px;
+      color: var(--ink);
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: clamp(46px, 8vw, 74px);
+      font-style: italic;
+      line-height: .9;
+      text-transform: uppercase;
+    }
+    .end-score {
+      margin: 13px 0 15px;
+      color: #224d31;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: 42px;
+      letter-spacing: .08em;
+    }
+    .end-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-bottom: 17px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .end-stats div { padding: 11px 5px; border-right: 1px solid var(--line); }
+    .end-stats div:last-child { border-right: 0; }
+    .end-stats b { display: block; color: var(--ink); font-size: 16px; }
+    .end-stats span {
+      display: block;
+      margin-top: 2px;
+      color: #7c837d;
+      font-size: 7px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .secondary-btn {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: transparent;
+      color: #4e5a51;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 800;
+      transition: background .16s ease;
+    }
+    .secondary-btn:hover { background: rgba(0, 0, 0, .05); }
+
+    .below-field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 13px 4px 0;
+      color: #8d9e91;
+      font-size: 10px;
+    }
+
+    .keyset { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+    .key-item { display: inline-flex; align-items: center; gap: 6px; }
+    .key {
+      min-width: 22px;
+      height: 22px;
+      display: inline-grid;
+      place-items: center;
+      padding: 0 5px;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-bottom-color: rgba(255, 255, 255, .28);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, .07);
+      color: #dce5dd;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 9px;
+      font-weight: 800;
+      box-shadow: 0 2px 0 rgba(0, 0, 0, .18);
+    }
+    .round-note {
+      flex: 0 0 auto;
+      color: #bbc9bd;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .round-note strong { color: var(--lime); }
+
+    .touch-controls {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 13px;
+      user-select: none;
+    }
+
+    .joystick {
+      position: relative;
+      width: 104px;
+      height: 104px;
+      flex: 0 0 auto;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .055);
+      touch-action: none;
+    }
+
+    .joystick::before, .joystick::after {
+      content: "";
+      position: absolute;
+      background: rgba(255, 255, 255, .10);
+    }
+    .joystick::before { width: 1px; height: 74%; top: 13%; left: calc(50% - .5px); }
+    .joystick::after { width: 74%; height: 1px; top: calc(50% - .5px); left: 13%; }
+
+    .stick {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 1;
+      width: 46px;
+      height: 46px;
+      margin: -23px;
+      border: 1px solid rgba(255, 255, 255, .22);
+      border-radius: 50%;
+      background: rgba(224, 236, 217, .16);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, .22);
+      transform: translate(0, 0);
+    }
+
+    .kick-btn {
+      width: 82px;
+      height: 82px;
+      flex: 0 0 auto;
+      border: 1px solid rgba(7, 17, 11, .18);
+      border-radius: 50%;
+      background: var(--lime);
+      color: var(--ink);
+      cursor: pointer;
+      font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+      font-size: 17px;
+      font-style: italic;
+      letter-spacing: .04em;
+      box-shadow: 0 8px 0 #71901f, 0 14px 30px rgba(0, 0, 0, .24);
+      touch-action: none;
+    }
+    .kick-btn:active { transform: translateY(5px); box-shadow: 0 3px 0 #71901f, 0 8px 18px rgba(0, 0, 0, .22); }
+
+    @media (max-width: 760px) {
+      .app { width: min(100% - 18px, 1120px); padding-top: 10px; }
+      .topbar { margin-bottom: 9px; }
+      .wordmark span { display: none; }
+      .eyebrow { display: none; }
+      .club { padding: 10px 9px; gap: 7px; }
+      .club-name { font-size: 10px; }
+      .club-kicker { font-size: 6px; }
+      .crest { width: 30px; height: 35px; font-size: 13px; }
+      .crest::before { inset: 5px 5px 8px; }
+      .score-box { min-width: 135px; padding: 6px 8px; }
+      .match-clock { min-width: 60px; padding: 0 6px; }
+      .clock-value { font-size: 13px; }
+      .clock-label { font-size: 6px; }
+      .score { font-size: 31px; }
+      .stat-rail .stat { gap: 4px; min-height: 30px; font-size: 7px; letter-spacing: .03em; }
+      .stadium-shell { padding: 5px; border-radius: 0 0 15px 15px; }
+      .pitch-wrap { border-radius: 10px; }
+      .field-tip { top: 7px; padding: 5px 8px; font-size: 7px; animation: hideTip .5s 3.5s forwards; }
+      .below-field { display: none; }
+      .screen { padding: 12px; }
+      .menu-card { padding: 18px; max-width: 410px; border-radius: 15px; }
+      .menu-title { font-size: clamp(40px, 12vw, 61px); margin-top: 10px; }
+      .menu-sub { margin-bottom: 11px; font-size: 10px; }
+      .difficulty { margin-bottom: 9px; }
+      .difficulty button { padding: 8px 5px; font-size: 8px; }
+      .style-picks { margin-bottom: 9px; }
+      .style-cycle { gap: 6px; padding: 6px; }
+      .style-icon { width: 23px; height: 23px; border-radius: 7px; }
+      .style-copy strong { font-size: 8px; }
+      .style-copy small { font-size: 6px; }
+      .primary-btn { min-height: 43px; font-size: 10px; }
+      .menu-foot { margin-top: 8px; font-size: 7px; }
+      .goal-callout strong { font-size: clamp(52px, 16vw, 90px); }
+    }
+
+    @media (hover: none), (max-width: 760px) {
+      .touch-controls { display: flex; }
+      canvas { cursor: default; }
+      .screen { place-items: start center; overflow-y: auto; scrollbar-width: none; }
+      .screen::-webkit-scrollbar { display: none; }
+    }
+
+    @media (max-height: 700px) and (min-width: 761px) {
+      .app { padding-top: 10px; }
+      .topbar { margin-bottom: 8px; }
+      .club { padding-top: 9px; padding-bottom: 9px; }
+      .stadium-shell { padding: 7px; }
+      .below-field { padding-top: 8px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="wordmark" href="../../index.html" aria-label="Back to Ben's Arcade">
+        <img src="../../logo-mark.svg" alt="">
+        <span>Ben's Arcade</span>
+      </a>
+      <div class="eyebrow"><i class="live-dot"></i>Arcade Cup · Match 07</div>
+      <div class="top-actions">
+        <button class="icon-btn" id="soundBtn" type="button" aria-label="Mute sound">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path id="soundWaves" d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+          <span id="soundLabel">Sound</span>
+        </button>
+        <a class="icon-btn" href="../../index.html" aria-label="Exit to games">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          Arcade
+        </a>
+      </div>
+    </header>
+
+    <main>
+      <section aria-label="Golden Goal match">
+        <div class="score-strip">
+          <div class="club home">
+            <div class="crest home" aria-hidden="true"><span>NH</span></div>
+            <div class="club-copy">
+              <span class="club-kicker">Home · You</span>
+              <span class="club-name">Northside FC</span>
+            </div>
+          </div>
+          <div class="score-box">
+            <div class="score home-score" id="homeScore">0</div>
+            <div class="match-clock">
+              <span class="clock-label" id="clockLabel">1st half</span>
+              <span class="clock-value" id="clockValue">1:00</span>
+            </div>
+            <div class="score away-score" id="awayScore">0</div>
+          </div>
+          <div class="club away">
+            <div class="club-copy">
+              <span class="club-kicker">Away · CPU</span>
+              <span class="club-name">Crimson Athletic</span>
+            </div>
+            <div class="crest away" aria-hidden="true"><span>CA</span></div>
+          </div>
+        </div>
+
+        <div class="stat-rail" aria-label="Live match statistics">
+          <div class="stat">Shots <b id="shotsStat">0–0</b></div>
+          <div class="stat">Possession <b id="possessionStat">50–50</b></div>
+          <div class="stat">Score streak <b id="streakStat">—</b></div>
+        </div>
+
+        <div class="stadium-shell">
+          <div class="pitch-wrap" id="pitchWrap">
+            <canvas id="pitch" width="1000" height="600" aria-label="Soccer pitch. Use arrow keys or WASD to move, and hold Space or click to shoot."></canvas>
+            <div class="field-tip">Move to the ball · hold click / space to power up</div>
+            <div class="goal-callout" id="goalCallout" aria-live="assertive">
+              <div><strong id="goalWord">GOAL!</strong><span id="goalSub">Northside FC</span></div>
+            </div>
+
+            <div class="screen" id="startScreen">
+              <div class="menu-card">
+                <span class="menu-kicker">60-second street match</span>
+                <h1 class="menu-title">Golden<br><span>Goal.</span></h1>
+                <p class="menu-sub">Beat the press, pick your pass, and bury the winner. Three-a-side football with no time to think.</p>
+                <div class="difficulty-label">Choose your opponent</div>
+                <div class="difficulty" id="difficulty">
+                  <button type="button" data-diff="rookie">Rookie</button>
+                  <button type="button" data-diff="pro" class="active">Pro</button>
+                  <button type="button" data-diff="legend">Legend</button>
+                </div>
+                <div class="style-picks">
+                  <button class="style-cycle" id="playerStyleBtn" type="button">
+                    <span class="style-icon" id="playerStyleIcon" aria-hidden="true"></span>
+                    <span class="style-copy"><small>Players</small><strong id="playerStyleLabel">Classic</strong></span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                  <button class="style-cycle" id="kickStyleBtn" type="button">
+                    <span class="style-icon kick" id="kickStyleIcon" aria-hidden="true"></span>
+                    <span class="style-copy"><small>Kick effect</small><strong id="kickStyleLabel">Classic</strong></span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                </div>
+                <button class="primary-btn" id="startBtn" type="button">
+                  Kick off
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>
+                </button>
+                <div class="menu-foot">
+                  <span>First to 5 wins</span>
+                  <span class="best-badge">Personal best <b id="bestScore">0 goals</b></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="screen hidden" id="endScreen">
+              <div class="menu-card end-card">
+                <div class="end-kicker" id="endKicker">Full time · Northside takes it</div>
+                <h2 class="end-title" id="endTitle">Victory.</h2>
+                <div class="end-score" id="endScore">3 – 1</div>
+                <div class="end-stats">
+                  <div><b id="endShots">0</b><span>Shots</span></div>
+                  <div><b id="endPossession">50%</b><span>Possession</span></div>
+                  <div><b id="endStreak">0</b><span>Best streak</span></div>
+                </div>
+                <button class="primary-btn" id="rematchBtn" type="button">Play again</button>
+                <button class="secondary-btn" id="menuBtn" type="button">Back to match setup</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="below-field">
+        <div class="keyset">
+          <span class="key-item"><span class="key">WASD</span> Move</span>
+          <span class="key-item"><span class="key">SPACE</span> Hold to shoot</span>
+          <span class="key-item"><span class="key">CLICK</span> Aim</span>
+        </div>
+        <div class="round-note">Golden goal decides a draw · first to <strong>5</strong></div>
+      </div>
+
+      <div class="touch-controls" aria-label="Touch controls">
+        <div class="joystick" id="joystick" aria-label="Movement joystick"><div class="stick" id="stick"></div></div>
+        <button class="kick-btn" id="kickBtn" type="button">Kick!</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const canvas = document.getElementById("pitch");
+      const ctx = canvas.getContext("2d");
+      const pitchWrap = document.getElementById("pitchWrap");
+      const startScreen = document.getElementById("startScreen");
+      const endScreen = document.getElementById("endScreen");
+      const goalCallout = document.getElementById("goalCallout");
+      const goalWord = document.getElementById("goalWord");
+      const goalSub = document.getElementById("goalSub");
+      const homeScoreEl = document.getElementById("homeScore");
+      const awayScoreEl = document.getElementById("awayScore");
+      const clockValue = document.getElementById("clockValue");
+      const clockLabel = document.getElementById("clockLabel");
+      const shotsStat = document.getElementById("shotsStat");
+      const possessionStat = document.getElementById("possessionStat");
+      const streakStat = document.getElementById("streakStat");
+      const bestScoreEl = document.getElementById("bestScore");
+      const soundBtn = document.getElementById("soundBtn");
+      const soundLabel = document.getElementById("soundLabel");
+      const soundWaves = document.getElementById("soundWaves");
+      const kickBtn = document.getElementById("kickBtn");
+      const joystick = document.getElementById("joystick");
+      const stick = document.getElementById("stick");
+      const playerStyleBtn = document.getElementById("playerStyleBtn");
+      const playerStyleLabel = document.getElementById("playerStyleLabel");
+      const playerStyleIcon = document.getElementById("playerStyleIcon");
+      const kickStyleBtn = document.getElementById("kickStyleBtn");
+      const kickStyleLabel = document.getElementById("kickStyleLabel");
+      const kickStyleIcon = document.getElementById("kickStyleIcon");
+
+      const W = 1000;
+      const H = 600;
+      const M = 34;
+      const GOAL_TOP = 222;
+      const GOAL_BOTTOM = 378;
+      const GOAL_DEPTH = 38;
+      const BALL_R = 10;
+      const TAU = Math.PI * 2;
+      const DIFFICULTY = {
+        rookie: { speed: 188, reaction: .82, error: 54, keeper: 155 },
+        pro: { speed: 215, reaction: .55, error: 32, keeper: 190 },
+        legend: { speed: 242, reaction: .32, error: 16, keeper: 220 }
+      };
+      const PLAYER_STYLES = [
+        {
+          name: "Classic",
+          swatch: "#2b9061",
+          home: { top: "#9ce8b4", middle: "#2b9061", bottom: "#0c4b31", stroke: "#d6ffdf", shorts: "#102b20", text: "#eefdf0" },
+          away: { top: "#ffc0a7", middle: "#f05e45", bottom: "#a92920", stroke: "#ffe0d2", shorts: "#6b1c18", text: "#fff1e8" }
+        },
+        {
+          name: "Solar",
+          swatch: "#e0b22f",
+          home: { top: "#fff1a3", middle: "#e0b22f", bottom: "#7f5b08", stroke: "#fffbe2", shorts: "#34250b", text: "#fffdf1" },
+          away: { top: "#d6c3ff", middle: "#8467d6", bottom: "#453482", stroke: "#f2eaff", shorts: "#2e2255", text: "#fbf8ff" }
+        },
+        {
+          name: "Ice",
+          swatch: "#5ac8ea",
+          home: { top: "#b8f8ff", middle: "#2c9bc4", bottom: "#0b4965", stroke: "#e6ffff", shorts: "#092a3b", text: "#f5feff" },
+          away: { top: "#ffd489", middle: "#ed7e35", bottom: "#8d3d19", stroke: "#fff0d8", shorts: "#4d2412", text: "#fff8eb" }
+        }
+      ];
+      const KICK_STYLES = [
+        { name: "Classic", color: "#d9fa62", trail: "#ffffff", glow: "#d9fa62" },
+        { name: "Comet", color: "#ffb14e", trail: "#ff5b4d", glow: "#ffcf70" },
+        { name: "Volt", color: "#61f4ff", trail: "#9a8cff", glow: "#73fff1" }
+      ];
+
+      let dpr = 1;
+      let state = "menu";
+      let difficulty = "pro";
+      let lastFrame = performance.now();
+      let elapsed = 0;
+      let freezeTime = 0;
+      let soundEnabled = true;
+      let audioContext = null;
+      let kickHeld = false;
+      let charge = 0;
+      let aim = { active: false, x: 790, y: 300 };
+      let joystickVector = { x: 0, y: 0, pointerId: null };
+      let playerStyleIndex = 0;
+      let kickStyleIndex = 0;
+      const keys = Object.create(null);
+
+      const match = {
+        home: 0,
+        away: 0,
+        time: 60,
+        shotsHome: 0,
+        shotsAway: 0,
+        possessionHome: 0,
+        possessionAway: 0,
+        streak: 0,
+        bestStreak: 0,
+        overtime: false,
+        lastScorer: null,
+        matchNumber: 1
+      };
+
+      const ball = {
+        x: W / 2,
+        y: H / 2,
+        vx: 0,
+        vy: 0,
+        rotation: 0,
+        owner: null,
+        lock: 0,
+        lastKicker: null,
+        trail: []
+      };
+
+      let players = [];
+      let user = null;
+      let homeTeam = [];
+      let awayTeam = [];
+      let particles = [];
+      let crowdLights = [];
+      let screenShake = 0;
+      let flash = 0;
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function lerp(a, b, amount) {
+        return a + (b - a) * amount;
+      }
+
+      function length(x, y) {
+        return Math.hypot(x, y);
+      }
+
+      function normalize(x, y) {
+        const magnitude = length(x, y) || 1;
+        return { x: x / magnitude, y: y / magnitude };
+      }
+
+      function dist(a, b) {
+        return Math.hypot(a.x - b.x, a.y - b.y);
+      }
+
+      function readBest() {
+        try { return Math.max(0, Number(localStorage.getItem("goldenGoalBest")) || 0); }
+        catch (_) { return 0; }
+      }
+
+      function writeBest(value) {
+        try {
+          if (value > readBest()) localStorage.setItem("goldenGoalBest", String(value));
+        } catch (_) { /* Storage can be disabled. */ }
+      }
+
+      function updateBestLabel() {
+        const best = readBest();
+        bestScoreEl.textContent = best ? `${best} goal${best === 1 ? "" : "s"}` : "No record yet";
+      }
+
+      function storedStyleIndex(key, options) {
+        try {
+          const value = Number(localStorage.getItem(key));
+          return Number.isInteger(value) && value >= 0 && value < options.length ? value : 0;
+        } catch (_) {
+          return 0;
+        }
+      }
+
+      function saveStyleIndex(key, value) {
+        try { localStorage.setItem(key, String(value)); }
+        catch (_) { /* Storage can be disabled. */ }
+      }
+
+      function updateStyleControls() {
+        const playerStyle = PLAYER_STYLES[playerStyleIndex];
+        const kickStyle = KICK_STYLES[kickStyleIndex];
+        playerStyleLabel.textContent = playerStyle.name;
+        playerStyleIcon.style.setProperty("--swatch", playerStyle.swatch);
+        playerStyleBtn.setAttribute("aria-label", `Change player style. Current style: ${playerStyle.name}.`);
+        kickStyleLabel.textContent = kickStyle.name;
+        kickStyleIcon.style.setProperty("--swatch", kickStyle.color);
+        kickStyleBtn.setAttribute("aria-label", `Change kick effect. Current effect: ${kickStyle.name}.`);
+        kickBtn.style.background = kickStyle.color;
+        kickBtn.style.boxShadow = `0 8px 0 ${kickStyle.trail}, 0 14px 30px rgba(0,0,0,.24)`;
+      }
+
+      function cyclePlayerStyle() {
+        playerStyleIndex = (playerStyleIndex + 1) % PLAYER_STYLES.length;
+        saveStyleIndex("goldenGoalPlayerStyle", playerStyleIndex);
+        updateStyleControls();
+        playTone(360 + playerStyleIndex * 90, .07, "triangle", .015, 430 + playerStyleIndex * 80);
+      }
+
+      function cycleKickStyle() {
+        kickStyleIndex = (kickStyleIndex + 1) % KICK_STYLES.length;
+        saveStyleIndex("goldenGoalKickStyle", kickStyleIndex);
+        updateStyleControls();
+        playTone(520 + kickStyleIndex * 100, .08, "sine", .016, 680 + kickStyleIndex * 100);
+      }
+
+      function makePlayer(team, number, role, x, y) {
+        return {
+          team,
+          number,
+          role,
+          x,
+          y,
+          homeX: x,
+          homeY: y,
+          r: role === "keeper" ? 18 : 17,
+          speed: team === "home" ? 226 : DIFFICULTY[difficulty].speed,
+          vx: 0,
+          vy: 0,
+          facingX: team === "home" ? 1 : -1,
+          facingY: 0,
+          controlCooldown: 0,
+          aiTimer: Math.random() * .5,
+          selected: false,
+          runPhase: Math.random() * TAU,
+          lookVariant: number % 3
+        };
+      }
+
+      function createTeams() {
+        players = [
+          makePlayer("home", 10, "field", 330, 300),
+          makePlayer("home", 7, "field", 435, 188),
+          makePlayer("home", 1, "keeper", 72, 300),
+          makePlayer("away", 9, "field", 670, 258),
+          makePlayer("away", 11, "field", 690, 408),
+          makePlayer("away", 1, "keeper", 928, 300)
+        ];
+        user = players[0];
+        user.selected = true;
+        homeTeam = players.filter(player => player.team === "home");
+        awayTeam = players.filter(player => player.team === "away");
+      }
+
+      createTeams();
+
+      function resizeCanvas() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+      }
+
+      function pointerPosition(event) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: clamp((event.clientX - rect.left) * W / rect.width, M, W - M),
+          y: clamp((event.clientY - rect.top) * H / rect.height, M, H - M)
+        };
+      }
+
+      function playTone(frequency, duration, type = "sine", volume = .025, endFrequency = frequency) {
+        if (!soundEnabled) return;
+        try {
+          audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+          if (audioContext.state === "suspended") audioContext.resume();
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          const now = audioContext.currentTime;
+          oscillator.type = type;
+          oscillator.frequency.setValueAtTime(frequency, now);
+          oscillator.frequency.exponentialRampToValueAtTime(Math.max(30, endFrequency), now + duration);
+          gain.gain.setValueAtTime(volume, now);
+          gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+          oscillator.connect(gain).connect(audioContext.destination);
+          oscillator.start(now);
+          oscillator.stop(now + duration);
+        } catch (_) { /* Audio is optional. */ }
+      }
+
+      function kickSound(power = .7) {
+        playTone(115 + power * 90, .085, "triangle", .035, 62);
+      }
+
+      function spawnKickBurst(direction, speed) {
+        const style = KICK_STYLES[kickStyleIndex];
+        const count = 8 + Math.round(clamp(speed / 1200, 0, 1) * 8);
+        for (let i = 0; i < count; i += 1) {
+          const angle = Math.atan2(direction.y, direction.x) + (Math.random() - .5) * 1.4;
+          const burstSpeed = 55 + Math.random() * 190;
+          particles.push({
+            x: ball.x,
+            y: ball.y,
+            vx: Math.cos(angle) * burstSpeed,
+            vy: Math.sin(angle) * burstSpeed,
+            life: .22 + Math.random() * .34,
+            maxLife: .56,
+            size: 1.3 + Math.random() * (kickStyleIndex === 1 ? 4.2 : 2.8),
+            color: Math.random() > .45 ? style.color : style.trail,
+            shape: kickStyleIndex === 1 ? "rect" : "circle"
+          });
+        }
+      }
+
+      function goalSound() {
+        playTone(330, .16, "square", .025, 440);
+        setTimeout(() => playTone(440, .17, "square", .023, 554), 120);
+        setTimeout(() => playTone(660, .26, "triangle", .025, 880), 250);
+      }
+
+      function whistleSound() {
+        playTone(1180, .18, "sine", .028, 1320);
+        setTimeout(() => playTone(1260, .22, "sine", .023, 1450), 120);
+      }
+
+      function setSound(enabled) {
+        soundEnabled = enabled;
+        soundLabel.textContent = enabled ? "Sound" : "Muted";
+        soundWaves.style.opacity = enabled ? "1" : ".2";
+        soundBtn.setAttribute("aria-label", enabled ? "Mute sound" : "Enable sound");
+        if (enabled) playTone(620, .08, "sine", .02);
+      }
+
+      function resetPositions(kickoffTeam = "home") {
+        const homeKick = kickoffTeam === "home";
+        user.x = homeKick ? W / 2 - 48 : W / 2 - 165;
+        user.y = H / 2;
+        user.facingX = 1;
+        user.facingY = 0;
+        user.vx = user.vy = 0;
+        user.controlCooldown = 0;
+
+        const homeMate = homeTeam.find(player => player.role === "field" && player !== user);
+        const homeKeeper = homeTeam.find(player => player.role === "keeper");
+        const awayPlayers = awayTeam.filter(player => player.role === "field");
+        const awayKeeper = awayTeam.find(player => player.role === "keeper");
+
+        homeMate.x = homeKick ? W / 2 + 108 : 438;
+        homeMate.y = homeKick ? 205 : 186;
+        homeKeeper.x = 72;
+        homeKeeper.y = H / 2;
+
+        awayPlayers[0].x = homeKick ? 684 : W / 2 + 45;
+        awayPlayers[0].y = homeKick ? 245 : 264;
+        awayPlayers[1].x = homeKick ? 728 : W / 2 + 118;
+        awayPlayers[1].y = homeKick ? 388 : 412;
+        awayKeeper.x = 928;
+        awayKeeper.y = H / 2;
+
+        players.forEach(player => {
+          player.vx = player.vy = 0;
+          player.controlCooldown = 0;
+          player.facingX = player.team === "home" ? 1 : -1;
+          player.facingY = 0;
+        });
+
+        ball.x = W / 2;
+        ball.y = H / 2;
+        ball.vx = ball.vy = 0;
+        ball.rotation = 0;
+        ball.owner = homeKick ? user : null;
+        ball.lock = homeKick ? .2 : .55;
+        ball.lastKicker = null;
+        ball.trail = [];
+        charge = 0;
+        kickHeld = false;
+      }
+
+      function startMatch() {
+        match.home = 0;
+        match.away = 0;
+        match.time = 60;
+        match.shotsHome = 0;
+        match.shotsAway = 0;
+        match.possessionHome = 0;
+        match.possessionAway = 0;
+        match.streak = 0;
+        match.bestStreak = 0;
+        match.overtime = false;
+        match.lastScorer = null;
+        match.matchNumber += 1;
+        state = "playing";
+        freezeTime = 0;
+        particles = [];
+        flash = 0;
+        screenShake = 0;
+        startScreen.classList.add("hidden");
+        endScreen.classList.add("hidden");
+        goalCallout.classList.remove("show");
+        document.body.classList.add("playing");
+        resetPositions("home");
+        updateHUD();
+        whistleSound();
+        lastFrame = performance.now();
+      }
+
+      function showMenu() {
+        state = "menu";
+        document.body.classList.remove("playing");
+        startScreen.classList.remove("hidden");
+        endScreen.classList.add("hidden");
+        goalCallout.classList.remove("show");
+        updateBestLabel();
+      }
+
+      function possessionPercentHome() {
+        const total = match.possessionHome + match.possessionAway;
+        return total > .5 ? Math.round(match.possessionHome / total * 100) : 50;
+      }
+
+      function updateHUD() {
+        homeScoreEl.textContent = match.home;
+        awayScoreEl.textContent = match.away;
+        const seconds = Math.max(0, Math.ceil(match.time));
+        clockValue.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+        clockLabel.textContent = match.overtime ? "Golden goal" : "Time remaining";
+        clockValue.classList.toggle("urgent", match.time <= 10 || match.overtime);
+        shotsStat.textContent = `${match.shotsHome}–${match.shotsAway}`;
+        const homePossession = possessionPercentHome();
+        possessionStat.textContent = `${homePossession}–${100 - homePossession}`;
+        streakStat.textContent = match.streak > 0 ? `×${match.streak} home` : "—";
+      }
+
+      function releasePossession(player, cooldown = .5) {
+        if (ball.owner === player) ball.owner = null;
+        player.controlCooldown = cooldown;
+        ball.lock = .14;
+      }
+
+      function kickBall(player, targetX, targetY, speed, countShot = true) {
+        if (ball.owner !== player) return;
+        const direction = normalize(targetX - player.x, targetY - player.y);
+        ball.x = player.x + direction.x * (player.r + BALL_R + 1);
+        ball.y = player.y + direction.y * (player.r + BALL_R + 1);
+        ball.vx = direction.x * speed;
+        ball.vy = direction.y * speed;
+        ball.rotation = Math.atan2(ball.vy, ball.vx);
+        ball.lastKicker = player;
+        releasePossession(player, player.role === "keeper" ? .7 : .42);
+        player.facingX = direction.x;
+        player.facingY = direction.y;
+        ball.trail = [];
+        spawnKickBurst(direction, speed);
+        if (countShot) {
+          if (player.team === "home") match.shotsHome += 1;
+          else match.shotsAway += 1;
+        }
+        kickSound(clamp(speed / 1150, .15, 1));
+        if (kickStyleIndex === 1) playTone(250, .11, "sawtooth", .018, 145);
+        if (kickStyleIndex === 2) playTone(820, .07, "sine", .018, 1320);
+        updateHUD();
+      }
+
+      function userShotTarget() {
+        if (aim.active) return aim;
+        const fallbackY = H / 2 + user.facingY * 88;
+        return { x: W - M - 12, y: fallbackY };
+      }
+
+      function endKick() {
+        if (!kickHeld) return;
+        kickHeld = false;
+        if (state !== "playing") {
+          charge = 0;
+          return;
+        }
+        if (ball.owner === user) {
+          const target = userShotTarget();
+          const power = clamp(charge, .08, 1);
+          kickBall(user, target.x, target.y, 570 + power * 590, true);
+          charge = 0;
+          return;
+        }
+        attemptTackle();
+        charge = 0;
+      }
+
+      function beginKick() {
+        if (state !== "playing") return;
+        kickHeld = true;
+        charge = 0;
+      }
+
+      function attemptTackle() {
+        if (state !== "playing" || user.controlCooldown > 0) return;
+        if (!ball.owner) {
+          if (dist(user, ball) < 71) {
+            const direction = normalize(ball.x - user.x, ball.y - user.y);
+            ball.vx += direction.x * 330;
+            ball.vy += direction.y * 330;
+            ball.lock = .12;
+            ball.lastKicker = user;
+            kickSound(.45);
+          }
+          user.controlCooldown = .28;
+          return;
+        }
+        if (ball.owner.team === "away" && dist(user, ball) < 80) {
+          const contest = normalize(ball.x - user.x, ball.y - user.y);
+          ball.owner = null;
+          ball.vx = contest.x * 310 + (Math.random() - .5) * 85;
+          ball.vy = contest.y * 310 + (Math.random() - .5) * 85;
+          ball.lock = .06;
+          ball.lastKicker = user;
+          user.controlCooldown = .38;
+          screenShake = Math.max(screenShake, 3.5);
+          playTone(115, .07, "sawtooth", .025, 70);
+        } else {
+          user.controlCooldown = .24;
+        }
+      }
+
+      function updateUser(dt) {
+        let inputX = 0;
+        let inputY = 0;
+        if (keys.ArrowLeft || keys.KeyA) inputX -= 1;
+        if (keys.ArrowRight || keys.KeyD) inputX += 1;
+        if (keys.ArrowUp || keys.KeyW) inputY -= 1;
+        if (keys.ArrowDown || keys.KeyS) inputY += 1;
+
+        if (length(joystickVector.x, joystickVector.y) > .08) {
+          inputX = joystickVector.x;
+          inputY = joystickVector.y;
+        }
+
+        const inputLength = Math.min(1, length(inputX, inputY));
+        let targetX = 0;
+        let targetY = 0;
+        if (inputLength > .04) {
+          const inputDirection = normalize(inputX, inputY);
+          targetX = inputDirection.x * user.speed * inputLength;
+          targetY = inputDirection.y * user.speed * inputLength;
+          user.facingX = lerp(user.facingX, inputDirection.x, Math.min(1, dt * 16));
+          user.facingY = lerp(user.facingY, inputDirection.y, Math.min(1, dt * 16));
+        }
+
+        const acceleration = 1 - Math.exp(-(inputLength > .04 ? 15 : 21) * dt);
+        user.vx = lerp(user.vx, targetX, acceleration);
+        user.vy = lerp(user.vy, targetY, acceleration);
+        user.x = clamp(user.x + user.vx * dt, M + user.r, W - M - user.r);
+        user.y = clamp(user.y + user.vy * dt, M + user.r, H - M - user.r);
+        user.controlCooldown = Math.max(0, user.controlCooldown - dt);
+        user.runPhase += length(user.vx, user.vy) * dt * .055;
+      }
+
+      function setAIFacing(player, dx, dy) {
+        const direction = normalize(dx, dy);
+        player.facingX = direction.x;
+        player.facingY = direction.y;
+      }
+
+      function moveToward(player, targetX, targetY, speedScale, dt) {
+        const dx = targetX - player.x;
+        const dy = targetY - player.y;
+        const distance = length(dx, dy);
+        if (distance < 3) {
+          player.vx = lerp(player.vx, 0, .2);
+          player.vy = lerp(player.vy, 0, .2);
+          return;
+        }
+        const direction = { x: dx / distance, y: dy / distance };
+        const maxSpeed = player.speed * speedScale;
+        player.vx = lerp(player.vx, direction.x * maxSpeed, Math.min(1, dt * 8));
+        player.vy = lerp(player.vy, direction.y * maxSpeed, Math.min(1, dt * 8));
+        player.x = clamp(player.x + player.vx * dt, M + player.r, W - M - player.r);
+        player.y = clamp(player.y + player.vy * dt, M + player.r, H - M - player.r);
+        setAIFacing(player, dx, dy);
+        player.controlCooldown = Math.max(0, player.controlCooldown - dt);
+        player.runPhase += length(player.vx, player.vy) * dt * .06;
+      }
+
+      function closestPlayerToBall(team) {
+        return team.reduce((closest, player) => {
+          if (player.role === "keeper") return closest;
+          return !closest || dist(player, ball) < dist(closest, ball) ? player : closest;
+        }, null);
+      }
+
+      function updateKeeper(keeper, dt) {
+        const settings = DIFFICULTY[difficulty];
+        const home = keeper.team === "home";
+        const goalX = home ? 74 : 926;
+        const attackSide = home ? 1 : -1;
+        const ballInOwnBox = home ? ball.x < 205 : ball.x > 795;
+        const opponentHasBall = ball.owner && ball.owner.team !== keeper.team;
+        let targetX = goalX;
+        const targetY = clamp(ball.y * .72 + H / 2 * .28, GOAL_TOP + 20, GOAL_BOTTOM - 20);
+
+        if (ballInOwnBox && !opponentHasBall && !ball.owner) targetX = goalX + attackSide * 31;
+        if (opponentHasBall && ballInOwnBox) targetX = goalX + attackSide * 12;
+        moveToward(keeper, targetX, targetY, settings.keeper / settings.speed, dt);
+
+        if (keeper.controlCooldown <= 0 && dist(keeper, ball) < keeper.r + BALL_R + 12 && ball.lock <= 0) {
+          if (ball.owner && ball.owner.team === keeper.team) return;
+          ball.owner = keeper;
+          keeper.controlCooldown = .7;
+          screenShake = Math.max(screenShake, 2.2);
+          const clearTargetY = 190 + Math.random() * 220;
+          setTimeout(() => {
+            if (state === "playing" && ball.owner === keeper) {
+              kickBall(keeper, keeper.x + attackSide * 350, clearTargetY, 720, false);
+            }
+          }, 90);
+        }
+      }
+
+      function updateHomeMate(player, dt) {
+        if (ball.owner === player) {
+          const pressure = dist(player, user) < 130;
+          if (player.x > 625 || pressure) {
+            const targetY = clamp(ball.y + (ball.y < H / 2 ? 82 : -82), GOAL_TOP + 18, GOAL_BOTTOM - 18);
+            kickBall(player, W - M - 5, targetY, 820 + Math.random() * 120, true);
+          } else {
+            moveToward(player, W - 270, clamp(player.y + (ball.y < H / 2 ? 70 : -70), 150, 450), .9, dt);
+          }
+          return;
+        }
+
+        if (ball.owner && ball.owner.team === "home") {
+          const supportY = user.y < H / 2 ? 394 : 204;
+          moveToward(player, clamp(user.x + 188, 430, 790), supportY, .78, dt);
+          return;
+        }
+
+        const closest = closestPlayerToBall(homeTeam);
+        if (closest === player) {
+          moveToward(player, ball.x + ball.vx * .06, ball.y + ball.vy * .06, .92, dt);
+        } else {
+          moveToward(player, 485, 188 + Math.sin(elapsed * .65) * 42, .64, dt);
+        }
+      }
+
+      function updateAwayPlayer(player, teamIndex, dt) {
+        const settings = DIFFICULTY[difficulty];
+        player.aiTimer -= dt;
+
+        if (ball.owner === player) {
+          const distHomeGoal = player.x;
+          const defenderAhead = dist(user, player) < 98 && user.x < player.x;
+          if (distHomeGoal < 445 || (defenderAhead && player.aiTimer <= 0)) {
+            const error = (Math.random() - .5) * settings.error;
+            const targetY = clamp(H / 2 + error, GOAL_TOP + 20, GOAL_BOTTOM - 20);
+            kickBall(player, M - 3, targetY, 740 + settings.speed * 1.25, true);
+            player.aiTimer = settings.reaction;
+          } else {
+            const pressureY = Math.abs(user.y - player.y) < 54 && user.x < player.x ? (player.y > user.y ? 56 : -56) : 0;
+            const targetY = clamp(H / 2 + pressureY + Math.sin(elapsed * .8 + teamIndex) * 36, 145, 455);
+            moveToward(player, player.x - 125, targetY, .96, dt);
+          }
+          return;
+        }
+
+        if (ball.owner && ball.owner.team === "away") {
+          const carrier = ball.owner;
+          const forwardY = teamIndex === 0 ? 190 : 410;
+          moveToward(player, clamp(carrier.x - 145, 430, 780), forwardY, .8, dt);
+          return;
+        }
+
+        const closest = closestPlayerToBall(awayTeam);
+        if (closest === player) {
+          const intercept = .075 + settings.reaction * .04;
+          moveToward(player, ball.x + ball.vx * intercept, ball.y + ball.vy * intercept, .99, dt);
+        } else {
+          const coverY = teamIndex === 0 ? 220 : 385;
+          moveToward(player, clamp(ball.x + 165, 500, 790), coverY, .72, dt);
+        }
+      }
+
+      function updateAI(dt) {
+        homeTeam.filter(player => player !== user).forEach(player => {
+          if (player.role === "keeper") updateKeeper(player, dt);
+          else updateHomeMate(player, dt);
+        });
+        awayTeam.forEach((player, index) => {
+          player.aiTimer = Math.max(0, player.aiTimer - dt);
+          if (player.role === "keeper") updateKeeper(player, dt);
+          else updateAwayPlayer(player, index, dt);
+        });
+      }
+
+      function resolvePlayerCollisions() {
+        const fieldPlayers = players.filter(player => player.role !== "keeper");
+        for (let i = 0; i < fieldPlayers.length; i += 1) {
+          for (let j = i + 1; j < fieldPlayers.length; j += 1) {
+            const a = fieldPlayers[i];
+            const b = fieldPlayers[j];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const distance = length(dx, dy);
+            const minDistance = a.r + b.r - 2;
+            if (distance > 0 && distance < minDistance) {
+              const push = (minDistance - distance) * .5;
+              const nx = dx / distance;
+              const ny = dy / distance;
+              a.x -= nx * push;
+              a.y -= ny * push;
+              b.x += nx * push;
+              b.y += ny * push;
+            }
+          }
+        }
+      }
+
+      function acquirePossession() {
+        if (ball.owner || ball.lock > 0 || state !== "playing") return;
+        let best = null;
+        let bestDistance = 31;
+        players.forEach(player => {
+          if (player.role === "keeper" || player.controlCooldown > 0) return;
+          const distance = dist(player, ball);
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            best = player;
+          }
+        });
+        if (best) {
+          ball.owner = best;
+          ball.vx *= .25;
+          ball.vy *= .25;
+          best.controlCooldown = .13;
+          if (best === user && !keys.Space && !kickHeld) charge = 0;
+        }
+      }
+
+      function carryBall(dt) {
+        const owner = ball.owner;
+        if (!owner) return;
+        const forward = owner.role === "keeper" ? 18 : owner.r + BALL_R - 1;
+        const targetX = owner.x + owner.facingX * forward;
+        const targetY = owner.y + owner.facingY * forward;
+        ball.x = lerp(ball.x, targetX, Math.min(1, dt * 19));
+        ball.y = lerp(ball.y, targetY, Math.min(1, dt * 19));
+        ball.vx = owner.vx;
+        ball.vy = owner.vy;
+        ball.rotation += length(owner.vx, owner.vy) * dt * .014;
+      }
+
+      function stealFromDribble(dt) {
+        if (!ball.owner || ball.owner.role === "keeper") return;
+        const owner = ball.owner;
+        const nearestOpponent = players
+          .filter(player => player.role !== "keeper" && player.team !== owner.team)
+          .sort((a, b) => dist(a, ball) - dist(b, ball))[0];
+        if (!nearestOpponent || nearestOpponent.controlCooldown > 0) return;
+        if (dist(nearestOpponent, ball) < 25) {
+          const chance = dt * (owner === user ? 2.8 : 1.55);
+          if (Math.random() < chance) {
+            ball.owner = nearestOpponent;
+            nearestOpponent.controlCooldown = .22;
+            owner.controlCooldown = .34;
+            screenShake = Math.max(screenShake, 1.5);
+          }
+        }
+      }
+
+      function bounceBall(dt) {
+        if (ball.owner) return;
+        ball.x += ball.vx * dt;
+        ball.y += ball.vy * dt;
+        if (length(ball.vx, ball.vy) > 115) {
+          ball.trail.push({ x: ball.x, y: ball.y, life: .34 });
+          if (ball.trail.length > 18) ball.trail.shift();
+        }
+        const friction = Math.pow(.19, dt);
+        ball.vx *= friction;
+        ball.vy *= friction;
+        ball.rotation += length(ball.vx, ball.vy) * dt * .004;
+        ball.lock = Math.max(0, ball.lock - dt);
+
+        if (ball.y - BALL_R < M) {
+          ball.y = M + BALL_R;
+          ball.vy = Math.abs(ball.vy) * .7;
+        } else if (ball.y + BALL_R > H - M) {
+          ball.y = H - M - BALL_R;
+          ball.vy = -Math.abs(ball.vy) * .7;
+        }
+
+        const inGoalMouth = ball.y > GOAL_TOP + BALL_R * .45 && ball.y < GOAL_BOTTOM - BALL_R * .45;
+        if (ball.x - BALL_R < M && !inGoalMouth) {
+          ball.x = M + BALL_R;
+          ball.vx = Math.abs(ball.vx) * .72;
+        }
+        if (ball.x + BALL_R > W - M && !inGoalMouth) {
+          ball.x = W - M - BALL_R;
+          ball.vx = -Math.abs(ball.vx) * .72;
+        }
+
+        const postRadius = BALL_R + 4;
+        [
+          { x: M, y: GOAL_TOP },
+          { x: M, y: GOAL_BOTTOM },
+          { x: W - M, y: GOAL_TOP },
+          { x: W - M, y: GOAL_BOTTOM }
+        ].forEach(post => {
+          const dx = ball.x - post.x;
+          const dy = ball.y - post.y;
+          const distance = length(dx, dy);
+          if (distance < postRadius && distance > 0) {
+            const nx = dx / distance;
+            const ny = dy / distance;
+            const overlap = postRadius - distance;
+            ball.x += nx * overlap;
+            ball.y += ny * overlap;
+            const velocityDot = ball.vx * nx + ball.vy * ny;
+            ball.vx -= 1.75 * velocityDot * nx;
+            ball.vy -= 1.75 * velocityDot * ny;
+            if (Math.abs(velocityDot) > 170) playTone(260, .055, "square", .018, 190);
+          }
+        });
+      }
+
+      function addGoalParticles(scoringTeam) {
+        const colors = scoringTeam === "home"
+          ? ["#d9fa62", "#ffffff", "#7ddb8c", "#b9dc35"]
+          : ["#ff7556", "#ffd4c5", "#ffffff", "#bd3829"];
+        for (let i = 0; i < 95; i += 1) {
+          const angle = Math.random() * TAU;
+          const speed = 80 + Math.random() * 440;
+          particles.push({
+            x: scoringTeam === "home" ? W - M - 8 : M + 8,
+            y: H / 2 + (Math.random() - .5) * 115,
+            vx: Math.cos(angle) * speed * (scoringTeam === "home" ? -1 : 1),
+            vy: Math.sin(angle) * speed,
+            life: .55 + Math.random() * 1.2,
+            maxLife: 1.8,
+            size: 2 + Math.random() * 7,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            shape: Math.random() > .72 ? "rect" : "circle"
+          });
+        }
+      }
+
+      function scoreGoal(team) {
+        if (state !== "playing") return;
+        match.lastScorer = team;
+        if (team === "home") {
+          match.home += 1;
+          match.streak += 1;
+          match.bestStreak = Math.max(match.bestStreak, match.streak);
+        } else {
+          match.away += 1;
+          match.streak = 0;
+        }
+        writeBest(match.home);
+        state = "goal";
+        freezeTime = 2.35;
+        ball.owner = null;
+        ball.vx = ball.vy = 0;
+        ball.lock = 1;
+        goalWord.textContent = match.overtime ? "GOLDEN!" : ["GOAL!", "BANG!", "TOP BINS!", "WHAT A FINISH!"][Math.floor(Math.random() * 4)];
+        goalSub.textContent = team === "home" ? "Northside FC · keep the pressure on" : "Crimson Athletic · hit straight back";
+        goalCallout.classList.add("show");
+        addGoalParticles(team);
+        screenShake = 13;
+        flash = .85;
+        goalSound();
+        updateHUD();
+      }
+
+      function finalResult() {
+        const homeWon = match.home > match.away;
+        const draw = match.home === match.away;
+        document.getElementById("endKicker").textContent = draw
+          ? "Full time · honors shared"
+          : homeWon ? "Full time · Northside takes it" : "Full time · Crimson takes it";
+        document.getElementById("endTitle").textContent = draw ? "Level." : homeWon ? "Victory." : "So close.";
+        document.getElementById("endScore").textContent = `${match.home} – ${match.away}`;
+        document.getElementById("endShots").textContent = match.shotsHome;
+        document.getElementById("endPossession").textContent = `${possessionPercentHome()}%`;
+        document.getElementById("endStreak").textContent = match.bestStreak;
+        state = "ended";
+        document.body.classList.remove("playing");
+        endScreen.classList.remove("hidden");
+        goalCallout.classList.remove("show");
+        writeBest(match.home);
+        playTone(homeWon ? 450 : 280, .2, "triangle", .025, homeWon ? 700 : 190);
+      }
+
+      function finishGoalSequence() {
+        goalCallout.classList.remove("show");
+        if (match.home >= 5 || match.away >= 5) {
+          finalResult();
+          return;
+        }
+        if (match.time <= 0 && match.home !== match.away) {
+          finalResult();
+          return;
+        }
+        state = "playing";
+        resetPositions(match.lastScorer === "home" ? "away" : "home");
+        whistleSound();
+      }
+
+      function updateParticles(dt) {
+        ball.trail.forEach(point => { point.life -= dt; });
+        ball.trail = ball.trail.filter(point => point.life > 0);
+        particles.forEach(particle => {
+          particle.x += particle.vx * dt;
+          particle.y += particle.vy * dt;
+          particle.vy += 170 * dt;
+          particle.vx *= Math.pow(.22, dt);
+          particle.vy *= Math.pow(.5, dt);
+          particle.life -= dt;
+        });
+        particles = particles.filter(particle => particle.life > 0);
+        screenShake = Math.max(0, screenShake - dt * 24);
+        flash = Math.max(0, flash - dt * 2.4);
+      }
+
+      function updateMatch(dt) {
+        updateParticles(dt);
+
+        if (state === "goal") {
+          freezeTime -= dt;
+          if (freezeTime <= 0) finishGoalSequence();
+          updateHUD();
+          return;
+        }
+
+        if (state !== "playing") return;
+
+        if (!match.overtime) {
+          match.time -= dt;
+        }
+        if (ball.owner && ball.owner.team === "home") match.possessionHome += dt;
+        if (ball.owner && ball.owner.team === "away") match.possessionAway += dt;
+
+        updateUser(dt);
+        updateAI(dt);
+        resolvePlayerCollisions();
+        acquirePossession();
+        carryBall(dt);
+        stealFromDribble(dt);
+        bounceBall(dt);
+        if (kickHeld && ball.owner === user) charge = Math.min(1, charge + dt * 1.45);
+        if (kickHeld && ball.owner !== user) charge = Math.min(1, charge + dt * .55);
+
+        const goalMouthTop = GOAL_TOP + BALL_R * .3;
+        const goalMouthBottom = GOAL_BOTTOM - BALL_R * .3;
+        if (ball.x <= M + 1 && ball.y > goalMouthTop && ball.y < goalMouthBottom) {
+          scoreGoal("away");
+          return;
+        }
+        if (ball.x >= W - M - 1 && ball.y > goalMouthTop && ball.y < goalMouthBottom) {
+          scoreGoal("home");
+          return;
+        }
+
+        if (match.time <= 0 && !match.overtime) {
+          if (match.home === match.away) {
+            match.overtime = true;
+            match.time = 0;
+            goalWord.textContent = "NEXT GOAL WINS";
+            goalWord.style.fontSize = "clamp(34px, 6vw, 72px)";
+            goalSub.textContent = "Golden goal · sudden death";
+            goalCallout.classList.add("show");
+            whistleSound();
+            setTimeout(() => {
+              if (state === "playing") goalCallout.classList.remove("show");
+              goalWord.style.fontSize = "";
+            }, 1800);
+          } else {
+            whistleSound();
+            finalResult();
+          }
+        }
+        updateHUD();
+      }
+
+      function roundedRect(x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, width, height, radius);
+      }
+
+      function drawPitch() {
+        const stripeCount = 14;
+        const stripeWidth = (W - M * 2) / stripeCount;
+        for (let i = 0; i < stripeCount; i += 1) {
+          ctx.fillStyle = i % 2 === 0 ? "#1f7545" : "#1b6c3f";
+          ctx.fillRect(M + i * stripeWidth, M, stripeWidth + .5, H - M * 2);
+        }
+
+        const glow = ctx.createRadialGradient(W * .58, H * .38, 20, W * .58, H * .38, W * .75);
+        glow.addColorStop(0, "rgba(220, 255, 180, .11)");
+        glow.addColorStop(.55, "rgba(255, 255, 255, .02)");
+        glow.addColorStop(1, "rgba(0, 20, 8, .20)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.strokeStyle = "rgba(238, 250, 232, .72)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(M, M, W - M * 2, H - M * 2);
+
+        ctx.beginPath();
+        ctx.moveTo(W / 2, M);
+        ctx.lineTo(W / 2, H - M);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(W / 2, H / 2, 67, 0, TAU);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(238, 250, 232, .82)";
+        ctx.beginPath();
+        ctx.arc(W / 2, H / 2, 4, 0, TAU);
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(238, 250, 232, .66)";
+        ctx.strokeRect(M, 170, 130, 260);
+        ctx.strokeRect(W - M - 130, 170, 130, 260);
+        ctx.strokeRect(M, 238, 52, 124);
+        ctx.strokeRect(W - M - 52, 238, 52, 124);
+
+        ctx.beginPath();
+        ctx.arc(M + 111, H / 2, 45, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(W - M - 111, H / 2, 45, Math.PI / 2, Math.PI * 1.5);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(45, 122, 72, .96)";
+        ctx.strokeStyle = "rgba(235, 246, 231, .74)";
+        ctx.lineWidth = 2;
+        ctx.fillRect(6, GOAL_TOP, M - 6, GOAL_BOTTOM - GOAL_TOP);
+        ctx.strokeRect(6, GOAL_TOP, M - 6, GOAL_BOTTOM - GOAL_TOP);
+        ctx.fillRect(W - M, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
+        ctx.strokeRect(W - M, GOAL_TOP, GOAL_DEPTH, GOAL_BOTTOM - GOAL_TOP);
+
+        ctx.save();
+        ctx.globalAlpha = .32;
+        ctx.lineWidth = 1;
+        for (let x = 10; x < M; x += 8) {
+          ctx.beginPath();
+          ctx.moveTo(x, GOAL_TOP);
+          ctx.lineTo(x, GOAL_BOTTOM);
+          ctx.stroke();
+        }
+        for (let y = GOAL_TOP + 10; y < GOAL_BOTTOM; y += 11) {
+          ctx.beginPath();
+          ctx.moveTo(6, y);
+          ctx.lineTo(M, y);
+          ctx.stroke();
+        }
+        for (let x = W - M; x < W - 5; x += 8) {
+          ctx.beginPath();
+          ctx.moveTo(x, GOAL_TOP);
+          ctx.lineTo(x, GOAL_BOTTOM);
+          ctx.stroke();
+        }
+        for (let y = GOAL_TOP + 10; y < GOAL_BOTTOM; y += 11) {
+          ctx.beginPath();
+          ctx.moveTo(W - M, y);
+          ctx.lineTo(W - 5, y);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        ctx.fillStyle = "rgba(255, 255, 255, .35)";
+        ctx.font = "800 9px Inter, sans-serif";
+        ctx.textAlign = "center";
+        ctx.save();
+        ctx.translate(M + 17, H / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText("NORTHSIDE", 0, 0);
+        ctx.restore();
+        ctx.save();
+        ctx.translate(W - M - 17, H / 2);
+        ctx.rotate(Math.PI / 2);
+        ctx.fillText("CRIMSON ATHLETIC", 0, 0);
+        ctx.restore();
+      }
+
+      function drawPlayer(player) {
+        const isHome = player.team === "home";
+        const isUser = player === user;
+        const style = PLAYER_STYLES[playerStyleIndex];
+        const kit = isHome ? style.home : style.away;
+        const speed = length(player.vx, player.vy);
+        const stride = Math.sin(player.runPhase) * Math.min(1, speed / 120) * 5;
+        const px = player.x;
+        const py = player.y;
+
+        ctx.save();
+        if (isUser && state === "playing") {
+          ctx.strokeStyle = "rgba(217, 250, 98, .38)";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 7]);
+          ctx.beginPath();
+          ctx.arc(px, py, player.r + 9 + Math.sin(elapsed * 4) * 1.5, 0, TAU);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        ctx.fillStyle = "rgba(0, 20, 8, .27)";
+        ctx.beginPath();
+        ctx.ellipse(px + 4, py + 13, player.r + 6, player.r * .55, 0, 0, TAU);
+        ctx.fill();
+
+        ctx.strokeStyle = kit.shorts;
+        ctx.lineWidth = 5;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(px - 5, py + 8);
+        ctx.lineTo(px - 5 + player.facingX * 3, py + 19 + stride);
+        ctx.moveTo(px + 5, py + 8);
+        ctx.lineTo(px + 5 + player.facingX * 3, py + 19 - stride);
+        ctx.stroke();
+
+        const bodyGradient = ctx.createRadialGradient(px - 5, py - 7, 2, px, py, player.r + 5);
+        bodyGradient.addColorStop(0, kit.top);
+        bodyGradient.addColorStop(.45, kit.middle);
+        bodyGradient.addColorStop(1, kit.bottom);
+        ctx.fillStyle = bodyGradient;
+        ctx.beginPath();
+        ctx.arc(px, py, player.r, 0, TAU);
+        ctx.fill();
+        ctx.strokeStyle = kit.stroke;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.save();
+        ctx.clip();
+        ctx.strokeStyle = "rgba(255, 255, 255, .24)";
+        ctx.lineWidth = playerStyleIndex === 1 ? 5 : 3;
+        ctx.beginPath();
+        if (playerStyleIndex === 2) {
+          ctx.moveTo(px - 22, py - 3);
+          ctx.lineTo(px + 22, py - 3);
+        } else {
+          ctx.moveTo(px - 15 + playerStyleIndex * 4, py + 18);
+          ctx.lineTo(px + 11 + playerStyleIndex * 4, py - 18);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.fillStyle = kit.text;
+        ctx.font = "900 10px Inter, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(player.number), px, py + 1);
+
+        const skin = ["#f0c4a2", "#af7452", "#714a35"][player.lookVariant % 3];
+        ctx.fillStyle = skin;
+        ctx.beginPath();
+        ctx.arc(px + player.facingX * 8, py + player.facingY * 8 - 4, 4.4, 0, TAU);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(18, 25, 19, .34)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(2, 14, 7, .58)";
+        ctx.beginPath();
+        ctx.arc(px + player.facingX * (player.r + 1), py + player.facingY * (player.r + 1), 3.2, 0, TAU);
+        ctx.fill();
+
+        if (isUser) {
+          ctx.fillStyle = "#d9fa62";
+          ctx.beginPath();
+          ctx.moveTo(px, py - player.r - 15);
+          ctx.lineTo(px - 5, py - player.r - 24);
+          ctx.lineTo(px + 5, py - player.r - 24);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "rgba(4, 18, 9, .72)";
+          ctx.font = "900 8px Inter, sans-serif";
+          ctx.fillText("YOU", px, py - player.r - 29);
+        }
+        ctx.restore();
+      }
+
+      function drawBall() {
+        ctx.save();
+        ctx.translate(ball.x, ball.y);
+        ctx.fillStyle = "rgba(0, 22, 9, .28)";
+        ctx.beginPath();
+        ctx.ellipse(3, 5, BALL_R + 3, BALL_R * .68, 0, 0, TAU);
+        ctx.fill();
+        ctx.rotate(ball.rotation);
+        const ballGradient = ctx.createRadialGradient(-3, -3, 1, 0, 0, BALL_R + 2);
+        ballGradient.addColorStop(0, "#ffffff");
+        ballGradient.addColorStop(.72, "#f2f1e9");
+        ballGradient.addColorStop(1, "#c9cec4");
+        ctx.fillStyle = ballGradient;
+        ctx.beginPath();
+        ctx.arc(0, 0, BALL_R, 0, TAU);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(25, 40, 31, .40)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = "#15251b";
+        ctx.beginPath();
+        ctx.moveTo(0, -4.4);
+        ctx.lineTo(4.1, -1.4);
+        ctx.lineTo(2.5, 3.5);
+        ctx.lineTo(-2.5, 3.5);
+        ctx.lineTo(-4.1, -1.4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "rgba(20, 34, 25, .55)";
+        [[-6, 5], [6, 3], [1, -8]].forEach(([x, y]) => {
+          ctx.beginPath();
+          ctx.arc(x, y, 1.7, 0, TAU);
+          ctx.fill();
+        });
+        ctx.restore();
+      }
+
+      function drawKickTrail() {
+        if (ball.trail.length < 2) return;
+        const style = KICK_STYLES[kickStyleIndex];
+        ctx.save();
+        if (kickStyleIndex === 0) {
+          ball.trail.forEach((point, index) => {
+            if (index % 2) return;
+            ctx.globalAlpha = clamp(point.life / .34, 0, 1) * .55;
+            ctx.fillStyle = index > ball.trail.length * .55 ? style.color : style.trail;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 1.4 + index / ball.trail.length * 2.4, 0, TAU);
+            ctx.fill();
+          });
+        } else {
+          const gradient = ctx.createLinearGradient(ball.trail[0].x, ball.trail[0].y, ball.x, ball.y);
+          gradient.addColorStop(0, "rgba(255,255,255,0)");
+          gradient.addColorStop(.55, style.trail);
+          gradient.addColorStop(1, style.color);
+          ctx.strokeStyle = gradient;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.lineWidth = kickStyleIndex === 1 ? 7 : 4;
+          ctx.globalAlpha = .72;
+          ctx.shadowColor = style.glow;
+          ctx.shadowBlur = kickStyleIndex === 2 ? 13 : 6;
+          ctx.beginPath();
+          ball.trail.forEach((point, index) => {
+            const previous = ball.trail[Math.max(0, index - 1)];
+            const segment = normalize(point.x - previous.x, point.y - previous.y);
+            const zigzag = kickStyleIndex === 2 ? (index % 2 ? 1 : -1) * 4 : 0;
+            const x = point.x - segment.y * zigzag;
+            const y = point.y + segment.x * zigzag;
+            if (index === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          });
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawAim() {
+        if (!kickHeld || ball.owner !== user || state !== "playing") return;
+        const kickStyle = KICK_STYLES[kickStyleIndex];
+        const target = userShotTarget();
+        const direction = normalize(target.x - user.x, target.y - user.y);
+        const distance = clamp(92 + charge * 210, 92, 302);
+        const endX = user.x + direction.x * distance;
+        const endY = user.y + direction.y * distance;
+        ctx.save();
+        const lineGradient = ctx.createLinearGradient(user.x, user.y, endX, endY);
+        lineGradient.addColorStop(0, "rgba(255, 255, 255, .18)");
+        lineGradient.addColorStop(.65, kickStyle.color);
+        lineGradient.addColorStop(1, "#ffffff");
+        ctx.strokeStyle = lineGradient;
+        ctx.lineWidth = 2 + charge * 2;
+        ctx.setLineDash([8, 7]);
+        ctx.beginPath();
+        ctx.moveTo(user.x + direction.x * 25, user.y + direction.y * 25);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = charge > .72 ? kickStyle.color : "rgba(255,255,255,.9)";
+        ctx.beginPath();
+        ctx.arc(endX, endY, 4 + charge * 2, 0, TAU);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,.72)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(endX, endY, 12, 0, TAU);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(4, 18, 9, .72)";
+        roundedRect(user.x - 31, user.y + user.r + 18, 62, 7, 4);
+        ctx.fill();
+        ctx.fillStyle = charge > .72 ? kickStyle.color : charge > .4 ? "#ffd65a" : "#ffffff";
+        roundedRect(user.x - 29, user.y + user.r + 20, 58 * charge, 3, 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawParticles() {
+        ctx.save();
+        particles.forEach(particle => {
+          ctx.globalAlpha = clamp(particle.life / .55, 0, 1);
+          ctx.fillStyle = particle.color;
+          if (particle.shape === "rect") {
+            ctx.save();
+            ctx.translate(particle.x, particle.y);
+            ctx.rotate(particle.life * 7);
+            ctx.fillRect(-particle.size * .45, -particle.size, particle.size * .9, particle.size * 2);
+            ctx.restore();
+          } else {
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, particle.size, 0, TAU);
+            ctx.fill();
+          }
+        });
+        ctx.restore();
+      }
+
+      function draw() {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        const shakeX = screenShake > 0 ? (Math.random() - .5) * screenShake : 0;
+        const shakeY = screenShake > 0 ? (Math.random() - .5) * screenShake : 0;
+        ctx.save();
+        ctx.translate(shakeX, shakeY);
+        drawPitch();
+        drawAim();
+        players.filter(player => player.role === "keeper").forEach(drawPlayer);
+        players.filter(player => player.role !== "keeper" && player !== user).forEach(drawPlayer);
+        if (user) drawPlayer(user);
+        drawKickTrail();
+        drawBall();
+        drawParticles();
+        ctx.restore();
+
+        if (flash > 0) {
+          ctx.fillStyle = `rgba(235, 255, 193, ${flash * .34})`;
+          ctx.fillRect(0, 0, W, H);
+        }
+      }
+
+      function frame(now) {
+        const dt = Math.min((now - lastFrame) / 1000 || 0, .034);
+        lastFrame = now;
+        elapsed += dt;
+        if (state === "menu") {
+          players.forEach(player => { player.runPhase += dt * 2; });
+        } else {
+          updateMatch(dt);
+        }
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      document.querySelectorAll("#difficulty button").forEach(button => {
+        button.addEventListener("click", () => {
+          difficulty = button.dataset.diff;
+          document.querySelectorAll("#difficulty button").forEach(option => {
+            option.classList.toggle("active", option === button);
+          });
+          awayTeam.forEach(player => {
+            if (player.role !== "keeper") player.speed = DIFFICULTY[difficulty].speed;
+          });
+          playTone(390, .055, "sine", .012);
+        });
+      });
+
+      playerStyleBtn.addEventListener("click", cyclePlayerStyle);
+      kickStyleBtn.addEventListener("click", cycleKickStyle);
+      document.getElementById("startBtn").addEventListener("click", startMatch);
+      document.getElementById("rematchBtn").addEventListener("click", startMatch);
+      document.getElementById("menuBtn").addEventListener("click", showMenu);
+      soundBtn.addEventListener("click", () => setSound(!soundEnabled));
+
+      canvas.addEventListener("pointermove", event => {
+        aim = { ...pointerPosition(event), active: true };
+      });
+      canvas.addEventListener("pointerleave", () => {
+        aim.active = false;
+      });
+      canvas.addEventListener("pointerdown", event => {
+        if (state !== "playing") return;
+        event.preventDefault();
+        aim = { ...pointerPosition(event), active: true };
+        canvas.setPointerCapture?.(event.pointerId);
+        beginKick();
+      });
+      canvas.addEventListener("pointerup", event => {
+        event.preventDefault();
+        endKick();
+      });
+      canvas.addEventListener("pointercancel", endKick);
+
+      const blockedKeys = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyW", "KeyA", "KeyS", "KeyD"]);
+      window.addEventListener("keydown", event => {
+        if (blockedKeys.has(event.code)) event.preventDefault();
+        keys[event.code] = true;
+        if (event.code === "Space" && !event.repeat) beginKick();
+        if (event.code === "Enter" && state === "menu") startMatch();
+      });
+      window.addEventListener("keyup", event => {
+        keys[event.code] = false;
+        if (event.code === "Space") endKick();
+      });
+      window.addEventListener("blur", () => {
+        Object.keys(keys).forEach(key => { keys[key] = false; });
+        if (kickHeld) endKick();
+        joystickVector = { x: 0, y: 0, pointerId: null };
+        stick.style.transform = "translate(0, 0)";
+      });
+
+      function updateJoystick(event) {
+        const rect = joystick.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        let dx = event.clientX - centerX;
+        let dy = event.clientY - centerY;
+        const maxDistance = rect.width * .34;
+        const distance = length(dx, dy);
+        if (distance > maxDistance) {
+          dx = dx / distance * maxDistance;
+          dy = dy / distance * maxDistance;
+        }
+        stick.style.transform = `translate(${dx}px, ${dy}px)`;
+        joystickVector.x = dx / maxDistance;
+        joystickVector.y = dy / maxDistance;
+      }
+
+      joystick.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        joystickVector.pointerId = event.pointerId;
+        joystick.setPointerCapture(event.pointerId);
+        updateJoystick(event);
+      });
+      joystick.addEventListener("pointermove", event => {
+        if (joystickVector.pointerId === event.pointerId) updateJoystick(event);
+      });
+      function releaseJoystick(event) {
+        if (joystickVector.pointerId !== null && event.pointerId !== joystickVector.pointerId) return;
+        joystickVector = { x: 0, y: 0, pointerId: null };
+        stick.style.transform = "translate(0, 0)";
+      }
+      joystick.addEventListener("pointerup", releaseJoystick);
+      joystick.addEventListener("pointercancel", releaseJoystick);
+
+      kickBtn.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        kickBtn.setPointerCapture?.(event.pointerId);
+        beginKick();
+      });
+      kickBtn.addEventListener("pointerup", event => {
+        event.preventDefault();
+        endKick();
+      });
+      kickBtn.addEventListener("pointercancel", endKick);
+
+      window.addEventListener("resize", resizeCanvas);
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          Object.keys(keys).forEach(key => { keys[key] = false; });
+          if (kickHeld) endKick();
+        }
+        lastFrame = performance.now();
+      });
+
+      resizeCanvas();
+      playerStyleIndex = storedStyleIndex("goldenGoalPlayerStyle", PLAYER_STYLES);
+      kickStyleIndex = storedStyleIndex("goldenGoalKickStyle", KICK_STYLES);
+      updateStyleControls();
+      updateBestLabel();
+      updateHUD();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+<script src="../../games-data.js?v=1"></script>
+<script src="../../arcade-shell.js?v=1"></script>
+</body>
+</html>

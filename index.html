@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#04060d">
-    <title>ben.junuzi.com · Play • Explore • Have Fun</title>
+    <meta name="description" content="Play free, mobile-friendly sports and arcade games on Ben's Arcade. Quick games, no download, and no sign-in.">
+    <link rel="canonical" href="https://ben.junuzi.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Ben's Arcade · Free Sports & Arcade Games">
+    <meta property="og:description" content="Fast, free games you can play on a quick break. No download or sign-in.">
+    <meta property="og:url" content="https://ben.junuzi.com/">
+    <meta property="og:image" content="https://ben.junuzi.com/logo.png">
+    <title>Ben's Arcade · Free Sports & Arcade Games</title>
     <link rel="icon" type="image/svg+xml" href="logo-mark.svg">
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
@@ -24,8 +31,8 @@
 
     <style>
         :root {
-            --accent: #2f7bff;
-            --accent2: #4aa8ff;
+            --accent: #20cfa0;
+            --accent2: #72f3cb;
         }
 
         * { -webkit-tap-highlight-color: transparent; }
@@ -38,11 +45,11 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #04060d;
+            background-color: #063d41;
             background-image:
-                radial-gradient(1100px 620px at 82% -8%, rgba(47,120,255,.22), transparent 60%),
-                radial-gradient(900px 560px at -8% 26%, rgba(122,47,255,.16), transparent 60%),
-                radial-gradient(760px 520px at 60% 110%, rgba(0,180,219,.12), transparent 60%);
+                radial-gradient(900px 520px at 15% 0%, rgba(31,202,160,.18), transparent 64%),
+                radial-gradient(760px 500px at 94% 24%, rgba(23,150,143,.2), transparent 66%),
+                linear-gradient(180deg, #063e43 0%, #052f35 58%, #04282d 100%);
             background-attachment: fixed;
             color: #e9eef9;
             min-height: 100vh;
@@ -56,6 +63,12 @@
             flex-direction: column;
         }
 
+        @media (max-width: 1023px) {
+            .app-shell {
+                padding-bottom: calc(84px + env(safe-area-inset-bottom));
+            }
+        }
+
         /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #04060d; }
@@ -66,20 +79,21 @@
 
         /* Surface cards */
         .surface {
-            background: rgba(255,255,255,.04);
-            border: 1px solid rgba(255,255,255,.08);
+            background: rgba(4,73,73,.72);
+            border: 1px solid rgba(73,222,188,.24);
             backdrop-filter: blur(8px);
         }
         .surface-strong {
-            background: rgba(13,22,44,.72);
-            border: 1px solid rgba(255,255,255,.09);
+            background: rgba(5,63,66,.9);
+            border: 1px solid rgba(73,222,188,.32);
             backdrop-filter: blur(12px);
         }
 
         /* Glowing primary button */
         .btn-primary {
-            background: linear-gradient(135deg, #2b6bff, #3fa2ff);
-            box-shadow: 0 12px 34px rgba(48,120,255,.5), inset 0 1px 0 rgba(255,255,255,.25);
+            background: linear-gradient(135deg, #20cfa0, #72f3cb);
+            color: #032d2b !important;
+            box-shadow: 0 10px 26px rgba(15,155,129,.35), inset 0 1px 0 rgba(255,255,255,.35);
             position: relative;
             overflow: hidden;
         }
@@ -96,7 +110,7 @@
 
         /* Brand wordmark */
         .wordmark {
-            background: linear-gradient(135deg, #ffffff 0%, #cfe1ff 55%, #4aa8ff 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #d9fff4 55%, #56e6be 100%);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -129,14 +143,25 @@
             z-index: 1;
         }
         .thumb .emoji { position: relative; z-index: 2; filter: drop-shadow(0 6px 14px rgba(0,0,0,.45)); }
+        .thumb img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 0;
+        }
+        .thumb.has-preview::after {
+            background: none;
+        }
 
         /* Featured hero */
         .featured-hero {
             position: relative;
             overflow: hidden;
             background:
-                radial-gradient(120% 140% at 90% -20%, rgba(64,180,255,.5), transparent 55%),
-                linear-gradient(120deg, #0a1230 0%, #0c2c6e 100%);
+                radial-gradient(120% 140% at 90% -20%, rgba(41,211,178,.35), transparent 55%),
+                linear-gradient(120deg, #063b3d 0%, #075a57 100%);
         }
         .featured-hero::before {
             content: "";
@@ -226,9 +251,9 @@
 
         /* Top nav (desktop) */
         .top-nav {
-            background: rgba(6,10,22,.72);
+            background: rgba(3,42,45,.96);
             backdrop-filter: blur(18px);
-            border-bottom: 1px solid rgba(255,255,255,.07);
+            border-bottom: 1px solid rgba(83,231,197,.24);
         }
         .nav-link { transition: color .18s ease; color:#aab2c9; }
         .nav-link:hover, .nav-link.active { color: #fff; }
@@ -250,6 +275,192 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         .glow-ring { box-shadow: 0 0 0 1px rgba(79,140,255,.4), 0 10px 40px rgba(20,60,160,.4); }
+
+        .bgames-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-auto-rows: 150px;
+            grid-auto-flow: dense;
+            gap: 9px;
+        }
+
+        @media (min-width: 768px) {
+            .bgames-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                grid-auto-rows: 166px;
+                gap: 10px;
+            }
+        }
+
+        @media (min-width: 1180px) {
+            .bgames-grid {
+                grid-template-columns: repeat(8, minmax(0, 1fr));
+                grid-auto-rows: 154px;
+            }
+        }
+
+        .bgames-card {
+            position: relative;
+            display: flex;
+            min-width: 0;
+            min-height: 0;
+            flex-direction: column;
+            overflow: hidden;
+            border: 2px solid rgba(49,205,178,.8);
+            border-radius: 11px;
+            background: #0a6862;
+            box-shadow: 0 8px 20px rgba(0,16,19,.25);
+            transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+        }
+
+        .bgames-card-wrap {
+            position: relative;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .bgames-card-wrap > .bgames-card {
+            width: 100%;
+            height: 100%;
+        }
+
+        .bgames-card:hover {
+            z-index: 2;
+            transform: translateY(-2px);
+            border-color: #a8ffe5;
+            box-shadow: 0 12px 28px rgba(0,18,20,.42), 0 0 0 2px rgba(66,229,191,.22);
+        }
+
+        .bgames-card .thumb {
+            flex: 1;
+            min-height: 0;
+            border-radius: 0;
+        }
+
+        .bgames-card-title {
+            min-height: 34px;
+            display: grid;
+            place-items: center;
+            padding: 5px 8px;
+            background: linear-gradient(180deg, #08746c, #075c58);
+            color: #f7fffd;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1.15;
+            text-align: center;
+        }
+
+        .bgames-card-new {
+            position: absolute;
+            left: 50%;
+            bottom: 35px;
+            z-index: 4;
+            transform: translateX(-50%);
+        }
+
+        .bgames-card-new .new-badge {
+            background: #a7ff4f;
+            color: #083c32;
+            box-shadow: 0 3px 10px rgba(0,0,0,.35);
+            padding: 3px 8px;
+        }
+
+        .bgames-category {
+            display: flex;
+            min-height: 74px;
+            overflow: hidden;
+            border: 2px solid #21a99a;
+            border-radius: 8px;
+            background: #0b6b64;
+            transition: border-color .16s ease, transform .16s ease;
+        }
+
+        .bgames-category:hover {
+            transform: translateX(2px);
+            border-color: #8bffdd;
+        }
+
+        .bgames-category img {
+            width: 39%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .game-row-wrap {
+            position: relative;
+        }
+
+        .save-game {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 5;
+            display: grid;
+            place-items: center;
+            width: 31px;
+            height: 31px;
+            border: 1px solid rgba(255,255,255,.16);
+            border-radius: 999px;
+            background: rgba(3,30,34,.78);
+            color: #d9fff4;
+            font-size: 18px;
+            line-height: 1;
+            box-shadow: 0 4px 14px rgba(0,0,0,.3);
+            backdrop-filter: blur(8px);
+            transition: transform .15s ease, background .15s ease, color .15s ease;
+        }
+
+        .save-game:hover {
+            transform: scale(1.08);
+            background: rgba(3,30,34,.96);
+            color: #fff;
+        }
+
+        .save-game.on {
+            color: #ffe57e;
+            border-color: rgba(255,229,126,.48);
+            background: rgba(75,58,10,.82);
+        }
+
+        .game-row-wrap .save-game {
+            top: 50%;
+            right: 12px;
+            width: 30px;
+            height: 30px;
+            transform: translateY(-50%);
+        }
+
+        .game-row-wrap .save-game:hover {
+            transform: translateY(-50%) scale(1.08);
+        }
+
+        .profile-name {
+            width: min(280px, 100%);
+            margin: 10px auto 0;
+            padding: 8px 12px;
+            border: 1px solid rgba(114,243,203,.22);
+            border-radius: 12px;
+            outline: none;
+            background: rgba(255,255,255,.05);
+            color: #fff;
+            font-size: 18px;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .profile-name:focus {
+            border-color: rgba(114,243,203,.72);
+            box-shadow: 0 0 0 3px rgba(32,207,160,.13);
+        }
+
+        .profile-empty {
+            padding: 24px 16px;
+            border: 1px dashed rgba(255,255,255,.16);
+            border-radius: 16px;
+            color: #94a3b8;
+            font-size: 13px;
+            text-align: center;
+        }
 
         .empty-state { border: 2px dashed rgba(255,255,255,.14); background: rgba(255,255,255,.03); }
     </style>
@@ -310,76 +521,28 @@
         <section id="view-home" class="view px-4 pt-2 lg:pt-8">
             <div class="mx-auto max-w-6xl">
 
-                <!-- Intro hero -->
-                <div class="surface-strong rounded-[26px] p-6 md:p-10 relative overflow-hidden mb-6 glow-ring">
-                    <div class="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-blue-500/20 blur-3xl"></div>
-                    <div class="absolute -left-10 -bottom-16 w-60 h-60 rounded-full bg-fuchsia-500/15 blur-3xl"></div>
-                    <div class="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
-                        <div class="flex-1">
-                            <p class="text-[11px] md:text-xs font-bold tracking-[0.3em] text-[#4aa8ff] mb-3">PLAY • EXPLORE • HAVE FUN</p>
-                            <h1 class="text-2xl sm:text-3xl md:text-5xl font-extrabold leading-tight tracking-tight">
-                                Hundreds of games.<br class="hidden md:block">
-                                <span class="wordmark">Endless fun.</span>
-                            </h1>
-                            <p class="text-slate-400 mt-4 max-w-md text-sm md:text-base leading-relaxed">
-                                From sports to arcade, action to music — there's a game for everyone. Jump in and start playing!
-                            </p>
-                            <div class="mt-6 flex flex-col sm:flex-row gap-3 items-start">
-                                <button onclick="scrollToGames()" class="btn-primary text-white font-extrabold px-7 py-3 rounded-2xl text-sm md:text-base flex items-center gap-2">
-                                    Get Started
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5-5 5M6 12h12"/></svg>
-                                </button>
-                                <a href="add-game/index.html" class="add-games-btn font-extrabold px-7 py-3 rounded-2xl text-sm md:text-base flex items-center gap-2">
-                                    ➕ Add Games
-                                </a>
-                            </div>
-                        </div>
-
-                        <!-- Logo mark (desktop) -->
-                        <div class="hidden md:flex shrink-0 flex-col items-center gap-3 pr-4">
-                            <div class="w-24 h-24 rounded-3xl grid place-items-center bg-gradient-to-br from-[#2b6bff] to-[#3fa2ff] shadow-2xl shadow-blue-600/40">
-                                <svg class="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 6v12a2 2 0 002 2h3a2 2 0 002-2V6a2 2 0 00-2-2h-3a2 2 0 00-2 2zM2 8v8a2 2 0 002 2h2a2 2 0 002-2V8a2 2 0 00-2-2H4a2 2 0 00-2 2zM4 4a2 2 0 100 4 2 2 0 000-4zM20 4a2 2 0 100 4 2 2 0 000-4zM8 2h8v4H8zM4 14h4M16 10h4M6 18h2"/></svg>
-                            </div>
-                            <p class="text-slate-400 text-xs tracking-widest uppercase font-semibold text-center">Daily<br>Games</p>
-                        </div>
+                <div class="flex flex-wrap items-end justify-between gap-4 mb-5">
+                    <div>
+                        <p class="text-[11px] font-black tracking-[0.2em] uppercase text-[#77f5cf] mb-1">Ben's Arcade</p>
+                        <h1 class="text-2xl md:text-4xl font-black tracking-tight text-white">Quick games. Big wins.</h1>
+                        <p class="text-sm text-emerald-50/70 mt-1">Free, mobile-friendly sports and arcade games—no download or sign-in.</p>
                     </div>
+                    <a href="add-game/index.html" class="add-games-btn font-extrabold px-5 py-2.5 rounded-xl text-sm">＋ Add Games</a>
                 </div>
 
-                <!-- Featured -->
-                <div id="featured-wrap"></div>
+                <!-- Latest games, presented like a BGames cover wall -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-lg md:text-xl font-extrabold text-white">Latest Games</h2>
+                        <button onclick="setView('games')" class="text-sm font-bold text-[#8cffdb] hover:text-white">See All</button>
+                    </div>
+                    <div id="popular-grid" class="bgames-grid"></div>
+                </div>
 
                 <!-- Browse Games -->
-                <div class="mt-8">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg md:text-xl font-bold flex items-center gap-2">
-                            <span class="w-1.5 h-5 rounded-full bg-[#2b6bff] inline-block"></span>
-                            Browse Games
-                        </h2>
-                    </div>
-                    <div id="browse-pills" class="flex gap-3 overflow-x-auto no-scrollbar pb-1"></div>
-                </div>
-
-                <!-- New Games (most recently added first) -->
-                <div class="mt-8">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg md:text-xl font-bold flex items-center gap-2">
-                            <span class="w-1.5 h-5 rounded-full bg-[#2b6bff] inline-block"></span>
-                            New Games
-                        </h2>
-                        <button onclick="setView('games')" class="text-sm font-semibold text-[#4aa8ff] hover:text-white hover:underline transition-colors">See All</button>
-                    </div>
-                    <div id="popular-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4"></div>
-                </div>
-
-                <!-- All Games highlight -->
-                <div class="mt-12">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg md:text-xl font-bold flex items-center gap-2">
-                            <span class="w-1.5 h-5 rounded-full bg-[#2b6bff] inline-block"></span>
-                            All Games
-                        </h2>
-                    </div>
-                    <div id="home-list" class="grid md:grid-cols-2 gap-2.5"></div>
+                <div class="border-2 border-[#58e4c2]/70 rounded-2xl bg-[#06393b]/65 p-4 md:p-6">
+                    <h2 class="text-lg md:text-xl font-extrabold text-white mb-4">Browse Categories</h2>
+                    <div id="browse-pills" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5"></div>
                 </div>
 
                 <!-- Practice Games (made by players in the Game Lab) -->
@@ -396,7 +559,7 @@
                 </div>
 
                 <!-- Add Games call to action -->
-                <div class="mt-12 surface rounded-[26px] p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-5">
+                <div id="make-your-own-game" class="mt-12 surface rounded-[26px] p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-5" style="scroll-margin-bottom:calc(96px + env(safe-area-inset-bottom))">
                     <div class="text-4xl md:text-5xl">🛠️</div>
                     <div class="flex-1">
                         <h2 class="text-xl md:text-2xl font-extrabold tracking-tight">Make your own game</h2>
@@ -451,7 +614,7 @@
                     </button>
                     <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">Categories</h1>
                 </div>
-                <div id="category-tiles" class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4"></div>
+                <div id="category-tiles" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2.5"></div>
             </div>
         </section>
 
@@ -488,21 +651,22 @@
                 </div>
 
                 <div class="surface-strong rounded-[26px] p-8 text-center mb-5 glow-ring">
-                    <div class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-[#2b6bff] to-[#3fa2ff] grid place-items-center text-4xl font-extrabold text-white shadow-2xl shadow-blue-600/40">B</div>
-                    <h2 class="mt-4 text-2xl font-extrabold">Ben</h2>
-                    <p class="text-slate-400 text-sm mt-1">ben.junuzi.com · Game Maker</p>
+                    <div id="player-avatar" class="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-[#20cfa0] to-[#3fa2ff] grid place-items-center text-4xl font-extrabold text-[#032d2b] shadow-2xl shadow-emerald-600/30">P</div>
+                    <label for="player-name" class="sr-only">Player name</label>
+                    <input id="player-name" class="profile-name" maxlength="32" placeholder="Your player name" autocomplete="nickname">
+                    <p class="text-slate-400 text-sm mt-2">Your progress is saved on this device.</p>
                     <div class="mt-6 grid grid-cols-3 gap-3">
                         <div class="surface rounded-2xl py-4">
                             <div class="text-2xl font-extrabold text-[#4aa8ff]" id="stat-games">0</div>
                             <div class="text-xs text-slate-400 mt-1">Games</div>
                         </div>
                         <div class="surface rounded-2xl py-4">
-                            <div class="text-2xl font-extrabold text-[#ff9cc9]">0</div>
-                            <div class="text-xs text-slate-400 mt-1">Saved</div>
+                            <div class="text-2xl font-extrabold text-[#ff9cc9]" id="stat-favorites">0</div>
+                            <div class="text-xs text-slate-400 mt-1">Favorites</div>
                         </div>
                         <div class="surface rounded-2xl py-4">
-                            <div class="text-2xl font-extrabold text-[#6ff0b0]">0</div>
-                            <div class="text-xs text-slate-400 mt-1">Played</div>
+                            <div class="text-2xl font-extrabold text-[#6ff0b0]" id="stat-played">0</div>
+                            <div class="text-xs text-slate-400 mt-1">Plays</div>
                         </div>
                     </div>
                     <a href="/forum/index.html" class="btn-primary block mt-6 text-white font-extrabold py-3.5 rounded-2xl text-sm">💬  Visit Community Forum</a>
@@ -511,6 +675,14 @@
                 <div class="surface rounded-[26px] p-6">
                     <h3 class="font-bold mb-3">Your Favorites</h3>
                     <div id="profile-games" class="flex flex-col gap-2.5"></div>
+                </div>
+
+                <div class="surface rounded-[26px] p-6 mt-5">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <h3 class="font-bold">Recently Played</h3>
+                        <button onclick="setView('games')" class="text-xs font-bold text-[#8cffdb] hover:text-white">Browse games</button>
+                    </div>
+                    <div id="profile-history" class="flex flex-col gap-2.5"></div>
                 </div>
             </div>
         </section>
@@ -566,6 +738,8 @@
 </div>
 
 <script src="practice-games.js?v=3"></script>
+<script src="games-data.js?v=1"></script>
+<script src="arcade-shell.js?v=1"></script>
 <script>
     let gamesData = [];
     let currentCategory = "All";
@@ -601,7 +775,7 @@
         "fast hands": "⚡", "ping pong": "🏓", "space adventure!": "🚀",
         "classic snake": "🐍", "mini-strike": "🎯", "piano tiles": "🎹",
         "pool game": "🎱", "soccer": "⚽", "soccer game v2": "⚽",
-        "cool baseball": "⚾", "baseball showdown": "⚾", "flappy bird": "🐦",
+        "cool baseball": "⚾", "flappy bird": "🐦",
         "dog food run": "🐕", "fruit catch frenzy": "🍎", "1v1 soccer": "⚽",
         "music studio": "🎶", "fc27": "⚽",
         "neon brick breaker": "🧱",
@@ -610,9 +784,10 @@
         "pong arena": "🏓",
         "neon flappy": "🐦",
         "pit crew: driver's orders": "🧑‍🔧",
+        "golden goal": "⚽",
     };
 
-    const featuredPool = ["Boxing Tournament", "FC27", "Soccer", "Football", "Touchdown Blitz", "Slime Soccer", "Fruit Catch Frenzy", "Piano Tiles"];
+    const featuredPool = ["Golden Goal", "Boxing Tournament", "FC27", "Soccer", "Football", "Touchdown Blitz", "Slime Soccer", "Fruit Catch Frenzy", "Piano Tiles"];
 
     function normCat(cat) {
         if (!cat) return "Other";
@@ -633,12 +808,19 @@
         return g._emoji || gameEmoji[titleKey(g.title)] || m.icon;
     }
 
-    function thumb(g, cls) {
+    function gameSlug(title) {
+        return titleKey(title).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "game";
+    }
+
+    function thumb(g, cls, eager = false) {
         const m = meta(normCat(g.category));
         const e = gameIcon(g);
+        const hasPreview = !!g._preview;
         return `
-            <div class="thumb ${g._grad || m.grad} w-full aspect-square rounded-2xl">
-                <span class="emoji text-3xl md:text-4xl">${e}</span>
+            <div class="thumb ${hasPreview ? "has-preview" : (g._grad || m.grad)} ${cls || "w-full aspect-square rounded-2xl"}">
+                ${hasPreview
+                    ? `<img src="${safeUrl(g._preview)}" alt="${escapeHtml(g.title)} gameplay preview" loading="${eager ? "eager" : "lazy"}" decoding="async">`
+                    : `<span class="emoji text-3xl md:text-4xl">${e}</span>`}
             </div>`;
     }
 
@@ -660,15 +842,34 @@
         return String(str).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
     }
 
+    function storedGame(g) {
+        return {
+            title: g.title,
+            url: g.url,
+            path: window.BenArcade ? window.BenArcade.pathFor(g.url) : g.url
+        };
+    }
+
+    function gameTitle(g) {
+        return `<span class="truncate">${escapeHtml(g.title)}</span>`;
+    }
+
+    function saveGameButton(g) {
+        const game = storedGame(g);
+        const saved = window.BenArcade && window.BenArcade.isFavorite(game);
+        const label = saved ? `Remove ${game.title} from favorites` : `Add ${game.title} to favorites`;
+        return `<button type="button" class="save-game ${saved ? "on" : ""}" data-save-title="${escapeHtml(game.title)}" data-save-url="${escapeHtml(game.path)}" aria-pressed="${saved}" aria-label="${escapeHtml(label)}">${saved ? "★" : "☆"}</button>`;
+    }
+
     function renderBrowsePills() {
         const cats = buildCategoryList();
         document.getElementById("browse-pills").innerHTML = cats.map(cat => {
             const m = meta(cat);
             const active = currentCategory === cat;
             return `
-                <button onclick="setCategory('${cat}')" class="pill ${active ? 'active' : 'surface'} shrink-0 w-[76px] flex flex-col items-center gap-1.5 py-3 rounded-2xl">
+                <button onclick="setCategory('${cat}')" class="pill ${active ? 'active' : 'surface'} flex items-center gap-2 px-3 py-3 rounded-lg text-left min-w-0">
                     <span class="text-xl">${m.icon}</span>
-                    <span class="text-[11px] font-bold">${cat === "All" ? "All Games" : cat}</span>
+                    <span class="text-[12px] font-extrabold truncate">${cat === "All" ? "All Games" : cat}</span>
                 </button>`;
         }).join("");
     }
@@ -704,9 +905,9 @@
 
     function renderFeatured() {
         const wrap = document.getElementById("featured-wrap");
+        if (!wrap) return;
         if (!featuredGames.length) { wrap.innerHTML = ""; return; }
         const g = featuredGames[featuredIndex];
-        const m = meta(normCat(g.category));
         const dots = featuredGames.map((_, i) => `
             <button onclick="stopFeaturedAuto();setFeatured(${i})" class="w-1.5 h-1.5 rounded-full transition-all ${i === featuredIndex ? 'bg-white w-5' : 'bg-white/40'}"></button>
         `).join("");
@@ -726,8 +927,8 @@
                         </a>
                     </div>
                     <div class="shrink-0">
-                        <div class="thumb ${g._grad || m.grad} w-28 h-28 md:w-36 md:h-36 rounded-3xl shadow-2xl">
-                            <span class="emoji text-5xl md:text-6xl">${gameIcon(g)}</span>
+                        <div class="thumb ${g._grad} w-20 h-20 md:w-28 md:h-28 rounded-2xl">
+                            <span class="emoji text-4xl md:text-5xl">${gameIcon(g)}</span>
                         </div>
                     </div>
                 </div>
@@ -751,20 +952,20 @@
     }
 
     function renderPopular() {
-        const games = filteredGames().slice(0, 8);
+        const games = filteredGames().slice(0, 24);
         const grid = document.getElementById("popular-grid");
-        grid.innerHTML = games.map(g => {
-            const m = meta(normCat(g.category));
+        grid.innerHTML = games.map((g, i) => {
+            const featureClass = i === 2 || i === 13 ? "sm:col-span-2 sm:row-span-2" : "";
+            const badge = newBadge(g);
             return `
-                <a href="${safeUrl(g.url)}" class="group surface rounded-2xl p-2.5 hover:-translate-y-1 hover:border-blue-400/60 transition-all duration-200">
-                    <div class="thumb ${g._grad || m.grad} w-full aspect-[4/3] rounded-xl mb-2.5">
-                        <span class="emoji text-3xl md:text-4xl">${gameIcon(g)}</span>
-                    </div>
-                    <h4 class="text-sm font-bold leading-tight group-hover:text-white transition-colors line-clamp-2 flex items-start gap-1.5">
-                        <span class="line-clamp-2">${escapeHtml(g.title)}</span>${newBadge(g)}
-                    </h4>
-                    <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-2">${escapeHtml(g.goal)}</p>
-                </a>`;
+                <div class="bgames-card-wrap ${featureClass}">
+                    <a href="${safeUrl(g.url)}" aria-label="Play ${escapeHtml(g.title)}" class="bgames-card">
+                        ${thumb(g, "w-full h-full", i < 6)}
+                        <div class="bgames-card-title"><span class="line-clamp-2">${escapeHtml(g.title)}</span></div>
+                        ${badge ? `<div class="bgames-card-new">${badge}</div>` : ""}
+                    </a>
+                    ${saveGameButton(g)}
+                </div>`;
         }).join("");
     }
 
@@ -774,21 +975,20 @@
     }
 
     function row(g, showCat = true) {
-        const m = meta(normCat(g.category));
         return `
-            <a href="${safeUrl(g.url)}" class="game-row flex items-center gap-3 surface rounded-2xl p-2.5">
-                <div class="thumb ${g._grad || m.grad} w-14 h-14 rounded-xl shrink-0">
-                    <span class="emoji text-2xl">${gameIcon(g)}</span>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <h4 class="font-bold text-sm flex items-center gap-2 min-w-0">
-                        <span class="truncate">${escapeHtml(g.title)}</span>${newBadge(g)}
-                    </h4>
-                    <p class="text-xs text-slate-400 truncate">${escapeHtml(g.goal)}</p>
-                </div>
-                ${showCat ? catPill(normCat(g.category)) : ""}
-                <svg class="chevron w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-            </a>`;
+            <div class="game-row-wrap">
+                <a href="${safeUrl(g.url)}" class="game-row flex items-center gap-3 surface rounded-2xl p-2.5 pr-12">
+                    ${thumb(g, "w-14 h-14 rounded-xl shrink-0")}
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-sm flex items-center gap-2 min-w-0">
+                            ${gameTitle(g)}${newBadge(g)}
+                        </h4>
+                    </div>
+                    ${showCat ? catPill(normCat(g.category)) : ""}
+                    <svg class="chevron w-4 h-4 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </a>
+                ${saveGameButton(g)}
+            </div>`;
     }
 
     function renderGamesList() {
@@ -806,13 +1006,17 @@
         el.innerHTML = cats.map(cat => {
             const m = meta(cat);
             const count = gamesData.filter(g => normCat(g.category) === cat).length;
+            const sample = gamesData.find(g => normCat(g.category) === cat && g._preview);
             return `
-                <button onclick="setCategory('${cat}');setView('games')" class="group surface rounded-3xl p-5 text-left hover:border-blue-400/60 hover:-translate-y-1 transition-all">
-                    <div class="thumb ${m.grad} w-12 h-12 rounded-2xl mb-3">
-                        <span class="emoji text-2xl">${m.icon}</span>
+                <button onclick="setCategory('${cat}');setView('games')" class="bgames-category text-left">
+                    <div class="flex-1 min-w-0 px-4 py-3 flex flex-col justify-center">
+                        <div class="text-lg">${m.icon}</div>
+                        <div class="font-extrabold text-sm text-white mt-1">${cat}</div>
+                        <div class="text-[11px] text-emerald-50/70">${count} games</div>
                     </div>
-                    <h3 class="font-extrabold text-lg">${cat}</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">${count} games</p>
+                    ${sample
+                        ? `<img src="${safeUrl(sample._preview)}" alt="" loading="lazy" decoding="async">`
+                        : `<div class="w-[39%] grid place-items-center text-3xl ${m.grad}"><span class="emoji">${m.icon}</span></div>`}
                 </button>`;
         }).join("");
     }
@@ -829,22 +1033,80 @@
 
     function renderProfile() {
         document.getElementById("stat-games").textContent = gamesData.length;
-        const favs = gamesData.filter(g => ["Soccer", "Football", "Touchdown Blitz"].some(f => titleKey(g.title) === titleKey(f)));
-        const el = document.getElementById("profile-games");
-        el.innerHTML = (favs.length ? favs : gamesData.slice(0, 3)).map(g => row(g, true)).join("");
+        const history = window.BenArcade ? window.BenArcade.getHistory() : [];
+        const favorites = window.BenArcade ? window.BenArcade.getFavorites() : [];
+        const playCount = history.reduce((total, game) => total + (Number(game.plays) || 0), 0);
+
+        document.getElementById("stat-favorites").textContent = favorites.length;
+        document.getElementById("stat-played").textContent = playCount;
+
+        function gameForStored(entry) {
+            const storedPath = window.BenArcade ? window.BenArcade.pathFor(entry.path || entry.url) : entry.url;
+            return gamesData.find(g => window.BenArcade.pathFor(g.url) === storedPath) || {
+                title: entry.title || "Game",
+                url: entry.path || entry.url,
+                category: "Other",
+                goal: "",
+                _preview: ""
+            };
+        }
+
+        const favoritesEl = document.getElementById("profile-games");
+        favoritesEl.innerHTML = favorites.length
+            ? favorites.map(gameForStored).map(g => row(g, true)).join("")
+            : `<div class="profile-empty">Tap ☆ on any game to save it here.</div>`;
+
+        const historyEl = document.getElementById("profile-history");
+        historyEl.innerHTML = history.length
+            ? history.slice(0, 6).map(gameForStored).map(g => row(g, true)).join("")
+            : `<div class="profile-empty">Your most recent games will appear here.</div>`;
+
+        const name = window.BenArcade ? window.BenArcade.getPlayerName() : "";
+        const nameInput = document.getElementById("player-name");
+        if (nameInput && document.activeElement !== nameInput) nameInput.value = name;
+        const shownName = name || "Player";
+        document.getElementById("player-avatar").textContent = shownName.charAt(0).toUpperCase();
     }
 
     function renderAll() {
         renderBrowsePills();
         renderGamesPills();
         renderPopular();
-        renderHomeList();
         renderFeatured();
         renderGamesList();
         renderCategoryTiles();
         renderSearch();
         renderProfile();
     }
+
+    document.addEventListener("click", function (event) {
+        const saveButton = event.target.closest("[data-save-url]");
+        if (saveButton && window.BenArcade) {
+            event.preventDefault();
+            event.stopPropagation();
+            const game = {
+                title: saveButton.dataset.saveTitle,
+                url: saveButton.dataset.saveUrl,
+                path: saveButton.dataset.saveUrl
+            };
+            window.BenArcade.toggleFavorite(game);
+            renderAll();
+            return;
+        }
+
+        const link = event.target.closest("a[href]");
+        if (!link || !window.BenArcade) return;
+        const clickedPath = window.BenArcade.pathFor(link.href);
+        const game = gamesData.find(g => window.BenArcade.pathFor(g.url) === clickedPath);
+        if (game) window.BenArcade.recordOpen(storedGame(game));
+    });
+
+    document.addEventListener("input", function (event) {
+        if (!event.target.matches("#player-name")) return;
+        const name = event.target.value.trim();
+        if (window.BenArcade) window.BenArcade.setPlayerName(name);
+        document.getElementById("player-avatar").textContent = (name || "Player").charAt(0).toUpperCase();
+    });
 
     // ---- Player-made practice games (from the Game Lab) ----
     // These are approved by Ben and live as data, so nothing is added to
@@ -871,14 +1133,13 @@
         section.classList.toggle("hidden", games.length === 0);
         grid.innerHTML = games.map(g => `
             <a href="${safeUrl(g.url)}" class="group surface rounded-2xl p-2.5 hover:-translate-y-1 hover:border-emerald-400/60 transition-all duration-200">
-                <div class="thumb ${g._grad} w-full aspect-[4/3] rounded-xl mb-2.5">
+                <div class="thumb ${g._grad} w-full aspect-[16/10] rounded-xl mb-2.5">
                     <span class="emoji text-3xl md:text-4xl">${gameIcon(g)}</span>
                 </div>
                 <h4 class="text-sm font-bold leading-tight group-hover:text-white transition-colors flex items-start gap-1.5">
                     <span class="line-clamp-2">${escapeHtml(g.title)}</span>
                     <span class="practice-badge shrink-0">PRACTICE</span>
                 </h4>
-                <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-2">${escapeHtml(g.goal)}</p>
             </a>`).join("");
     }
 
@@ -960,48 +1221,73 @@
         return arr;
     }
 
+    function embeddedGames() {
+        return Array.isArray(window.BEN_GAMES_DATA)
+            ? window.BEN_GAMES_DATA.map(game => Object.assign({}, game))
+            : [];
+    }
+
     async function loadGames() {
+        let catalog = [];
+
         try {
-            // no-store: GitHub Pages sends games.csv with a 10-minute cache header,
-            // so without this the browser can keep showing an outdated games list.
-            const res = await fetch("games.csv", { cache: "no-store" });
-            if (!res.ok) throw new Error("network");
-            const text = await res.text();
-            const rows = parseCSV(text);
-            if (rows.length > 1) {
-                const headers = rows[0].map(h => h.trim().toLowerCase());
-                gamesData = rows.slice(1).map(r => {
-                    const obj = {};
-                    headers.forEach((h, i) => { obj[h] = r[i] ? r[i].trim() : ""; });
-                    return obj;
-                }).filter(g => g.title);
+            if (location.protocol !== "file:") {
+                // Fetch the live catalog when the site is served over HTTP.
+                const res = await fetch("games.csv", { cache: "no-store" });
+                if (!res.ok) throw new Error("network");
+                const text = await res.text();
+                const rows = parseCSV(text);
+                if (rows.length > 1) {
+                    const headers = rows[0].map(h => h.trim().toLowerCase());
+                    catalog = rows.slice(1).map(r => {
+                        const obj = {};
+                        headers.forEach((h, i) => { obj[h] = r[i] ? r[i].trim() : ""; });
+                        return obj;
+                    }).filter(g => g.title);
+                }
             }
-
-            const grads = ["th-sports","th-arcade","th-action","th-music","th-other"];
-            gamesData.forEach((g, i) => { g._grad = grads[i % grads.length]; });
-
-            // Newest uploads are appended to the bottom of games.csv, so flip the order
-            // once here and every list on the site shows the freshest games first.
-            gamesData.reverse();
-            gamesData.forEach((g, i) => { g._new = i < 3; });
-
-            featuredGames = featuredPool
-                .map(t => gamesData.find(g => titleKey(g.title) === titleKey(t)))
-                .filter(Boolean);
-            if (!featuredGames.length) featuredGames = gamesData.slice(0, 4);
-
-            csvLoaded = true;
-            applyPracticeGames();
-            renderAll();
-            startFeaturedAuto();
         } catch (err) {
-            console.error("Failed to load CSV", err);
+            console.warn("Using the bundled game catalog", err);
         }
+
+        gamesData = catalog.length ? catalog : embeddedGames();
+        if (!gamesData.length) {
+            console.error("Failed to load game catalog");
+            return;
+        }
+
+        const grads = ["th-sports","th-arcade","th-action","th-music","th-other"];
+        gamesData.forEach((g, i) => {
+            g.url = String(g.url || "").replace(/^\/+/, "");
+            g._grad = grads[i % grads.length];
+            g._preview = `assets/game-covers-v2/${gameSlug(g.title)}.jpg`;
+        });
+
+        // Newest uploads are appended to the bottom of games.csv, so flip the order
+        // once here and every list on the site shows the freshest games first.
+        gamesData.reverse();
+        gamesData.forEach((g, i) => { g._new = i < 3; });
+
+        featuredGames = featuredPool
+            .map(t => gamesData.find(g => titleKey(g.title) === titleKey(t)))
+            .filter(Boolean);
+        if (!featuredGames.length) featuredGames = gamesData.slice(0, 4);
+
+        csvLoaded = true;
+        applyPracticeGames();
+        renderAll();
+        startFeaturedAuto();
     }
 
     if (typeof PracticeGames !== "undefined") PracticeGames.ready(applyPracticeGames);
 
     document.addEventListener("DOMContentLoaded", loadGames);
+    document.addEventListener("DOMContentLoaded", function () {
+        const requestedView = new URLSearchParams(location.search).get("view");
+        if (["home", "games", "categories", "search", "profile"].includes(requestedView)) {
+            setView(requestedView);
+        }
+    });
 </script>
 </body>
 </html>

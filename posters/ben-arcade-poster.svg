@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="2400" viewBox="0 0 1600 2400"
+     role="img" aria-labelledby="poster-title poster-desc">
+  <title id="poster-title">Ben's Good Games poster</title>
+  <desc id="poster-desc">A neon arcade poster asking: Do you want to play good games? Go to ben.junuzi.com and have a blast!</desc>
+
+  <defs>
+    <linearGradient id="background" x1="130" y1="0" x2="1470" y2="2400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#07091B"/>
+      <stop offset=".48" stop-color="#0B1132"/>
+      <stop offset="1" stop-color="#160A32"/>
+    </linearGradient>
+    <radialGradient id="blue-glow" cx="0" cy="0" r="1" gradientTransform="translate(1270 260) rotate(129) scale(850 950)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#147BFF" stop-opacity=".5"/>
+      <stop offset=".54" stop-color="#365BFF" stop-opacity=".15"/>
+      <stop offset="1" stop-color="#365BFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pink-glow" cx="0" cy="0" r="1" gradientTransform="translate(100 1210) rotate(28) scale(720 880)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF36C5" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#FF36C5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="headline" x1="182" y1="380" x2="1400" y2="890" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset=".57" stop-color="#E9F5FF"/>
+      <stop offset="1" stop-color="#83D9FF"/>
+    </linearGradient>
+    <linearGradient id="controller-shell" x1="580" y1="1025" x2="1010" y2="1330" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#29E5FF"/>
+      <stop offset=".5" stop-color="#327DFF"/>
+      <stop offset="1" stop-color="#8D5BFF"/>
+    </linearGradient>
+    <linearGradient id="cta-fill" x1="175" y1="1590" x2="1425" y2="1905" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B214A"/>
+      <stop offset="1" stop-color="#23114E"/>
+    </linearGradient>
+    <linearGradient id="cta-edge" x1="150" y1="1620" x2="1450" y2="1870" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38E8FF"/>
+      <stop offset=".52" stop-color="#4C96FF"/>
+      <stop offset="1" stop-color="#FF4CC8"/>
+    </linearGradient>
+    <linearGradient id="blast" x1="250" y1="2080" x2="1350" y2="2200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFEF73"/>
+      <stop offset=".48" stop-color="#FF82CE"/>
+      <stop offset="1" stop-color="#65E8FF"/>
+    </linearGradient>
+    <filter id="glow-blue" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <filter id="glow-small" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="200%">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#000000" flood-opacity=".55"/>
+    </filter>
+    <pattern id="grid" width="70" height="70" patternUnits="userSpaceOnUse">
+      <path d="M70 0H0V70" fill="none" stroke="#799EFF" stroke-opacity=".075" stroke-width="2"/>
+    </pattern>
+    <clipPath id="poster-clip">
+      <rect width="1600" height="2400"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#poster-clip)">
+    <rect width="1600" height="2400" fill="url(#background)"/>
+    <rect width="1600" height="2400" fill="url(#blue-glow)"/>
+    <rect width="1600" height="2400" fill="url(#pink-glow)"/>
+    <rect y="1180" width="1600" height="1220" fill="url(#grid)" opacity=".9"/>
+
+    <!-- Loose arcade spark shapes -->
+    <g fill="none" stroke-linecap="round">
+      <path d="M120 308v88M76 352h88" stroke="#FFE66D" stroke-width="9"/>
+      <path d="M1462 924v68M1428 958h68" stroke="#FF62C7" stroke-width="8"/>
+      <path d="M132 1935v70M97 1970h70" stroke="#4DE8FF" stroke-width="7"/>
+      <path d="M1422 1316v46M1399 1339h46" stroke="#FFE66D" stroke-width="6"/>
+    </g>
+    <g fill="#FFE66D">
+      <circle cx="1473" cy="432" r="11"/>
+      <circle cx="95" cy="766" r="8"/>
+      <circle cx="1470" cy="2146" r="10"/>
+    </g>
+    <g fill="#FF62C7">
+      <path d="m239 1247 14 34 34 14-34 14-14 34-14-34-34-14 34-14 14-34Z"/>
+      <path d="m1378 1671 10 24 24 10-24 10-10 24-10-24-24-10 24-10 10-24Z"/>
+    </g>
+
+    <!-- Header badge -->
+    <g transform="translate(155 126)">
+      <rect width="472" height="72" rx="36" fill="#FFFFFF" fill-opacity=".055" stroke="#67E5FF" stroke-opacity=".5"/>
+      <circle cx="42" cy="36" r="12" fill="#FFE66D"/>
+      <text x="70" y="47" fill="#DDF8FF" font-family="Arial, Helvetica, sans-serif" font-size="27"
+            font-weight="800" letter-spacing="5">ONLY GOOD GAMES</text>
+    </g>
+
+    <!-- Headline -->
+    <g font-family="Arial Black, Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle">
+      <text x="810" y="420" fill="url(#headline)" font-size="124" letter-spacing="-3">DO YOU WANT TO</text>
+      <text x="810" y="620" fill="url(#headline)" font-size="190" letter-spacing="-8">PLAY GOOD</text>
+      <text x="810" y="825" fill="#5ADFFF" font-size="224" letter-spacing="-9"
+            stroke="#2D8DFF" stroke-opacity=".24" stroke-width="7">GAMES?</text>
+    </g>
+
+    <!-- Controller illustration -->
+    <g transform="translate(485 940)" filter="url(#shadow)">
+      <ellipse cx="315" cy="350" rx="260" ry="42" fill="#2B9BFF" opacity=".28" filter="url(#glow-blue)"/>
+      <path d="M160 39H470c79 0 131 60 149 146l45 211c16 75-44 129-105 112l-102-30c-28-8-48-23-67-46l-38-45c-24-28-59-28-83 0l-38 45c-19 23-39 38-67 46l-102 30C-22 525-82 471-66 396l45-211C-3 99 56 39 160 39Z"
+            fill="url(#controller-shell)" stroke="#D3F9FF" stroke-width="9"/>
+      <path d="M153 57H476c56 0 99 32 121 87" fill="none" stroke="#D4FBFF" stroke-opacity=".45"
+            stroke-width="12" stroke-linecap="round"/>
+      <path d="M154 201v126M91 264h126" stroke="#081432" stroke-width="42" stroke-linecap="round"/>
+      <path d="M154 201v126M91 264h126" stroke="#B6F5FF" stroke-width="18" stroke-linecap="round"/>
+      <circle cx="476" cy="212" r="38" fill="#FFE66D" stroke="#FFF9C2" stroke-width="7"/>
+      <circle cx="548" cy="287" r="38" fill="#FF4FB8" stroke="#FFD5ED" stroke-width="7"/>
+      <circle cx="402" cy="301" r="23" fill="#FFFFFF" fill-opacity=".88"/>
+      <circle cx="467" cy="337" r="23" fill="#FFFFFF" fill-opacity=".88"/>
+      <path d="M270 113c17-13 40-13 57 0" fill="none" stroke="#091633" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="224" cy="104" r="10" fill="#FFE66D"/>
+      <circle cx="351" cy="104" r="10" fill="#FFE66D"/>
+    </g>
+
+    <!-- Domain callout -->
+    <g transform="translate(110 1510)">
+      <rect x="14" y="22" width="1380" height="302" rx="66" fill="#35A0FF" opacity=".23"
+            filter="url(#glow-blue)"/>
+      <rect x="2" y="2" width="1380" height="302" rx="66" fill="url(#cta-fill)"
+            stroke="url(#cta-edge)" stroke-width="8"/>
+      <rect x="37" y="37" width="1310" height="232" rx="48" fill="none"
+            stroke="#B0F3FF" stroke-opacity=".12" stroke-width="3"/>
+      <text x="535" y="86" fill="#79E9FF" text-anchor="middle"
+            font-family="Arial, Helvetica, sans-serif" font-size="31" font-weight="800"
+            letter-spacing="8">GO TO</text>
+      <text x="535" y="207" fill="#FFFFFF" text-anchor="middle"
+            font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="88"
+            font-weight="900" letter-spacing="-4">BEN.JUNUZI.COM</text>
+      <text x="535" y="257" fill="#D9FAFF" text-anchor="middle"
+            font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700"
+            letter-spacing="2">SCAN OR TYPE TO START PLAYING</text>
+
+      <!-- QR code for https://ben.junuzi.com -->
+      <rect x="1114" y="22" width="242" height="242" rx="20" fill="#FFFFFF"/>
+      <g transform="translate(1133 41) scale(6.7)" fill="#000000" shape-rendering="crispEdges">
+        <path d="M1 1h7v1h-7z M11 1h1v1h-1z M13 1h1v1h-1z M16 1h4v1h-4z M21 1h1v1h-1z M23 1h7v1h-7z M1 2h1v1h-1z M7 2h1v1h-1z M12 2h1v1h-1z M14 2h1v1h-1z M19 2h3v1h-3z M23 2h1v1h-1z M29 2h1v1h-1z M1 3h1v1h-1z M3 3h3v1h-3z M7 3h1v1h-1z M10 3h3v1h-3z M15 3h2v1h-2z M21 3h1v1h-1z M23 3h1v1h-1z M25 3h3v1h-3z M29 3h1v1h-1z M1 4h1v1h-1z M3 4h3v1h-3z M7 4h1v1h-1z M10 4h2v1h-2z M14 4h2v1h-2z M18 4h3v1h-3z M23 4h1v1h-1z M25 4h3v1h-3z M29 4h1v1h-1z M1 5h1v1h-1z M3 5h3v1h-3z M7 5h1v1h-1z M9 5h1v1h-1z M11 5h1v1h-1z M13 5h1v1h-1z M15 5h1v1h-1z M18 5h1v1h-1z M20 5h1v1h-1z M23 5h1v1h-1z M25 5h3v1h-3z M29 5h1v1h-1z M1 6h1v1h-1z M7 6h1v1h-1z M10 6h3v1h-3z M15 6h3v1h-3z M20 6h2v1h-2z M23 6h1v1h-1z M29 6h1v1h-1z M1 7h7v1h-7z M9 7h1v1h-1z M11 7h1v1h-1z M13 7h1v1h-1z M15 7h1v1h-1z M17 7h1v1h-1z M19 7h1v1h-1z M21 7h1v1h-1z M23 7h7v1h-7z M9 8h2v1h-2z M12 8h3v1h-3z M18 8h2v1h-2z M3 9h2v1h-2z M7 9h3v1h-3z M13 9h2v1h-2z M16 9h1v1h-1z M20 9h1v1h-1z M22 9h2v1h-2z M25 9h1v1h-1z M1 10h1v1h-1z M3 10h2v1h-2z M6 10h1v1h-1z M8 10h1v1h-1z M10 10h2v1h-2z M13 10h3v1h-3z M17 10h1v1h-1z M22 10h2v1h-2z M25 10h2v1h-2z M29 10h1v1h-1z M3 11h1v1h-1z M5 11h1v1h-1z M7 11h2v1h-2z M11 11h5v1h-5z M23 11h1v1h-1z M26 11h3v1h-3z M1 12h2v1h-2z M5 12h1v1h-1z M8 12h6v1h-6z M15 12h1v1h-1z M17 12h1v1h-1z M20 12h2v1h-2z M25 12h1v1h-1z M29 12h1v1h-1z M1 13h2v1h-2z M4 13h4v1h-4z M11 13h2v1h-2z M14 13h2v1h-2z M20 13h1v1h-1z M22 13h1v1h-1z M24 13h1v1h-1z M27 13h3v1h-3z M2 14h2v1h-2z M9 14h1v1h-1z M11 14h1v1h-1z M13 14h1v1h-1z M16 14h1v1h-1z M18 14h3v1h-3z M23 14h2v1h-2z M26 14h4v1h-4z M2 15h1v1h-1z M4 15h1v1h-1z M7 15h1v1h-1z M10 15h1v1h-1z M12 15h1v1h-1z M15 15h3v1h-3z M19 15h2v1h-2z M22 15h1v1h-1z M24 15h3v1h-3z M28 15h2v1h-2z M1 16h3v1h-3z M8 16h1v1h-1z M11 16h3v1h-3z M15 16h1v1h-1z M19 16h2v1h-2z M22 16h2v1h-2z M25 16h2v1h-2z M28 16h2v1h-2z M2 17h2v1h-2z M7 17h2v1h-2z M10 17h6v1h-6z M18 17h1v1h-1z M21 17h2v1h-2z M24 17h3v1h-3z M29 17h1v1h-1z M2 18h1v1h-1z M4 18h1v1h-1z M8 18h3v1h-3z M12 18h1v1h-1z M14 18h2v1h-2z M19 18h1v1h-1z M21 18h1v1h-1z M24 18h1v1h-1z M27 18h1v1h-1z M1 19h1v1h-1z M4 19h1v1h-1z M6 19h3v1h-3z M11 19h2v1h-2z M15 19h3v1h-3z M19 19h1v1h-1z M21 19h1v1h-1z M23 19h1v1h-1z M27 19h1v1h-1z M4 20h2v1h-2z M11 20h2v1h-2z M16 20h2v1h-2z M19 20h2v1h-2z M22 20h6v1h-6z M29 20h1v1h-1z M2 21h1v1h-1z M7 21h5v1h-5z M13 21h2v1h-2z M16 21h1v1h-1z M19 21h1v1h-1z M21 21h5v1h-5z M27 21h3v1h-3z M9 22h3v1h-3z M14 22h1v1h-1z M16 22h4v1h-4z M21 22h1v1h-1z M25 22h2v1h-2z M28 22h2v1h-2z M1 23h7v1h-7z M9 23h2v1h-2z M13 23h1v1h-1z M15 23h3v1h-3z M20 23h2v1h-2z M23 23h1v1h-1z M25 23h1v1h-1z M27 23h2v1h-2z M1 24h1v1h-1z M7 24h1v1h-1z M11 24h1v1h-1z M13 24h1v1h-1z M18 24h1v1h-1z M21 24h1v1h-1z M25 24h1v1h-1z M1 25h1v1h-1z M3 25h3v1h-3z M7 25h1v1h-1z M10 25h3v1h-3z M14 25h2v1h-2z M17 25h1v1h-1z M21 25h7v1h-7z M29 25h1v1h-1z M1 26h1v1h-1z M3 26h3v1h-3z M7 26h1v1h-1z M9 26h1v1h-1z M11 26h2v1h-2z M15 26h2v1h-2z M20 26h1v1h-1z M25 26h4v1h-4z M1 27h1v1h-1z M3 27h3v1h-3z M7 27h1v1h-1z M9 27h2v1h-2z M14 27h1v1h-1z M16 27h1v1h-1z M18 27h2v1h-2z M21 27h1v1h-1z M24 27h1v1h-1z M29 27h1v1h-1z M1 28h1v1h-1z M7 28h1v1h-1z M13 28h1v1h-1z M15 28h2v1h-2z M18 28h2v1h-2z M21 28h2v1h-2z M25 28h2v1h-2z M28 28h1v1h-1z M1 29h7v1h-7z M10 29h1v1h-1z M12 29h6v1h-6z M20 29h5v1h-5z M26 29h1v1h-1z M28 29h1v1h-1z"/>
+      </g>
+      <text x="1235" y="286" fill="#C6FAFF" text-anchor="middle"
+            font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="800"
+            letter-spacing="3">SCAN &amp; PLAY</text>
+    </g>
+
+    <!-- Closing call to action -->
+    <g text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif">
+      <text x="800" y="2115" fill="url(#blast)" font-size="116" font-weight="900"
+            letter-spacing="-5">AND HAVE A BLAST!</text>
+    </g>
+
+    <g transform="translate(104 2284)">
+      <rect width="1392" height="3" rx="1.5" fill="#87C9FF" fill-opacity=".4"/>
+      <text x="0" y="63" fill="#9BBEE6" font-family="Arial, Helvetica, sans-serif"
+            font-size="25" font-weight="700" letter-spacing="5">PLAY • EXPLORE • HAVE FUN</text>
+      <text x="1392" y="63" fill="#9BBEE6" text-anchor="end"
+            font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700"
+            letter-spacing="3">BEN'S GAME ARCADE</text>
+    </g>
+  </g>
+</svg>

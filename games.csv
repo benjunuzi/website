@@ -35,7 +35,6 @@ Pool Game,Try to get all the balls in the holes!,games/poolgame/index.html,Sport
 Soccer,Score some beautiful goals!,games/soccer/index.html,Sports
 Soccer Game V2,"The soccer experience, upgraded!",games/soccer-game-v2/index.html,Sports
 Cool Baseball,Aim for the fences and hit a home run!,games/cool-baseball/index.html,Sports
-Baseball Showdown,"Pitch, swing, and outscore the CPU in a 3-inning game!",games/baseball-showdown/index.html,Sports
 Flappy Bird,Flap through obstacles and set a high score!,games/flappy-bird/index.html,Arcade
 Dog Food Run,"Jump, collect food, and escape people and obstacles!",games/dog-food-run/index.html,Arcade
 Fruit Catch Frenzy,"Catch the fruit, dodge the bombs, and chain combos!",games/fruit-catch-frenzy/index.html,Arcade
@@ -50,3 +49,4 @@ Pong Arena,"Rally against the CPU with spin, power and a first-to-7 match!",game
 Neon Flappy,"Slip through the neon towers and chase a platinum medal!",games/neon-flappy/index.html,Arcade
 Endless Runner,"Jump the blocks, slide under the flying bars, and run as far as you can!",games/endless-runner/index.html,Arcade
 Pit Crew: Driver's Orders,"Drive, manage your tyres, nail a mandatory stop, and race in Easy, Medium or Hard mode!",games/pit-crew/index.html,Racing
+Golden Goal,"Dribble, tackle, and score a golden goal in a fast 3-a-side street match!",games/golden-goal/index.html,Sports
